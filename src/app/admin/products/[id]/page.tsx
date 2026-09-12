@@ -7,6 +7,7 @@ import { apiGet } from "@/lib/api/http";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { AdminProduct, ProductStatus } from "@/lib/admin/types";
 import type { CaseType, PhoneModel } from "@/lib/api/types";
 
@@ -25,7 +26,7 @@ export default function AdminProductDetailPage({
   const formId = useId();
 
   const [sku, setSku] = useState("");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState<number | null>(null);
   const [phoneModelId, setPhoneModelId] = useState("");
   const [caseTypeId, setCaseTypeId] = useState("");
   const [isUnlimitedStock, setIsUnlimitedStock] = useState(false);
@@ -40,7 +41,7 @@ export default function AdminProductDetailPage({
   const [editNameEn, setEditNameEn] = useState("");
   const [editNameAr, setEditNameAr] = useState("");
   const [editDescriptionEn, setEditDescriptionEn] = useState("");
-  const [editBasePrice, setEditBasePrice] = useState("");
+  const [editBasePrice, setEditBasePrice] = useState<number | null>(null);
   const [isSavingDetails, setIsSavingDetails] = useState(false);
 
   useEffect(() => {
@@ -65,18 +66,22 @@ export default function AdminProductDetailPage({
   async function handleAddVariant(event: React.FormEvent) {
     event.preventDefault();
     if (!accessToken) return;
+    if (price === null) {
+      setError("Enter the variant's price.");
+      return;
+    }
     setIsBusy(true);
     setError(null);
     try {
       await adminClient.createVariant(accessToken, id, {
         sku,
-        price: Number(price),
+        price,
         phoneModelId: phoneModelId || undefined,
         caseTypeId: caseTypeId || undefined,
         isUnlimitedStock,
       });
       setSku("");
-      setPrice("");
+      setPrice(null);
       setPhoneModelId("");
       setCaseTypeId("");
       setIsUnlimitedStock(false);
@@ -155,7 +160,7 @@ export default function AdminProductDetailPage({
     setEditNameEn(product.nameEn);
     setEditNameAr(product.nameAr);
     setEditDescriptionEn(product.descriptionEn ?? "");
-    setEditBasePrice(product.basePrice !== null ? String(product.basePrice) : "");
+    setEditBasePrice(product.basePrice);
     setIsEditingDetails(true);
   }
 
@@ -169,7 +174,7 @@ export default function AdminProductDetailPage({
         nameEn: editNameEn,
         nameAr: editNameAr,
         descriptionEn: editDescriptionEn || undefined,
-        basePrice: editBasePrice ? Number(editBasePrice) : undefined,
+        basePrice: editBasePrice ?? undefined,
       });
       setProduct((prev) => (prev ? { ...prev, ...updated } : updated));
       setIsEditingDetails(false);
@@ -244,13 +249,10 @@ export default function AdminProductDetailPage({
               onChange={(e) => setEditDescriptionEn(e.target.value)}
               className="rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
-            <input
-              type="number"
-              min={0}
-              placeholder="Base price (minor units, optional)"
-              value={editBasePrice}
-              onChange={(e) => setEditBasePrice(e.target.value)}
-              className="rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            <MoneyInput
+              label="Base price (optional)"
+              minorUnits={editBasePrice}
+              onChange={setEditBasePrice}
             />
             <div className="flex gap-2">
               <button
@@ -320,15 +322,7 @@ export default function AdminProductDetailPage({
           onChange={(e) => setSku(e.target.value)}
           className="rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         />
-        <input
-          required
-          type="number"
-          min={0}
-          placeholder="Price (minor units)"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-48 rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        />
+        <MoneyInput label="Price" minorUnits={price} onChange={setPrice} className="w-36" />
         <select
           value={phoneModelId}
           onChange={(e) => setPhoneModelId(e.target.value)}

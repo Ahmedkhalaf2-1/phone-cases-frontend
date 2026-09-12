@@ -1,6 +1,160 @@
 # Frontend progress
 
-## ⚠️ Known backend config issue: media URLs are `localhost`-relative
+## Milestone 9 — visual rebuild, checkout/cart/auth reliability, remaining admin gaps
+
+Prompted by an owner review that the storefront didn't reproduce the
+reference's composition/imagery, and a punch list of concrete
+purchase-flow and admin gaps. Everything below was implemented directly
+(not just proposed), verified with `tsc`/`eslint`/`build`, and — where
+a live backend call was involved — with real `curl` requests against
+the backend, same discipline as every earlier milestone.
+
+### Visual rebuild
+
+- **Hero** rebuilt from scratch: real headline/CTA/nav stay as
+  components; the product visual is now a **temporary cropped photo**
+  from `refrenace.png` (`public/temp-reference/hero-collage.webp`) —
+  the orange backdrop, peach circle, sparkle, and both cases, with the
+  page's own captions cropped out to avoid duplicating text. Documented
+  inline in `Hero.tsx` as temporary, not a claim of real product
+  photography. Container widened to the requested ~1440px max-width
+  (was 1280px) and hero height brought down to a realistic ~500px band
+  instead of a tall portrait card — no `min-height: 100vh`, no
+  `scaleX()` font stretching.
+- **"Pick your mood" tiles**: same treatment — real cropped photos
+  (`mood-different/calm/bold.webp`) with the reference's own captions
+  cropped out, real HTML title/tagline overlaid. **Fixed a real layout
+  bug**: tiles used `aspect-4/5`, so the wide (2-column) "Bold" tile was
+  nearly *twice as tall* as the two narrow tiles — spec explicitly
+  wants consistent height across the row. Now uses a fixed height
+  (`h-60`/`sm:h-80`/`lg:h-[340px]`) regardless of column span. Mobile
+  layout fixed to 2-up + full-width third tile (was single-column
+  stacking only, since no mobile grid-cols were set at all).
+- **Featured products**: demo products now carry real image URLs
+  (`product-check/cherry/orbit/sage.webp`, same crop-and-document
+  approach) instead of a separate hand-drawn-SVG code path — this also
+  deleted a whole component (`PhoneCaseIllustration.tsx`) that existed
+  only to fake product photography, which the review specifically
+  flagged as not acceptable.
+- **Product detail page**: replaced the single static image with
+  `ProductGallery` — thumbnail strip when a product has multiple
+  images, and picking a variant with its own photo swaps the main image
+  (falls back to the gallery selection otherwise). Handles accessories
+  correctly now (see Fixes below).
+- **Header**: search icon now opens a real inline search form
+  (`/phone-cases?q=...`) instead of linking to "not available in this
+  development milestone" — that exact phrase was customer-facing via
+  `aria-label`, i.e. read aloud by screen readers. Bag icon is no
+  longer `hidden` below the `sm:` breakpoint — on a real phone it was
+  invisible unless the hamburger menu was opened first. Closed mobile
+  menu now uses the HTML `inert` attribute so its links leave the tab
+  order (collapsing height alone still left them keyboard-focusable).
+  "Collections" nav link changed from a bare `#collections` (only
+  worked already-on-homepage) to `/#collections` (works from any page).
+- **Footer**: About/Help/Privacy/Terms now point at `/pages/<slug>`
+  (real CMS route, honest "not published yet" state) instead of the
+  generic `/coming-soon` — per the instruction not to route pages with
+  real page routes to a generic placeholder.
+- Brand name restored to "Contrast" (an earlier uncommitted edit in the
+  working tree had reverted it to the placeholder "YOUR BRAND"; the
+  owner explicitly set it to "Contrast" earlier in this project).
+
+### Checkout/cart/auth reliability fixes (section 11-13 of the review)
+
+- **Idempotency key was regenerated on every submit** — fixed: a stable
+  key is now derived once per distinct payload (hashed with FNV-1a, not
+  stored raw — no address/PII persisted) and reused across retries of
+  the *same* submission via `sessionStorage`; a genuinely changed
+  payload gets a new key automatically.
+- **Order success depended on the next cart being created** — fixed:
+  `completeCheckout()` (housekeeping for the next cart) now runs
+  fire-and-forget *after* navigating to the confirmation page; its
+  failure can never turn into "could not place order" for an order
+  that actually succeeded.
+- **No real quote-staleness tracking** — added explicit
+  loading/stale state; submit is disabled while a new quote is
+  in-flight, and the quote now re-fetches on cart/coupon changes too,
+  not just a shipping-rate change.
+- **`ApiError` carried no backend error code** — extended to parse the
+  `code`/`details` fields from the backend's structured error body.
+  `PRICE_CHANGED` now shows the fresh total and requires an explicit
+  "Confirm new total" click before resubmitting (with a new
+  idempotency key, since the payload genuinely changed) — never loops
+  silently on the stale `expectedTotal`.
+- **Cart discarded a valid token on any fetch failure** — fixed: only
+  401/403/404 (an actually-invalid credential) triggers starting a new
+  cart; a network/5xx failure now keeps the existing token and shows a
+  retry control instead.
+- **"Added to cart" could show after a failed add** — `CartProvider`
+  mutations now rethrow on failure (previously swallowed into a
+  context-level error string only); `VariantPicker` catches that and
+  shows the error state instead of a false success message. Same fix
+  applied to the cart page's quantity/coupon/remove actions (the coupon
+  form could also get stuck on "applying…" forever if the request
+  failed, since there was no `finally`).
+- **Concurrent/stale cart mutations could corrupt visible state** —
+  added a sequence-number guard so an older in-flight mutation's
+  response can never overwrite a newer one's.
+- **Demo and live cart tokens shared one localStorage key** — now
+  namespaced by mode (`cart-token:demo` / `cart-token:live`).
+- **No way to change an existing cart item's variant** — added,
+  using the backend's actual atomic
+  `PATCH /cart/items/:id/variant` (not a remove-then-add pair).
+- **Accessories (no phoneModel) were unbuyable** — `VariantPicker`
+  required selecting a phone model even when a product had none; fixed
+  to detect model-less variants and skip straight to the single
+  variant.
+- **Admin token refresh restarted a full lifetime on every page
+  load** — fixed to track an absolute expiry timestamp and schedule
+  against the *remaining* time; concurrent refreshes are deduplicated
+  via a shared in-flight promise; a refresh result is discarded if the
+  user logged out while it was in flight; other tabs pick up a
+  rotated/cleared session via a `storage` event listener.
+- **Admin logout never called the backend** — now calls
+  `POST /auth/logout` (revokes the refresh token server-side) before
+  clearing local state; local state clears even if that call fails.
+- **InstaPay recipient details** — verified directly against the
+  backend source: none exist anywhere (no env var, settings endpoint,
+  or seed data). Rather than invent one, the payment step shows an
+  honest "not configured" state and disables that path; Cash on
+  Delivery stays usable. Documented in `CheckoutPage` so this isn't
+  mistaken for an oversight.
+- **Order tracking**: added a manual refresh control, a "copy tracking
+  link" button, and — the hard one — a **rejected-receipt replacement
+  flow**. This needed a real fix: `POST /cart/receipts/replace` is
+  guarded by the *original* cart's token, which `CartProvider` already
+  discards right after checkout. Added
+  `src/lib/cart/order-credentials.ts` to preserve that specific token
+  (localStorage, keyed by tracking token, never in the URL) *before*
+  it's replaced, specifically so this flow has something to authorize
+  with later. If it's genuinely unavailable (different device/browser,
+  storage cleared), the page says so honestly instead of faking success.
+- Cart/checkout/tracking totals now consistently show subtotal, coupon
+  discount, and bundle discount as separate lines everywhere (tracking
+  page was missing both; checkout was missing bundle discount) — the
+  grand total itself was always server-authoritative already, so there
+  was never a double-subtraction risk, just an inconsistent breakdown
+  display.
+
+### Admin: remaining workflows completed
+
+- **Audit log** (`/admin/audit-log`, OWNER_ADMIN only) — new, against
+  `GET /admin/audit-logs`, paginated.
+- **Money inputs**: new shared `MoneyInput` component — operators now
+  type/read whole EGP everywhere money is entered (bundle fixed total,
+  shipping rate price, product base price, variant price, fixed-amount
+  coupon value); minor-unit conversion happens once, at the API
+  boundary, via `Math.round(egp * 100)` to avoid float drift. Percentage
+  coupons stay a plain 1–100 integer (not money). **This was a real
+  bug**: the bundle/shipping/variant/product-price forms previously
+  sent whatever the operator typed as raw minor units — typing "50"
+  meaninging "50 EGP" would have silently created a 50-piaster (0.50
+  EGP) price/bundle.
+- Admin nav now hides Staff/Audit-log for non-`OWNER_ADMIN` roles
+  (the backend already enforces this at the API level — this just
+  avoids a dead end in the UI for roles that can't use them).
+
+### Known backend config issue: media URLs are `localhost`-relative
 
 Verified live: uploading media (`POST /admin/media/upload`) and every
 place that returns a `mediaAsset`/`primaryImage`/`media` field returns
@@ -553,15 +707,41 @@ committing — `.env.local` correctly stays untracked
 
 ### Explicitly not done this pass (by design, not oversight)
 
-- **Real product photography / logo** — no real assets exist; per the
-  original brief, fabricating "real-looking" images or a logo isn't
-  acceptable. Still using original placeholder SVG art.
+- **Real product photography / logo** — still no real assets exist;
+  per the brief, fabricating "real-looking" images or a logo isn't
+  acceptable. All imagery is either original SVG or a clearly-labeled
+  temporary crop of `refrenace.png` (see "Visual rebuild" above) — none
+  of it is a claim that production photography exists.
 - **Arabic translation / RTL** — explicitly out of scope per the
-  original brief ("outside this milestone"). Admin CMS forms
-  (pages, shipping zones, staff) do collect the required `*Ar` fields
-  the backend needs, but no Arabic UI or `dir="rtl"` layout exists.
+  original brief ("outside this milestone") and re-confirmed out of
+  scope for this pass too. Admin CMS forms (pages, shipping zones)
+  collect the required `*Ar` fields the backend needs, but no Arabic UI
+  or `dir="rtl"` layout exists.
+- **Phone brands / models / case types admin CRUD** — not built.
+  Live-verified read-only usage (variant creation already sources real
+  phone-model/case-type dropdowns from the public catalog), but there's
+  no admin screen to create/edit a brand, model, or case type itself —
+  that still requires the backend's own tooling.
+- **Variant editing after creation** (price/SKU/compareAtPrice) and
+  **product↔collection attachment** — still only create + status/active
+  toggles, as documented in the coverage audit above.
+- **Variant-level media, media reordering, "choose a different
+  primary"** — still product-level-only, first-upload-is-primary, as
+  documented above.
+- **Full bounded 401-retry-on-every-request** — the admin token-refresh
+  fix in this pass covers the *scheduled* background refresh (correct
+  absolute-expiry timing, deduplication, cross-tab sync). It does not
+  yet retrofit every individual admin API call to catch a 401 and retry
+  once after an on-demand refresh — that needs routing all admin calls
+  through one authenticated-request wrapper instead of each page
+  reading `accessToken` from context directly, which is a larger
+  refactor than fit in this pass. In practice this only matters if an
+  access token expires in the ~20% tail window between page load and
+  the next scheduled refresh while a request happens to be in flight.
 - Real in-browser click-testing — still no headless-browser tool
-  available in this environment. Every new admin screen has been
-  verified at the API level (curl) and confirmed to render (`200` +
-  expected content via curl), but not clicked through in an actual
-  browser. Please verify manually, especially form validation/UX.
+  available in this environment. Every change has been verified at the
+  API/contract level (curl) and confirmed to render/build correctly,
+  and reasoned through against the reference image and the stated
+  breakpoints, but not visually inspected in an actual browser. Please
+  verify manually, especially the hero/collection/product image crops
+  at 1440/768/390px and the checkout/receipt-replacement flows.

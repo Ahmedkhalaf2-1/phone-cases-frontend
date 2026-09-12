@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { PhoneCaseIllustration } from "@/components/graphics/PhoneCaseIllustration";
 import { formatPrice } from "@/lib/format-price";
 import { getCompatibilityLabel } from "@/lib/compatibility";
-import type { PublicProductSummary } from "@/lib/api/types";
+import type { PublicProductSummary, PublicVariant } from "@/lib/api/types";
 import type { DemoProduct } from "@/lib/demo/products.demo";
 
-function isDemoProduct(
+function hasVariants(
   product: PublicProductSummary | DemoProduct,
-): product is DemoProduct {
-  return "artwork" in product;
+): product is DemoProduct & { variants: PublicVariant[] } {
+  return "variants" in product;
 }
 
 export function ProductCard({
@@ -18,28 +17,21 @@ export function ProductCard({
   product: PublicProductSummary | DemoProduct;
   source: "demo" | "live";
 }) {
-  const isDemo = isDemoProduct(product);
-
   return (
     <Link
       href={`/products/${product.slug}`}
       className="group rounded-sm border border-border bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      <div className="aspect-square overflow-hidden rounded-t-sm bg-surface">
-        {isDemo ? (
-          <PhoneCaseIllustration
-            artwork={product.artwork}
-            className="mx-auto h-full max-h-56 py-4 transition-transform duration-500 ease-out group-hover:scale-105"
-          />
-        ) : product.primaryImage ? (
+      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-t-sm bg-surface p-3">
+        {product.primaryImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.primaryImage.url}
             alt={product.primaryImage.altText ?? product.name}
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            className="h-full w-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
             No image
           </div>
         )}
@@ -49,7 +41,7 @@ export function ProductCard({
         <div>
           <p className="font-semibold text-ink">{product.name}</p>
           <p className="text-sm text-muted-foreground">
-            {isDemo
+            {hasVariants(product)
               ? getCompatibilityLabel(product.variants)
               : (product.collections[0]?.name ?? "")}
           </p>
@@ -66,7 +58,7 @@ export function ProductCard({
         </div>
         <span
           aria-hidden
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-ink transition-colors group-hover:border-accent group-hover:text-accent"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm border border-border text-ink transition-colors group-hover:border-accent group-hover:text-accent"
         >
           →
         </span>

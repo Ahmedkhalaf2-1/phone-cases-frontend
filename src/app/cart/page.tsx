@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { CartLineThumbnail } from "@/components/catalog/CartLineThumbnail";
 import { useCart } from "@/lib/cart/CartProvider";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
+import { getProductBySlug } from "@/lib/data/products";
+import type { PublicVariant } from "@/lib/api/types";
 
 export default function CartPage() {
   const {
@@ -17,14 +19,19 @@ export default function CartPage() {
     source,
     updateItemQuantity,
     removeItem,
+    replaceVariant,
     applyCoupon,
     removeCoupon,
+    retryInit,
   } = useCart();
   const [couponInput, setCouponInput] = useState("");
   const [couponBusy, setCouponBusy] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   return (
     <>
+      {/* Transactional/private page — never indexed. */}
+      <meta name="robots" content="noindex, nofollow" />
       <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -42,9 +49,18 @@ export default function CartPage() {
           {isLoading && <LoadingRow label="Loading your bag…" />}
 
           {!isLoading && error && (
-            <p className="rounded-sm border border-accent/40 bg-accent/5 px-4 py-3 text-sm text-accent">
-              {error}
-            </p>
+            <div className="flex items-center justify-between gap-4 rounded-sm border border-accent/40 bg-accent/5 px-4 py-3 text-sm text-accent">
+              <span>{error}</span>
+              {!cart && (
+                <button
+                  type="button"
+                  onClick={retryInit}
+                  className="shrink-0 font-semibold underline underline-offset-4"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
           )}
 
           {!isLoading && cart && cart.items.length === 0 && (
@@ -102,11 +118,11 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              updateItemQuantity(item.id, item.quantity - 1)
+                              updateItemQuantity(item.id, item.quantity - 1).catch(() => {})
                             }
                             disabled={item.quantity <= 1}
                             aria-label="Decrease quantity"
-                            className="px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                            className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                           >
                             −
                           </button>
@@ -116,23 +132,46 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              updateItemQuantity(item.id, item.quantity + 1)
+                              updateItemQuantity(item.id, item.quantity + 1).catch(() => {})
                             }
                             disabled={item.quantity >= 20}
                             aria-label="Increase quantity"
-                            className="px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                            className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                           >
                             +
                           </button>
                         </div>
+                        {(item.phoneModel || item.caseType) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditingItemId((id) => (id === item.id ? null : item.id))
+                            }
+                            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          >
+                            {editingItemId === item.id ? "Cancel" : "Change"}
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeItem(item.id).catch(() => {})}
                           className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                           Remove
                         </button>
                       </div>
+
+                      {editingItemId === item.id && (
+                        <CartItemVariantEditor
+                          productSlug={item.productSlug}
+                          currentVariantId={item.variantId}
+                          onSelect={(variantId) => {
+                            replaceVariant(item.id, variantId)
+                              .then(() => setEditingItemId(null))
+                              .catch(() => {});
+                          }}
+                        />
+                      )}
                     </div>
                   </li>
                 ))}
@@ -150,7 +189,7 @@ export default function CartPage() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => removeCoupon()}
+                      onClick={() => removeCoupon().catch(() => {})}
                       className="text-muted-foreground underline underline-offset-4 hover:text-accent"
                     >
                       Remove
@@ -162,8 +201,14 @@ export default function CartPage() {
                       event.preventDefault();
                       if (!couponInput.trim()) return;
                       setCouponBusy(true);
-                      await applyCoupon(couponInput.trim());
-                      setCouponBusy(false);
+                      try {
+                        await applyCoupon(couponInput.trim());
+                        setCouponInput("");
+                      } catch {
+                        // cart context `error` already carries the message.
+                      } finally {
+                        setCouponBusy(false);
+                      }
                     }}
                     className="flex gap-2"
                   >
@@ -236,5 +281,64 @@ export default function CartPage() {
       </main>
       <SiteFooter />
     </>
+  );
+}
+
+/**
+ * Lets a customer move an existing line item to a different phone
+ * model / case type via the backend's atomic
+ * `PATCH /cart/items/:id/variant` — a single replace, not a
+ * remove-then-add pair that would briefly show an inconsistent cart.
+ */
+function CartItemVariantEditor({
+  productSlug,
+  currentVariantId,
+  onSelect,
+}: {
+  productSlug: string;
+  currentVariantId: string;
+  onSelect: (variantId: string) => void;
+}) {
+  const [variants, setVariants] = useState<PublicVariant[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getProductBySlug(productSlug)
+      .then((result) => {
+        if (cancelled) return;
+        setVariants(result?.product.variants ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load other options for this product.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productSlug]);
+
+  if (error) return <p className="mt-2 text-xs text-accent">{error}</p>;
+  if (!variants) return <p className="mt-2 text-xs text-muted-foreground">Loading options…</p>;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {variants.map((variant) => (
+        <button
+          key={variant.id}
+          type="button"
+          disabled={!variant.isAvailable || variant.id === currentVariantId}
+          onClick={() => onSelect(variant.id)}
+          className={`rounded-sm border px-2 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+            variant.id === currentVariantId
+              ? "border-accent text-accent"
+              : "border-border text-ink hover:border-accent hover:text-accent"
+          }`}
+        >
+          {[variant.phoneModel?.name, variant.caseType?.name].filter(Boolean).join(" · ") ||
+            variant.sku}
+          {!variant.isAvailable && " (out of stock)"}
+        </button>
+      ))}
+    </div>
   );
 }

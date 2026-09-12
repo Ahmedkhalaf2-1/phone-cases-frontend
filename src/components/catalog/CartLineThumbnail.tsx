@@ -1,8 +1,3 @@
-import {
-  PhoneCaseIllustration,
-  artworkForProductSlug,
-} from "@/components/graphics/PhoneCaseIllustration";
-
 export function CartLineThumbnail({
   productSlug,
   thumbnail,
@@ -12,24 +7,14 @@ export function CartLineThumbnail({
   thumbnail: { url: string; altText: string | null } | null;
   className?: string;
 }) {
-  const artwork = artworkForProductSlug(productSlug);
-
   if (thumbnail) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={thumbnail.url}
         alt={thumbnail.altText ?? productSlug}
-        className={`shrink-0 rounded-sm bg-surface object-cover ${className}`}
+        className={`shrink-0 rounded-sm bg-surface object-contain p-1 ${className}`}
       />
-    );
-  }
-
-  if (artwork) {
-    return (
-      <div className={`shrink-0 overflow-hidden rounded-sm bg-surface ${className}`}>
-        <PhoneCaseIllustration artwork={artwork} className="h-full w-full py-1" />
-      </div>
     );
   }
 

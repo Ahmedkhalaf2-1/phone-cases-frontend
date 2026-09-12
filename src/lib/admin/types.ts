@@ -378,6 +378,23 @@ export interface AdminRefundInput {
   idempotencyKey: string;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  staffUserId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  metadata: unknown;
+  ipAddress: string | null;
+  createdAt: string;
+  staffUser: { id: string; email: string; fullName: string; role: StaffRole };
+}
+
+export interface AuditLogResult {
+  items: AuditLogEntry[];
+  meta: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
 export interface AdminItemReturnInput {
   quantity: number;
   reason: string;

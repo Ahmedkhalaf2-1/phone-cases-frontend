@@ -30,8 +30,14 @@ composition stays white-dominant, matching the reference.
 
 ## Layout rules
 
-- Container: `max-w-7xl` with `px-4 sm:px-6 lg:px-8`, consistent across
-  every section.
+- Container: `max-w-[1440px]` with `px-4 sm:px-6 lg:px-10` on the
+  marketing/browsing pages (home, header, footer, `/phone-cases`,
+  product detail) — consistent across every section. Narrower reading
+  widths (`max-w-3xl`/`max-w-5xl`) are used deliberately for
+  form-centric pages (cart, checkout, order tracking) — those aren't
+  part of this shared container.
+- Hero targets ~500px tall at a 1440px viewport (43%/57% text/visual
+  split), not a full-viewport or tall-portrait layout.
 - Corner radii: small/restrained (`rounded-sm`, `rounded-md`); no large
   radii or pill shapes except the CTA button ends and icon buttons.
 - Shadows: restrained — `drop-shadow` on collage artwork and one
@@ -59,5 +65,22 @@ composition stays white-dominant, matching the reference.
 - Headings are semantic and in document order (`h1` in the hero, `h2` per
   section).
 - The mobile menu toggle uses `aria-expanded`/`aria-controls`, closes on
-  `Escape`, and disabled/unbuilt links use accessible labels stating why
-  (`aria-label="… (not available in this development milestone)"`).
+  `Escape`, and the closed panel is marked `inert` (not just visually
+  collapsed) so its links leave the tab order and accessibility tree.
+- Touch targets are at least ~44px (`min-h-11`/`min-w-11`) on header
+  icons, the mobile menu button, and cart quantity controls.
+
+## Image assets
+
+- `public/temp-reference/*.webp` are **temporary, documented crops** of
+  `refrenace.png` — isolated product photography (hero collage, the
+  three mood-tile photos, the four demo product shots), with the
+  reference's own page-level captions cropped out wherever practical so
+  they don't duplicate this app's real HTML text. They exist only
+  because no real product photography has been supplied yet; see
+  `docs/FRONTEND_PROGRESS.md` for exactly what should replace each one.
+  Never treat their presence as evidence that production assets exist.
+- Where a crop was technically impossible without also cutting into the
+  product itself (e.g. "Bold" tile's "Good Mood Always" sticker), that
+  text is part of the photographed product's own design, not a page
+  caption — it's left in intentionally.

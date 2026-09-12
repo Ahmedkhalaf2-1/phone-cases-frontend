@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
+import { MoneyInput } from "@/components/admin/MoneyInput";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function NewProductPage() {
   const [nameEn, setNameEn] = useState("");
   const [nameAr, setNameAr] = useState("");
   const [descriptionEn, setDescriptionEn] = useState("");
-  const [basePrice, setBasePrice] = useState("");
+  const [basePrice, setBasePrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,7 +30,7 @@ export default function NewProductPage() {
         nameEn,
         nameAr,
         descriptionEn: descriptionEn || undefined,
-        basePrice: basePrice ? Number(basePrice) : undefined,
+        basePrice: basePrice ?? undefined,
       });
       router.push(`/admin/products/${product.id}`);
     } catch (err) {
@@ -82,16 +83,11 @@ export default function NewProductPage() {
             className={inputClass}
           />
         </Field>
-        <Field label="Base price (minor units, optional)" htmlFor={`${formId}-price`}>
-          <input
-            id={`${formId}-price`}
-            type="number"
-            min={0}
-            value={basePrice}
-            onChange={(e) => setBasePrice(e.target.value)}
-            className={inputClass}
-          />
-        </Field>
+        <MoneyInput
+          label="Base price (optional)"
+          minorUnits={basePrice}
+          onChange={setBasePrice}
+        />
 
         {error && <p className="text-sm text-accent">{error}</p>}
 

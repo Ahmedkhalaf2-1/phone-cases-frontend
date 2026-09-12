@@ -1,17 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format-price";
 import { useCart } from "@/lib/cart/CartProvider";
 import type { PublicVariant } from "@/lib/api/types";
 
-export function VariantPicker({ variants }: { variants: PublicVariant[] }) {
+export function VariantPicker({
+  variants,
+  onVariantChange,
+}: {
+  variants: PublicVariant[];
+  /** Lets the parent page sync a gallery/thumbnail to the selected variant. */
+  onVariantChange?: (variant: PublicVariant | undefined) => void;
+}) {
   const modelId = useId();
   const caseTypeId = useId();
   const { addItem, error: cartError } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [status, setStatus] = useState<"idle" | "adding" | "added">("idle");
+  const [status, setStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
 
   const models = useMemo(() => {
     const seen = new Map<string, PublicVariant["phoneModel"]>();
@@ -20,6 +27,12 @@ export function VariantPicker({ variants }: { variants: PublicVariant[] }) {
     }
     return Array.from(seen.values());
   }, [variants]);
+
+  // Accessories (e.g. cables, stands) have variants with no phoneModel at
+  // all — null compatibility means "not modeled per-phone", not "fits
+  // every phone". Skip the model/case-type pickers entirely for these
+  // rather than rendering empty selects that can never match a variant.
+  const isAccessory = models.length === 0;
 
   const [selectedModelSlug, setSelectedModelSlug] = useState(
     models[0]?.slug ?? "",
@@ -45,41 +58,52 @@ export function VariantPicker({ variants }: { variants: PublicVariant[] }) {
     ? selectedCaseTypeSlug
     : (caseTypesForModel[0]?.slug ?? "");
 
-  const selectedVariant = variants.find(
-    (variant) =>
-      variant.phoneModel?.slug === selectedModelSlug &&
-      variant.caseType?.slug === activeCaseTypeSlug,
-  );
+  const selectedVariant = isAccessory
+    ? variants[0]
+    : variants.find(
+        (variant) =>
+          variant.phoneModel?.slug === selectedModelSlug &&
+          variant.caseType?.slug === activeCaseTypeSlug,
+      );
+
+  useEffect(() => {
+    onVariantChange?.(selectedVariant);
+    // onVariantChange is expected to be referentially stable (useCallback)
+    // in callers; only re-run when the actual selection changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVariant?.id]);
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor={modelId}
-          className="text-sm font-semibold tracking-wide text-ink uppercase"
-        >
-          Phone model
-        </label>
-        <select
-          id={modelId}
-          value={selectedModelSlug}
-          onChange={(event) => {
-            setSelectedModelSlug(event.target.value);
-            setSelectedCaseTypeSlug("");
-          }}
-          className="w-full max-w-xs rounded-sm border border-border bg-background px-3 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {models.map((model) =>
-            model ? (
-              <option key={model.slug} value={model.slug}>
-                {model.brand.name} {model.name}
-              </option>
-            ) : null,
-          )}
-        </select>
-      </div>
+      {!isAccessory && (
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor={modelId}
+            className="text-sm font-semibold tracking-wide text-ink uppercase"
+          >
+            Phone model
+          </label>
+          <select
+            id={modelId}
+            value={selectedModelSlug}
+            onChange={(event) => {
+              setSelectedModelSlug(event.target.value);
+              setSelectedCaseTypeSlug("");
+            }}
+            className="w-full max-w-xs rounded-sm border border-border bg-background px-3 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {models.map((model) =>
+              model ? (
+                <option key={model.slug} value={model.slug}>
+                  {model.brand.name} {model.name}
+                </option>
+              ) : null,
+            )}
+          </select>
+        </div>
+      )}
 
-      {caseTypesForModel.length > 0 && (
+      {!isAccessory && caseTypesForModel.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor={caseTypeId}
@@ -127,7 +151,8 @@ export function VariantPicker({ variants }: { variants: PublicVariant[] }) {
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          This combination isn&apos;t available.
+          This combination isn&apos;t available. Try a different phone
+          model or case type above.
         </p>
       )}
 
@@ -141,7 +166,7 @@ export function VariantPicker({ variants }: { variants: PublicVariant[] }) {
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               aria-label="Decrease quantity"
-              className="px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               −
             </button>
@@ -162,7 +187,7 @@ export function VariantPicker({ variants }: { variants: PublicVariant[] }) {
               type="button"
               onClick={() => setQuantity((q) => Math.min(20, q + 1))}
               aria-label="Increase quantity"
-              className="px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               +
             </button>
@@ -176,15 +201,21 @@ export function VariantPicker({ variants }: { variants: PublicVariant[] }) {
         onClick={async () => {
           if (!selectedVariant) return;
           setStatus("adding");
-          await addItem(selectedVariant.id, quantity);
-          setStatus("added");
+          try {
+            await addItem(selectedVariant.id, quantity);
+            setStatus("added");
+          } catch {
+            // cartError (from context) already carries the message; just
+            // stop showing a spinner instead of also claiming success.
+            setStatus("error");
+          }
         }}
         title={
           !selectedVariant?.isAvailable
             ? "This combination is out of stock"
             : undefined
         }
-        className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-sm bg-ink px-6 py-3.5 text-sm font-semibold tracking-wide text-white uppercase transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
+        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 rounded-sm bg-ink px-6 py-3.5 text-sm font-semibold tracking-wide text-white uppercase transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
       >
         {status === "adding" ? "Adding…" : "Add to cart"}
       </button>

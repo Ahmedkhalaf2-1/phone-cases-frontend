@@ -5,6 +5,7 @@ import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
+import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { AdminBundle } from "@/lib/admin/types";
 
 const inputClass =
@@ -20,7 +21,7 @@ export default function AdminBundlesPage() {
   const [isBusy, setIsBusy] = useState(false);
 
   const [name, setName] = useState("");
-  const [fixedTotal, setFixedTotal] = useState("");
+  const [fixedTotal, setFixedTotal] = useState<number | null>(null);
   const [variantIds, setVariantIds] = useState("");
 
   function load() {
@@ -47,17 +48,21 @@ export default function AdminBundlesPage() {
       setError("A bundle needs at least two eligible variant ids.");
       return;
     }
+    if (fixedTotal === null) {
+      setError("Enter the fixed total for this bundle.");
+      return;
+    }
     setIsBusy(true);
     setError(null);
     try {
       await adminClient.createBundle(accessToken, {
         name,
-        fixedTotal: Number(fixedTotal),
+        fixedTotal,
         currency: "EGP",
         eligibleVariants: ids.map((variantId) => ({ variantId })),
       });
       setName("");
-      setFixedTotal("");
+      setFixedTotal(null);
       setVariantIds("");
       load();
     } catch (err) {
@@ -161,14 +166,11 @@ export default function AdminBundlesPage() {
           onChange={(e) => setName(e.target.value)}
           className={inputClass}
         />
-        <input
-          required
-          type="number"
-          min={1}
-          placeholder="Fixed total (minor units)"
-          value={fixedTotal}
-          onChange={(e) => setFixedTotal(e.target.value)}
-          className={`${inputClass} w-56`}
+        <MoneyInput
+          label="Fixed total"
+          minorUnits={fixedTotal}
+          onChange={setFixedTotal}
+          className="w-40"
         />
         <input
           required

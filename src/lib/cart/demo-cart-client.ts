@@ -110,7 +110,7 @@ function buildCartView(state: DemoCartState): CartView {
           }
         : null,
       caseType: variant.caseType,
-      thumbnail: null,
+      thumbnail: product.primaryImage,
       unitPrice: variant.price,
       quantity: entry.quantity,
       lineSubtotal: variant.isAvailable ? variant.price * entry.quantity : 0,
@@ -197,6 +197,21 @@ export const demoCartClient = {
   async removeItem(_token: string, itemId: string): Promise<CartView> {
     const state = readState();
     state.items = state.items.filter((i) => i.id !== itemId);
+    writeState(state);
+    return buildCartView(state);
+  },
+
+  async replaceVariant(
+    _token: string,
+    itemId: string,
+    newVariantId: string,
+  ): Promise<CartView> {
+    const state = readState();
+    const item = requireItem(state, itemId);
+    if (!findVariant(newVariantId)) {
+      throw new ApiError("Unknown demo variant.", 404);
+    }
+    item.variantId = newVariantId;
     writeState(state);
     return buildCartView(state);
   },

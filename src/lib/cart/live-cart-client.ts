@@ -46,6 +46,18 @@ export const liveCartClient = {
     });
   },
 
+  replaceVariant(
+    token: string,
+    itemId: string,
+    newVariantId: string,
+  ): Promise<CartView> {
+    return apiRequest<CartView>(`/cart/items/${itemId}/variant`, {
+      method: "PATCH",
+      json: { newVariantId },
+      headers: { "X-Cart-Token": token },
+    });
+  },
+
   removeItem(token: string, itemId: string): Promise<CartView> {
     return apiRequest<CartView>(`/cart/items/${itemId}`, {
       method: "DELETE",

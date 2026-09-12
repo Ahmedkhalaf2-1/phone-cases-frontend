@@ -32,3 +32,9 @@ export async function getStaticPage(
     throw error;
   }
 }
+
+/** All published pages — used by the sitemap. */
+export async function listStaticPages(): Promise<StaticPageSummary[]> {
+  if (DEMO_MODE) return [];
+  return apiGet<StaticPageSummary[]>("/pages");
+}

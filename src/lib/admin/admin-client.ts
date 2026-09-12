@@ -2,6 +2,7 @@ import { apiRequest, ApiError } from "@/lib/api/http";
 import type {
   AdminBundle,
   AdminCoupon,
+  AuditLogResult,
   AdminHomepageSection,
   AdminItemReturnInput,
   AdminOrder,
@@ -52,6 +53,13 @@ export const adminClient = {
 
   refresh(refreshToken: string): Promise<AuthSession> {
     return apiRequest<AuthSession>("/auth/refresh", {
+      method: "POST",
+      json: { refreshToken },
+    });
+  },
+
+  logout(refreshToken: string): Promise<void> {
+    return apiRequest<void>("/auth/logout", {
       method: "POST",
       json: { refreshToken },
     });
@@ -479,6 +487,19 @@ export const adminClient = {
     return apiRequest<AdminHomepageSection>(`/admin/homepage-sections/${id}`, {
       method: "PATCH",
       json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  listAuditLog(
+    accessToken: string,
+    params: { page?: number; pageSize?: number } = {},
+  ): Promise<AuditLogResult> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined) query.set(key, String(value));
+    }
+    return apiRequest<AuditLogResult>(`/admin/audit-logs?${query.toString()}`, {
       headers: authHeader(accessToken),
     });
   },

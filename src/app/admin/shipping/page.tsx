@@ -5,6 +5,7 @@ import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
+import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { ShippingZone } from "@/lib/admin/types";
 
 const inputClass =
@@ -26,7 +27,7 @@ export default function AdminShippingPage() {
   const [rateZoneId, setRateZoneId] = useState("");
   const [rateNameEn, setRateNameEn] = useState("");
   const [rateNameAr, setRateNameAr] = useState("");
-  const [ratePrice, setRatePrice] = useState("");
+  const [ratePrice, setRatePrice] = useState<number | null>(null);
   const [isCreatingRate, setIsCreatingRate] = useState(false);
 
   function load() {
@@ -73,17 +74,21 @@ export default function AdminShippingPage() {
   async function handleCreateRate(event: React.FormEvent) {
     event.preventDefault();
     if (!accessToken || !rateZoneId) return;
+    if (ratePrice === null) {
+      setError("Enter the shipping rate's price.");
+      return;
+    }
     setIsCreatingRate(true);
     setError(null);
     try {
       await adminClient.createShippingRate(accessToken, rateZoneId, {
         nameEn: rateNameEn,
         nameAr: rateNameAr,
-        price: Number(ratePrice),
+        price: ratePrice,
       });
       setRateNameEn("");
       setRateNameAr("");
-      setRatePrice("");
+      setRatePrice(null);
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create rate.");
@@ -186,15 +191,7 @@ export default function AdminShippingPage() {
           onChange={(e) => setRateNameAr(e.target.value)}
           className={inputClass}
         />
-        <input
-          required
-          type="number"
-          min={0}
-          placeholder="Price (minor units)"
-          value={ratePrice}
-          onChange={(e) => setRatePrice(e.target.value)}
-          className={`${inputClass} w-48`}
-        />
+        <MoneyInput label="Price" minorUnits={ratePrice} onChange={setRatePrice} className="w-36" />
         <button type="submit" disabled={isCreatingRate} className={buttonClass}>
           {isCreatingRate ? "Creating…" : "Create rate"}
         </button>

@@ -20,13 +20,23 @@ export interface NavLink {
 export const PRIMARY_NAV: NavLink[] = [
   { label: "New In", href: "/phone-cases?sort=newest" },
   { label: "Phone Cases", href: "/phone-cases" },
-  { label: "Collections", href: "#collections" },
+  // Absolute path + hash (not a bare "#collections") so this works from
+  // any page, not just when already on the homepage.
+  { label: "Collections", href: "/#collections" },
   { label: "Track Order", href: "/track" },
 ];
 
+/**
+ * Real CMS page routes (`/pages/<slug>`) — each renders the published
+ * page if one exists, or an honest "not published yet" state if it
+ * doesn't (see src/app/pages/[slug]/page.tsx). Slugs here are a
+ * business decision, not something to invent: update them once the
+ * shop owner publishes real About/Help/Privacy/Terms pages under
+ * whatever slugs they choose in the admin Pages CMS.
+ */
 export const FOOTER_LINKS: NavLink[] = [
-  { label: "About Us", href: NOT_AVAILABLE_ROUTE },
-  { label: "Help", href: NOT_AVAILABLE_ROUTE },
-  { label: "Privacy Policy", href: NOT_AVAILABLE_ROUTE },
-  { label: "Terms & Conditions", href: NOT_AVAILABLE_ROUTE },
+  { label: "About Us", href: "/pages/about" },
+  { label: "Help", href: "/pages/help" },
+  { label: "Privacy Policy", href: "/pages/privacy-policy" },
+  { label: "Terms & Conditions", href: "/pages/terms-and-conditions" },
 ];

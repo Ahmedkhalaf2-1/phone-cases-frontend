@@ -10,13 +10,12 @@ import { DEMO_CASE_TYPES } from "@/lib/demo/case-types.demo";
  *
  * Shaped exactly like `PublicProductDetail` from the verified backend
  * contract so swapping to live data requires no component changes.
- * Names, artwork keys, and prices are placeholders for this milestone;
- * see docs/FRONTEND_PROGRESS.md.
+ * Images point at `public/temp-reference/product-*.webp` — cropped
+ * isolated slices of `refrenace.png`'s product photography, used only
+ * because no real product photography exists yet (see
+ * docs/FRONTEND_PROGRESS.md). Names and prices are placeholders too.
  */
-export interface DemoProduct extends PublicProductDetail {
-  /** Key into the local illustration set (src/components/graphics). Demo-only field. */
-  artwork: "check" | "cherry" | "orbit" | "sage";
-}
+export type DemoProduct = PublicProductDetail;
 
 const [iphone15Pro, iphone15, iphone14, galaxyS24] = DEMO_PHONE_MODELS;
 const [silicone, tough] = DEMO_CASE_TYPES;
@@ -60,6 +59,10 @@ function buildVariants(
   return variants;
 }
 
+function demoImage(name: string) {
+  return `/temp-reference/product-${name}.webp`;
+}
+
 export const DEMO_PRODUCTS: DemoProduct[] = [
   {
     id: "demo-check",
@@ -70,14 +73,18 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     currency: "EGP",
     effectivePriceFrom: 45000,
     isAvailable: true,
-    primaryImage: null,
+    primaryImage: { url: demoImage("check"), altText: "Checkerboard-pattern phone case" },
     collections: [{ id: "demo-different", slug: "different", name: "Different" }],
     media: [
-      { id: "demo-check-1", url: "", altText: "Check case, front", isPrimary: true, displayOrder: 0 },
-      { id: "demo-check-2", url: "", altText: "Check case, angle", isPrimary: false, displayOrder: 1 },
+      {
+        id: "demo-check-1",
+        url: demoImage("check"),
+        altText: "Checkerboard-pattern phone case",
+        isPrimary: true,
+        displayOrder: 0,
+      },
     ],
     variants: buildVariants("check", 45000, "EGP"),
-    artwork: "check",
   },
   {
     id: "demo-cherry",
@@ -87,16 +94,20 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     currency: "EGP",
     effectivePriceFrom: 45000,
     isAvailable: true,
-    primaryImage: null,
+    primaryImage: { url: demoImage("cherry"), altText: "Glossy cherry-print phone case" },
     collections: [{ id: "demo-bold", slug: "bold", name: "Bold" }],
     media: [
-      { id: "demo-cherry-1", url: "", altText: "Cherry case, front", isPrimary: true, displayOrder: 0 },
-      { id: "demo-cherry-2", url: "", altText: "Cherry case, angle", isPrimary: false, displayOrder: 1 },
+      {
+        id: "demo-cherry-1",
+        url: demoImage("cherry"),
+        altText: "Glossy cherry-print phone case",
+        isPrimary: true,
+        displayOrder: 0,
+      },
     ],
     variants: buildVariants("cherry", 45000, "EGP", {
       unavailableFor: "galaxy-s24",
     }),
-    artwork: "cherry",
   },
   {
     id: "demo-orbit",
@@ -106,14 +117,18 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     currency: "EGP",
     effectivePriceFrom: 49500,
     isAvailable: true,
-    primaryImage: null,
+    primaryImage: { url: demoImage("orbit"), altText: "Planetary-scene phone case" },
     collections: [{ id: "demo-different", slug: "different", name: "Different" }],
     media: [
-      { id: "demo-orbit-1", url: "", altText: "Orbit case, front", isPrimary: true, displayOrder: 0 },
-      { id: "demo-orbit-2", url: "", altText: "Orbit case, angle", isPrimary: false, displayOrder: 1 },
+      {
+        id: "demo-orbit-1",
+        url: demoImage("orbit"),
+        altText: "Planetary-scene phone case",
+        isPrimary: true,
+        displayOrder: 0,
+      },
     ],
     variants: buildVariants("orbit", 49500, "EGP"),
-    artwork: "orbit",
   },
   {
     id: "demo-sage",
@@ -123,13 +138,17 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     currency: "EGP",
     effectivePriceFrom: 45000,
     isAvailable: true,
-    primaryImage: null,
+    primaryImage: { url: demoImage("sage"), altText: "Sage-green leaf-print phone case" },
     collections: [{ id: "demo-calm", slug: "calm", name: "Calm" }],
     media: [
-      { id: "demo-sage-1", url: "", altText: "Sage case, front", isPrimary: true, displayOrder: 0 },
-      { id: "demo-sage-2", url: "", altText: "Sage case, angle", isPrimary: false, displayOrder: 1 },
+      {
+        id: "demo-sage-1",
+        url: demoImage("sage"),
+        altText: "Sage-green leaf-print phone case",
+        isPrimary: true,
+        displayOrder: 0,
+      },
     ],
     variants: buildVariants("sage", 45000, "EGP"),
-    artwork: "sage",
   },
 ];

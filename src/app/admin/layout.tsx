@@ -6,8 +6,9 @@ import { useEffect, useId, useState } from "react";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { SITE } from "@/config/site";
 import { LoadingRow } from "@/components/ui/Spinner";
+import type { StaffRole } from "@/lib/admin/types";
 
-const NAV = [
+const NAV: { href: string; label: string; roles?: StaffRole[] }[] = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products" },
@@ -17,14 +18,20 @@ const NAV = [
   { href: "/admin/stock", label: "Stock" },
   { href: "/admin/pages", label: "Pages" },
   { href: "/admin/homepage-sections", label: "Homepage" },
-  { href: "/admin/staff", label: "Staff" },
+  // Staff management and the audit log are owner-only in the backend
+  // itself — hiding them for other roles avoids a dead end, not a
+  // security control (the API enforces the real restriction).
+  { href: "/admin/staff", label: "Staff", roles: ["OWNER_ADMIN"] },
+  { href: "/admin/audit-log", label: "Audit log", roles: ["OWNER_ADMIN"] },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { staff } = useAdminAuth();
+  const visibleNav = NAV.filter((item) => !item.roles || (staff && item.roles.includes(staff.role)));
   return (
     <nav className="flex flex-col gap-1">
-      {NAV.map((item) => {
+      {visibleNav.map((item) => {
         const isActive =
           item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
         return (
@@ -61,11 +68,22 @@ function AdminGate({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, staff, isLoginPage, router]);
 
-  if (isLoginPage) return <>{children}</>;
+  // The whole admin surface is staff-only and must never be indexed —
+  // robots.txt disallows /admin too, but that alone doesn't guarantee a
+  // crawler won't index a URL it reaches some other way.
+  const noindex = <meta name="robots" content="noindex, nofollow" />;
+
+  if (isLoginPage) return (
+    <>
+      {noindex}
+      {children}
+    </>
+  );
 
   if (isLoading || !staff) {
     return (
       <div className="flex min-h-screen items-center justify-center">
+        {noindex}
         <LoadingRow label="Checking session…" />
       </div>
     );
@@ -73,6 +91,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col sm:flex-row">
+      {noindex}
       <header className="flex items-center justify-between border-b border-border bg-surface p-4 sm:hidden">
         <p className="font-display text-lg tracking-wide text-ink uppercase">
           {SITE.brandName} Admin

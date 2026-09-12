@@ -5,6 +5,7 @@ import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
+import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { AdminCoupon, CouponType } from "@/lib/admin/types";
 
 export default function AdminCouponsPage() {
@@ -16,7 +17,10 @@ export default function AdminCouponsPage() {
 
   const [code, setCode] = useState("");
   const [type, setType] = useState<CouponType>("PERCENTAGE");
-  const [value, setValue] = useState("");
+  // Percentage is a plain 1-100 integer; Fixed is money, so it goes
+  // through MoneyInput and stays in minor units (piastres) end to end.
+  const [percentValue, setPercentValue] = useState("");
+  const [fixedValueMinor, setFixedValueMinor] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   function load() {
@@ -38,16 +42,24 @@ export default function AdminCouponsPage() {
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
     if (!accessToken) return;
+    const value = type === "PERCENTAGE" ? Number(percentValue) : fixedValueMinor;
+    if (value === null || !Number.isFinite(value) || value <= 0) {
+      setError(
+        type === "PERCENTAGE" ? "Enter a percentage between 1 and 100." : "Enter the fixed discount amount.",
+      );
+      return;
+    }
     setIsCreating(true);
     setError(null);
     try {
       await adminClient.createCoupon(accessToken, {
         code: code.toUpperCase(),
         type,
-        value: Number(value),
+        value,
       });
       setCode("");
-      setValue("");
+      setPercentValue("");
+      setFixedValueMinor(null);
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create coupon.");
@@ -149,17 +161,27 @@ export default function AdminCouponsPage() {
           className="rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <option value="PERCENTAGE">Percentage</option>
-          <option value="FIXED">Fixed (minor units)</option>
+          <option value="FIXED">Fixed amount</option>
         </select>
-        <input
-          required
-          type="number"
-          min={1}
-          placeholder="Value"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="w-32 rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        />
+        {type === "PERCENTAGE" ? (
+          <input
+            required
+            type="number"
+            min={1}
+            max={100}
+            placeholder="Percent off (1-100)"
+            value={percentValue}
+            onChange={(e) => setPercentValue(e.target.value)}
+            className="w-40 rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          />
+        ) : (
+          <MoneyInput
+            label="Discount amount"
+            minorUnits={fixedValueMinor}
+            onChange={setFixedValueMinor}
+            className="w-32"
+          />
+        )}
         <button
           type="submit"
           disabled={isCreating}

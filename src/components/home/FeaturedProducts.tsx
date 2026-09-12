@@ -12,7 +12,7 @@ export function FeaturedProducts({
   return (
     <section
       aria-labelledby="featured-heading"
-      className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
+      className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-8"
     >
       <h2
         id="featured-heading"
@@ -28,8 +28,8 @@ export function FeaturedProducts({
       </div>
 
       {source === "demo" && (
-        <p className="mt-4 text-xs text-muted-foreground">
-          Demo data — sample images and names, not real inventory or prices.
+        <p className="mt-4 text-right text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+          DESIGN CONCEPT — SAMPLE IMAGES & NAMES
         </p>
       )}
     </section>

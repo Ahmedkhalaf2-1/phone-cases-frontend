@@ -11,7 +11,7 @@ export function CollectionsSection({
     <section
       id="collections"
       aria-labelledby="collections-heading"
-      className="mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 lg:px-8"
+      className="mx-auto max-w-[1440px] scroll-mt-20 px-4 py-16 sm:px-6 lg:px-8"
     >
       <div className="mb-6 flex items-end justify-between gap-4">
         <h2
@@ -28,13 +28,13 @@ export function CollectionsSection({
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {collections.map((collection, index) => (
           <Link
             key={collection.id}
             href={`/phone-cases?collection=${collection.slug}`}
-            className={`group relative isolate flex aspect-4/5 overflow-hidden rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-              index === 2 ? "sm:col-span-2" : "sm:col-span-1"
+            className={`group relative isolate flex h-60 overflow-hidden rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-80 lg:h-[340px] ${
+              index === 2 ? "col-span-2 sm:col-span-2" : "col-span-1"
             }`}
           >
             <MoodTileArt
@@ -43,7 +43,7 @@ export function CollectionsSection({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-black/0" />
             <div className="relative mt-auto flex flex-col gap-1 p-5 text-white">
-              <span className="font-display text-2xl tracking-wide uppercase underline decoration-2 underline-offset-4">
+              <span className="font-display text-2xl tracking-wide uppercase">
                 {collection.name}
               </span>
               <span className="text-sm text-white/85">

@@ -59,7 +59,7 @@ export default async function PhoneCasesPage({
     <>
       <SiteHeader />
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="mb-6 font-display text-4xl tracking-tight text-ink uppercase sm:text-5xl">
             Phone cases
           </h1>
