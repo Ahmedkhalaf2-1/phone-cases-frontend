@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/http";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { saveOrderCartCredential } from "@/lib/cart/order-credentials";
+import { INSTAPAY_RECIPIENT } from "@/config/site";
 import type { CheckoutQuote, OrderPaymentMethod, ShippingOption } from "@/lib/cart/types";
 
 const SHIPPING_COUNTRY = "EG";
@@ -597,15 +598,6 @@ function Field({
   );
 }
 
-/**
- * No InstaPay recipient (phone/name) is configured anywhere in the
- * backend (verified against its source — no env var, settings endpoint,
- * or seed data exposes one). Rather than invent a recipient, this shows
- * an honest "not configured" state and disables the upload step, per
- * the project's explicit instruction not to fabricate business details.
- */
-const INSTAPAY_RECIPIENT: { name: string; identifier: string } | null = null;
-
 function InstaPayInstructions({
   amount,
   currency,
@@ -631,7 +623,8 @@ function InstaPayInstructions({
     }
   }
 
-  if (!INSTAPAY_RECIPIENT) {
+  const recipient = INSTAPAY_RECIPIENT;
+  if (!recipient) {
     return (
       <div className="rounded-sm border border-accent/40 bg-accent/5 p-3 text-sm text-accent">
         InstaPay transfer details aren&apos;t configured yet. Please choose
@@ -645,11 +638,11 @@ function InstaPayInstructions({
       <p className="text-sm font-semibold text-ink">Transfer instructions</p>
       <div className="mt-2 flex items-center justify-between text-sm">
         <span>
-          Send to: <strong>{INSTAPAY_RECIPIENT.name}</strong> ({INSTAPAY_RECIPIENT.identifier})
+          Send to: <strong>{recipient.name}</strong> ({recipient.identifier})
         </span>
         <button
           type="button"
-          onClick={() => copy(INSTAPAY_RECIPIENT.identifier, "recipient")}
+          onClick={() => copy(recipient.identifier, "recipient")}
           className="text-xs font-semibold text-accent underline underline-offset-4"
         >
           {copied === "recipient" ? "Copied" : "Copy"}

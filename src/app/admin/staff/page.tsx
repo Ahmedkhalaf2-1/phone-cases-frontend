@@ -13,7 +13,7 @@ const buttonClass =
   "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export default function AdminStaffPage() {
-  const { accessToken, staff: currentStaff } = useAdminAuth();
+  const { accessToken, authorizedFetch, staff: currentStaff } = useAdminAuth();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +28,7 @@ export default function AdminStaffPage() {
 
   function load() {
     if (!accessToken) return;
-    adminClient
-      .listStaff(accessToken)
+    authorizedFetch((token) => adminClient.listStaff(token))
       .then((result) => {
         setStaff(result);
         setError(null);
@@ -40,7 +39,7 @@ export default function AdminStaffPage() {
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(load, [accessToken]);
+  useEffect(load, [accessToken, authorizedFetch]);
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -48,7 +47,7 @@ export default function AdminStaffPage() {
     setIsBusy(true);
     setError(null);
     try {
-      await adminClient.createStaff(accessToken, { email, fullName, password, role });
+      await authorizedFetch((token) => adminClient.createStaff(token, { email, fullName, password, role }));
       setEmail("");
       setFullName("");
       setPassword("");
@@ -64,9 +63,9 @@ export default function AdminStaffPage() {
     if (!accessToken) return;
     setIsBusy(true);
     try {
-      await adminClient.updateStaff(accessToken, member.id, {
-        isActive: !member.isActive,
-      });
+      await authorizedFetch((token) =>
+        adminClient.updateStaff(token, member.id, { isActive: !member.isActive }),
+      );
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not update staff account.");

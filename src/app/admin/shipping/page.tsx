@@ -6,18 +6,34 @@ import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { MoneyInput } from "@/components/admin/MoneyInput";
-import type { ShippingZone } from "@/lib/admin/types";
+import type { ShippingRate, ShippingZone } from "@/lib/admin/types";
 
 const inputClass =
   "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
   "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
+interface ZoneEditState {
+  nameEn: string;
+  nameAr: string;
+  countries: string;
+}
+
+interface RateEditState {
+  nameEn: string;
+  nameAr: string;
+  price: number | null;
+  freeShippingThreshold: number | null;
+  estimatedDaysMin: string;
+  estimatedDaysMax: string;
+}
+
 export default function AdminShippingPage() {
-  const { accessToken } = useAdminAuth();
+  const { accessToken, authorizedFetch } = useAdminAuth();
   const [zones, setZones] = useState<ShippingZone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
 
   const [nameEn, setNameEn] = useState("");
   const [nameAr, setNameAr] = useState("");
@@ -30,10 +46,21 @@ export default function AdminShippingPage() {
   const [ratePrice, setRatePrice] = useState<number | null>(null);
   const [isCreatingRate, setIsCreatingRate] = useState(false);
 
+  const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
+  const [zoneEdit, setZoneEdit] = useState<ZoneEditState>({ nameEn: "", nameAr: "", countries: "" });
+  const [editingRateId, setEditingRateId] = useState<string | null>(null);
+  const [rateEdit, setRateEdit] = useState<RateEditState>({
+    nameEn: "",
+    nameAr: "",
+    price: null,
+    freeShippingThreshold: null,
+    estimatedDaysMin: "",
+    estimatedDaysMax: "",
+  });
+
   function load() {
     if (!accessToken) return;
-    adminClient
-      .listShippingZones(accessToken)
+    authorizedFetch((token) => adminClient.listShippingZones(token))
       .then((result) => {
         setZones(result);
         setError(null);
@@ -44,7 +71,7 @@ export default function AdminShippingPage() {
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(load, [accessToken]);
+  useEffect(load, [accessToken, authorizedFetch]);
 
   async function handleCreateZone(event: React.FormEvent) {
     event.preventDefault();
@@ -52,14 +79,16 @@ export default function AdminShippingPage() {
     setIsCreatingZone(true);
     setError(null);
     try {
-      await adminClient.createShippingZone(accessToken, {
-        nameEn,
-        nameAr,
-        countries: countries
-          .split(",")
-          .map((c) => c.trim().toUpperCase())
-          .filter(Boolean),
-      });
+      await authorizedFetch((token) =>
+        adminClient.createShippingZone(token, {
+          nameEn,
+          nameAr,
+          countries: countries
+            .split(",")
+            .map((c) => c.trim().toUpperCase())
+            .filter(Boolean),
+        }),
+      );
       setNameEn("");
       setNameAr("");
       setCountries("");
@@ -81,11 +110,13 @@ export default function AdminShippingPage() {
     setIsCreatingRate(true);
     setError(null);
     try {
-      await adminClient.createShippingRate(accessToken, rateZoneId, {
-        nameEn: rateNameEn,
-        nameAr: rateNameAr,
-        price: ratePrice,
-      });
+      await authorizedFetch((token) =>
+        adminClient.createShippingRate(token, rateZoneId, {
+          nameEn: rateNameEn,
+          nameAr: rateNameAr,
+          price: ratePrice,
+        }),
+      );
       setRateNameEn("");
       setRateNameAr("");
       setRatePrice(null);
@@ -94,6 +125,105 @@ export default function AdminShippingPage() {
       setError(err instanceof ApiError ? err.message : "Could not create rate.");
     } finally {
       setIsCreatingRate(false);
+    }
+  }
+
+  function startEditingZone(zone: ShippingZone) {
+    setEditingZoneId(zone.id);
+    setZoneEdit({ nameEn: zone.nameEn, nameAr: zone.nameAr, countries: zone.countries.join(", ") });
+  }
+
+  async function handleSaveZone(event: React.FormEvent, zoneId: string) {
+    event.preventDefault();
+    if (!accessToken) return;
+    setIsBusy(true);
+    setError(null);
+    try {
+      await authorizedFetch((token) =>
+        adminClient.updateShippingZone(token, zoneId, {
+          nameEn: zoneEdit.nameEn,
+          nameAr: zoneEdit.nameAr,
+          countries: zoneEdit.countries
+            .split(",")
+            .map((c) => c.trim().toUpperCase())
+            .filter(Boolean),
+        }),
+      );
+      setEditingZoneId(null);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not save zone.");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleToggleZoneActive(zone: ShippingZone) {
+    if (!accessToken) return;
+    setIsBusy(true);
+    setError(null);
+    try {
+      await authorizedFetch((token) =>
+        adminClient.updateShippingZone(token, zone.id, { isActive: !zone.isActive }),
+      );
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not update zone.");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  function startEditingRate(rate: ShippingRate) {
+    setEditingRateId(rate.id);
+    setRateEdit({
+      nameEn: rate.nameEn,
+      nameAr: rate.nameAr,
+      price: rate.price,
+      freeShippingThreshold: rate.freeShippingThreshold,
+      estimatedDaysMin: rate.estimatedDaysMin?.toString() ?? "",
+      estimatedDaysMax: rate.estimatedDaysMax?.toString() ?? "",
+    });
+  }
+
+  async function handleSaveRate(event: React.FormEvent, zoneId: string, rateId: string) {
+    event.preventDefault();
+    if (!accessToken || rateEdit.price === null) return;
+    setIsBusy(true);
+    setError(null);
+    try {
+      await authorizedFetch((token) =>
+        adminClient.updateShippingRate(token, zoneId, rateId, {
+          nameEn: rateEdit.nameEn,
+          nameAr: rateEdit.nameAr,
+          price: rateEdit.price ?? undefined,
+          freeShippingThreshold: rateEdit.freeShippingThreshold ?? undefined,
+          estimatedDaysMin: rateEdit.estimatedDaysMin ? Number(rateEdit.estimatedDaysMin) : undefined,
+          estimatedDaysMax: rateEdit.estimatedDaysMax ? Number(rateEdit.estimatedDaysMax) : undefined,
+        }),
+      );
+      setEditingRateId(null);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not save rate.");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleToggleRateActive(zoneId: string, rate: ShippingRate) {
+    if (!accessToken) return;
+    setIsBusy(true);
+    setError(null);
+    try {
+      await authorizedFetch((token) =>
+        adminClient.updateShippingRate(token, zoneId, rate.id, { isActive: !rate.isActive }),
+      );
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not update rate.");
+    } finally {
+      setIsBusy(false);
     }
   }
 
@@ -110,14 +240,173 @@ export default function AdminShippingPage() {
         <div className="mt-4 flex flex-col gap-6">
           {zones.map((zone) => (
             <div key={zone.id} className="rounded-sm border border-border p-4">
-              <h2 className="font-semibold text-ink">
-                {zone.nameEn} ({zone.countries.join(", ")})
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {editingZoneId === zone.id ? (
+                  <form
+                    onSubmit={(e) => handleSaveZone(e, zone.id)}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <input
+                      required
+                      value={zoneEdit.nameEn}
+                      onChange={(e) => setZoneEdit((s) => ({ ...s, nameEn: e.target.value }))}
+                      className={inputClass}
+                    />
+                    <input
+                      required
+                      dir="rtl"
+                      value={zoneEdit.nameAr}
+                      onChange={(e) => setZoneEdit((s) => ({ ...s, nameAr: e.target.value }))}
+                      className={inputClass}
+                    />
+                    <input
+                      required
+                      placeholder="Countries (comma-separated)"
+                      value={zoneEdit.countries}
+                      onChange={(e) => setZoneEdit((s) => ({ ...s, countries: e.target.value }))}
+                      className={`${inputClass} w-56`}
+                    />
+                    <button type="submit" disabled={isBusy} className={buttonClass}>
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingZoneId(null)}
+                      className="text-sm font-semibold text-muted-foreground underline underline-offset-4"
+                    >
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <h2 className="font-semibold text-ink">
+                    {zone.nameEn} ({zone.countries.join(", ")})
+                  </h2>
+                )}
+                <div className="flex items-center gap-3">
+                  {editingZoneId !== zone.id && (
+                    <button
+                      type="button"
+                      onClick={() => startEditingZone(zone)}
+                      className="text-xs font-semibold text-accent underline underline-offset-4"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => handleToggleZoneActive(zone)}
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase transition-opacity hover:opacity-80 ${
+                      zone.isActive ? "bg-green-100 text-green-800" : "bg-surface text-muted-foreground"
+                    }`}
+                  >
+                    {zone.isActive ? "Active" : "Inactive"}
+                  </button>
+                </div>
+              </div>
               <ul className="mt-2 flex flex-col gap-1 text-sm">
                 {zone.rates.map((rate) => (
-                  <li key={rate.id} className="flex justify-between border-b border-border py-1">
-                    <span>{rate.nameEn}</span>
-                    <span>{formatPrice(rate.price, rate.currency)}</span>
+                  <li key={rate.id} className="border-b border-border py-1">
+                    {editingRateId === rate.id ? (
+                      <form
+                        onSubmit={(e) => handleSaveRate(e, zone.id, rate.id)}
+                        className="flex flex-wrap items-end gap-2"
+                      >
+                        <input
+                          required
+                          placeholder="Name (English)"
+                          value={rateEdit.nameEn}
+                          onChange={(e) => setRateEdit((s) => ({ ...s, nameEn: e.target.value }))}
+                          className={inputClass}
+                        />
+                        <input
+                          required
+                          dir="rtl"
+                          placeholder="الاسم (عربي)"
+                          value={rateEdit.nameAr}
+                          onChange={(e) => setRateEdit((s) => ({ ...s, nameAr: e.target.value }))}
+                          className={inputClass}
+                        />
+                        <MoneyInput
+                          label="Price"
+                          minorUnits={rateEdit.price}
+                          onChange={(v) => setRateEdit((s) => ({ ...s, price: v }))}
+                          className="w-32"
+                        />
+                        <MoneyInput
+                          label="Free shipping over"
+                          minorUnits={rateEdit.freeShippingThreshold}
+                          onChange={(v) => setRateEdit((s) => ({ ...s, freeShippingThreshold: v }))}
+                          className="w-32"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="Min days"
+                          value={rateEdit.estimatedDaysMin}
+                          onChange={(e) => setRateEdit((s) => ({ ...s, estimatedDaysMin: e.target.value }))}
+                          className={`${inputClass} w-24`}
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="Max days"
+                          value={rateEdit.estimatedDaysMax}
+                          onChange={(e) => setRateEdit((s) => ({ ...s, estimatedDaysMax: e.target.value }))}
+                          className={`${inputClass} w-24`}
+                        />
+                        <button type="submit" disabled={isBusy} className={buttonClass}>
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingRateId(null)}
+                          className="text-sm font-semibold text-muted-foreground underline underline-offset-4"
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                          {rate.nameEn} — {formatPrice(rate.price, rate.currency)}
+                          {rate.estimatedDaysMin != null && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              ({rate.estimatedDaysMin}–{rate.estimatedDaysMax ?? rate.estimatedDaysMin}{" "}
+                              days)
+                            </span>
+                          )}
+                          {rate.freeShippingThreshold != null && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              · free over {formatPrice(rate.freeShippingThreshold, rate.currency)}
+                            </span>
+                          )}
+                        </span>
+                        <span className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => startEditingRate(rate)}
+                            className="text-xs font-semibold text-accent underline underline-offset-4"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => handleToggleRateActive(zone.id, rate)}
+                            className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase transition-opacity hover:opacity-80 ${
+                              rate.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-surface text-muted-foreground"
+                            }`}
+                          >
+                            {rate.isActive ? "Active" : "Inactive"}
+                          </button>
+                        </span>
+                      </div>
+                    )}
                   </li>
                 ))}
                 {zone.rates.length === 0 && (

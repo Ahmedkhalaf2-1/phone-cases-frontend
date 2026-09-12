@@ -40,3 +40,13 @@ export const FOOTER_LINKS: NavLink[] = [
   { label: "Privacy Policy", href: "/pages/privacy-policy" },
   { label: "Terms & Conditions", href: "/pages/terms-and-conditions" },
 ];
+
+/**
+ * No InstaPay recipient (phone/name) is configured anywhere in the
+ * backend (verified against its source — no env var, settings endpoint,
+ * or seed data exposes one). Rather than invent a recipient, checkout
+ * shows an honest "not configured" state and disables the upload step
+ * while this is null. Fill this in once the shop owner provides real
+ * transfer details — a single edit here, not duplicated per component.
+ */
+export const INSTAPAY_RECIPIENT: { name: string; identifier: string } | null = null;

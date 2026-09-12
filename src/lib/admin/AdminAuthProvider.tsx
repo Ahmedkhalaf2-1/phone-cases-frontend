@@ -29,6 +29,18 @@ interface AdminAuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loginError: string | null;
+  /**
+   * Runs `fn` with the current access token. If it fails with a 401
+   * (token rejected — not a 403 permission failure, which refreshing
+   * can never fix), refreshes once and retries `fn` exactly once with
+   * the new token. Safe to call concurrently from multiple components:
+   * the refresh itself is deduplicated, and retrying only ever happens
+   * after an *unambiguous* 401 (the backend's auth guard rejected the
+   * request before it reached any handler, so nothing was applied
+   * server-side yet) — never after an ambiguous network failure, where
+   * blindly retrying a non-idempotent mutation could double-submit it.
+   */
+  authorizedFetch: <T>(fn: (accessToken: string) => Promise<T>) => Promise<T>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
@@ -68,11 +80,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [loginError, setLoginError] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleRefreshRef = useRef<(stored: StoredSession) => void>(() => {});
-  // Shared in-flight refresh promise so a scheduled refresh and any other
-  // trigger never fire two overlapping refresh-token rotations at once —
-  // the backend's rotation is one-shot per token, so a second concurrent
-  // attempt would just fail and could log the user out spuriously.
-  const inFlightRefresh = useRef<Promise<void> | null>(null);
+  // Latest session, readable synchronously from callbacks that close over
+  // a stale render (authorizedFetch in particular).
+  const sessionRef = useRef<AuthSession | null>(null);
+  // Shared in-flight refresh promise so a scheduled refresh, an on-demand
+  // 401 recovery, and any other trigger never fire two overlapping
+  // refresh-token rotations at once — the backend's rotation is one-shot
+  // per token, so a second concurrent attempt would just fail and could
+  // log the user out spuriously.
+  const inFlightRefresh = useRef<Promise<AuthSession> | null>(null);
   // Set on logout so a refresh that was already in flight can't resurrect
   // the session after the user explicitly signed out.
   const loggedOutAt = useRef(0);
@@ -82,6 +98,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     const stored = readStored();
     writeStored(null);
+    sessionRef.current = null;
     setSession(null);
     if (stored?.session.refreshToken) {
       try {
@@ -95,50 +112,96 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  /** The one place a refresh actually happens — scheduled timer and
+   * on-demand 401 recovery both go through this. */
+  const performRefresh = useCallback((refreshToken: string): Promise<AuthSession> => {
+    if (!inFlightRefresh.current) {
+      const attemptedAt = loggedOutAt.current;
+      inFlightRefresh.current = (async () => {
+        try {
+          const refreshed = await adminClient.refresh(refreshToken);
+          if (loggedOutAt.current !== attemptedAt) {
+            // Logged out while this was in flight — don't resurrect the session.
+            throw new ApiError("Logged out during refresh.", undefined, undefined, undefined, "network");
+          }
+          const totalMs = parseExpiresIn(refreshed.expiresIn) ?? 0;
+          const nextStored: StoredSession = {
+            session: refreshed,
+            expiresAt: Date.now() + totalMs,
+          };
+          writeStored(nextStored);
+          sessionRef.current = refreshed;
+          setSession(refreshed);
+          scheduleRefreshRef.current(nextStored);
+          return refreshed;
+        } finally {
+          inFlightRefresh.current = null;
+        }
+      })();
+    }
+    return inFlightRefresh.current;
+  }, []);
+
   const scheduleRefresh = useCallback(
     (stored: StoredSession) => {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
-      const attemptedAt = loggedOutAt.current;
       const refreshAt = stored.expiresAt - 0.2 * (stored.expiresAt - Date.now());
       const delay = Math.max(0, refreshAt - Date.now());
 
       refreshTimer.current = setTimeout(() => {
-        if (!inFlightRefresh.current) {
-          inFlightRefresh.current = (async () => {
-            try {
-              const refreshed = await adminClient.refresh(stored.session.refreshToken);
-              // Ignore this result if the user logged out while it was in flight.
-              if (loggedOutAt.current !== attemptedAt) return;
-              const totalMs = parseExpiresIn(refreshed.expiresIn) ?? 0;
-              const nextStored: StoredSession = {
-                session: refreshed,
-                expiresAt: Date.now() + totalMs,
-              };
-              writeStored(nextStored);
-              setSession(refreshed);
-              scheduleRefreshRef.current(nextStored);
-            } catch {
-              // Refresh token expired/invalid — require a real re-login
-              // rather than silently pretending the session is still valid.
-              if (loggedOutAt.current === attemptedAt) void logout();
-            } finally {
-              inFlightRefresh.current = null;
-            }
-          })();
-        }
+        performRefresh(stored.session.refreshToken).catch(() => {
+          // Refresh token expired/invalid — require a real re-login
+          // rather than silently pretending the session is still valid.
+          void logout();
+        });
       }, delay);
     },
-    [logout],
+    [performRefresh, logout],
   );
   useEffect(() => {
     scheduleRefreshRef.current = scheduleRefresh;
   }, [scheduleRefresh]);
+
+  const authorizedFetch = useCallback(
+    async <T,>(fn: (accessToken: string) => Promise<T>): Promise<T> => {
+      const current = sessionRef.current;
+      if (!current) {
+        throw new ApiError("Not signed in.", 401, "UNAUTHORIZED");
+      }
+      try {
+        return await fn(current.accessToken);
+      } catch (err) {
+        // Only a 401 (token itself rejected) is worth refreshing for — a
+        // 403 means this staff member's role genuinely can't do this,
+        // which a new token won't change, and any other failure
+        // (network, 5xx, validation) isn't an auth problem at all.
+        if (!(err instanceof ApiError) || err.status !== 401) throw err;
+        let refreshed: AuthSession;
+        try {
+          refreshed = await performRefresh(current.refreshToken);
+        } catch {
+          await logout();
+          throw new ApiError(
+            "Your session expired. Please sign in again.",
+            401,
+            "SESSION_EXPIRED",
+          );
+        }
+        // Retry exactly once. A 401 guard rejects before any handler
+        // runs, so nothing was applied server-side by the first attempt
+        // — retrying is safe even for a non-idempotent mutation.
+        return fn(refreshed.accessToken);
+      }
+    },
+    [performRefresh, logout],
+  );
 
   useEffect(() => {
     // Reading localStorage must happen after mount (it doesn't exist during
     // server rendering) — this is synchronizing with an external system,
     // not mirroring props/state, so the setState calls belong here.
     const stored = readStored();
+    sessionRef.current = stored?.session ?? null;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSession(stored?.session ?? null);
     setIsLoading(false);
@@ -150,6 +213,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     function onStorage(event: StorageEvent) {
       if (event.key !== STORAGE_KEY) return;
       const updated = event.newValue ? (JSON.parse(event.newValue) as StoredSession) : null;
+      sessionRef.current = updated?.session ?? null;
       setSession(updated?.session ?? null);
       if (updated) scheduleRefresh(updated);
       else if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -171,6 +235,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         const totalMs = parseExpiresIn(newSession.expiresIn) ?? 0;
         const stored: StoredSession = { session: newSession, expiresAt: Date.now() + totalMs };
         writeStored(stored);
+        sessionRef.current = newSession;
         setSession(newSession);
         scheduleRefresh(stored);
       } catch (err) {
@@ -192,6 +257,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         loginError,
+        authorizedFetch,
       }}
     >
       {children}

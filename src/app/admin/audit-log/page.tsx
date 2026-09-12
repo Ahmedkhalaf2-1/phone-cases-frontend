@@ -7,7 +7,7 @@ import { LoadingRow } from "@/components/ui/Spinner";
 import type { AuditLogEntry } from "@/lib/admin/types";
 
 export default function AdminAuditLogPage() {
-  const { accessToken } = useAdminAuth();
+  const { accessToken, authorizedFetch } = useAdminAuth();
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -19,8 +19,7 @@ export default function AdminAuditLogPage() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
-    adminClient
-      .listAuditLog(accessToken, { page, pageSize: 25 })
+    authorizedFetch((token) => adminClient.listAuditLog(token, { page, pageSize: 25 }))
       .then((result) => {
         if (cancelled) return;
         setEntries(result.items);
@@ -38,7 +37,7 @@ export default function AdminAuditLogPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, page]);
+  }, [accessToken, authorizedFetch, page]);
 
   return (
     <div>

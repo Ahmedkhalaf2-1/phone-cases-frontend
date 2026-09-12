@@ -31,7 +31,7 @@ const PAYMENT_VALUES: PaymentStatus[] = [
 ];
 
 export default function AdminOrdersPage() {
-  const { accessToken } = useAdminAuth();
+  const { accessToken, authorizedFetch } = useAdminAuth();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [fulfillmentStatus, setFulfillmentStatus] = useState<FulfillmentStatus | "">("");
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | "">("");
@@ -41,12 +41,13 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     if (!accessToken) return;
     let cancelled = false;
-    adminClient
-      .listOrders(accessToken, {
+    authorizedFetch((token) =>
+      adminClient.listOrders(token, {
         fulfillmentStatus: fulfillmentStatus || undefined,
         paymentStatus: paymentStatus || undefined,
         pageSize: 50,
-      })
+      }),
+    )
       .then((result) => {
         if (cancelled) return;
         setOrders(result.items);
@@ -62,7 +63,7 @@ export default function AdminOrdersPage() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, fulfillmentStatus, paymentStatus]);
+  }, [accessToken, authorizedFetch, fulfillmentStatus, paymentStatus]);
 
   return (
     <div>

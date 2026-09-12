@@ -6,30 +6,44 @@ import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { MoneyInput } from "@/components/admin/MoneyInput";
-import type { AdminBundle } from "@/lib/admin/types";
+import type { AdminBundle, AdminProduct } from "@/lib/admin/types";
 
 const inputClass =
   "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
   "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
+interface SelectableVariant {
+  id: string;
+  label: string;
+}
+
 export default function AdminBundlesPage() {
-  const { accessToken } = useAdminAuth();
+  const { accessToken, authorizedFetch } = useAdminAuth();
   const [bundles, setBundles] = useState<AdminBundle[]>([]);
+  const [variants, setVariants] = useState<SelectableVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
 
   const [name, setName] = useState("");
   const [fixedTotal, setFixedTotal] = useState<number | null>(null);
-  const [variantIds, setVariantIds] = useState("");
+  const [selected, setSelected] = useState<Record<string, { checked: boolean; surcharge: number | null }>>(
+    {},
+  );
+  const [requireDifferentPhoneModels, setRequireDifferentPhoneModels] = useState(true);
+  const [isRepeatable, setIsRepeatable] = useState(true);
+  const [allowCouponStacking, setAllowCouponStacking] = useState(false);
 
   function load() {
     if (!accessToken) return;
-    adminClient
-      .listBundles(accessToken)
-      .then((result) => {
-        setBundles(result);
+    Promise.all([
+      authorizedFetch((token) => adminClient.listBundles(token)),
+      authorizedFetch((token) => adminClient.listProducts(token, { pageSize: 100 })),
+    ])
+      .then(([bundleResult, productResult]) => {
+        setBundles(bundleResult);
+        setVariants(flattenVariants(productResult.items));
         setError(null);
       })
       .catch((err) =>
@@ -38,14 +52,22 @@ export default function AdminBundlesPage() {
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(load, [accessToken]);
+  useEffect(load, [accessToken, authorizedFetch]);
+
+  function toggleVariant(id: string, checked: boolean) {
+    setSelected((prev) => ({ ...prev, [id]: { checked, surcharge: prev[id]?.surcharge ?? null } }));
+  }
+
+  function setSurcharge(id: string, surcharge: number | null) {
+    setSelected((prev) => ({ ...prev, [id]: { checked: prev[id]?.checked ?? false, surcharge } }));
+  }
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
     if (!accessToken) return;
-    const ids = variantIds.split(",").map((id) => id.trim()).filter(Boolean);
-    if (ids.length < 2) {
-      setError("A bundle needs at least two eligible variant ids.");
+    const chosen = Object.entries(selected).filter(([, v]) => v.checked);
+    if (chosen.length < 2) {
+      setError("Select at least two eligible variants.");
       return;
     }
     if (fixedTotal === null) {
@@ -55,15 +77,23 @@ export default function AdminBundlesPage() {
     setIsBusy(true);
     setError(null);
     try {
-      await adminClient.createBundle(accessToken, {
-        name,
-        fixedTotal,
-        currency: "EGP",
-        eligibleVariants: ids.map((variantId) => ({ variantId })),
-      });
+      await authorizedFetch((token) =>
+        adminClient.createBundle(token, {
+          name,
+          fixedTotal,
+          currency: "EGP",
+          requireDifferentPhoneModels,
+          isRepeatable,
+          allowCouponStacking,
+          eligibleVariants: chosen.map(([variantId, v]) => ({
+            variantId,
+            surchargeAmount: v.surcharge ?? undefined,
+          })),
+        }),
+      );
       setName("");
       setFixedTotal(null);
-      setVariantIds("");
+      setSelected({});
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create bundle.");
@@ -76,9 +106,9 @@ export default function AdminBundlesPage() {
     if (!accessToken) return;
     setIsBusy(true);
     try {
-      await adminClient.updateBundle(accessToken, bundle.id, {
-        isEnabled: !bundle.isEnabled,
-      });
+      await authorizedFetch((token) =>
+        adminClient.updateBundle(token, bundle.id, { isEnabled: !bundle.isEnabled }),
+      );
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not update bundle.");
@@ -91,7 +121,7 @@ export default function AdminBundlesPage() {
     if (!accessToken) return;
     setIsBusy(true);
     try {
-      await adminClient.deleteBundle(accessToken, id);
+      await authorizedFetch((token) => adminClient.deleteBundle(token, id));
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not delete bundle.");
@@ -99,6 +129,8 @@ export default function AdminBundlesPage() {
       setIsBusy(false);
     }
   }
+
+  const selectedCount = Object.values(selected).filter((v) => v.checked).length;
 
   return (
     <div>
@@ -125,6 +157,9 @@ export default function AdminBundlesPage() {
                 <p className="text-sm text-muted-foreground">
                   Fixed total: {formatPrice(bundle.fixedTotal, bundle.currency)} ·{" "}
                   {bundle.eligibleVariants.length} eligible variant(s)
+                  {bundle.requireDifferentPhoneModels && " · requires different phone models"}
+                  {bundle.isRepeatable && " · repeatable"}
+                  {bundle.allowCouponStacking && " · stacks with coupons"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -158,36 +193,110 @@ export default function AdminBundlesPage() {
       )}
 
       <h2 className="mt-8 font-semibold text-ink">New bundle</h2>
-      <form onSubmit={handleCreate} className="mt-2 flex max-w-lg flex-wrap gap-3">
-        <input
-          required
-          placeholder="Bundle name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className={inputClass}
-        />
-        <MoneyInput
-          label="Fixed total"
-          minorUnits={fixedTotal}
-          onChange={setFixedTotal}
-          className="w-40"
-        />
-        <input
-          required
-          placeholder="Variant ids, comma-separated (min 2)"
-          value={variantIds}
-          onChange={(e) => setVariantIds(e.target.value)}
-          className={`${inputClass} w-72`}
-        />
-        <button type="submit" disabled={isBusy} className={buttonClass}>
+      <form onSubmit={handleCreate} className="mt-2 flex max-w-2xl flex-col gap-4">
+        <div className="flex flex-wrap gap-3">
+          <input
+            required
+            placeholder="Bundle name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputClass}
+          />
+          <MoneyInput
+            label="Fixed total"
+            minorUnits={fixedTotal}
+            onChange={setFixedTotal}
+            className="w-40"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-4 text-sm">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={requireDifferentPhoneModels}
+              onChange={(e) => setRequireDifferentPhoneModels(e.target.checked)}
+              className="size-4 accent-accent"
+            />
+            Require different phone models
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={isRepeatable}
+              onChange={(e) => setIsRepeatable(e.target.checked)}
+              className="size-4 accent-accent"
+            />
+            Repeatable (customer can apply it more than once per order)
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={allowCouponStacking}
+              onChange={(e) => setAllowCouponStacking(e.target.checked)}
+              className="size-4 accent-accent"
+            />
+            Allow stacking with coupons
+          </label>
+        </div>
+
+        <div>
+          <p className="text-sm font-semibold text-ink">
+            Eligible variants ({selectedCount} selected, need 2+)
+          </p>
+          <div className="mt-2 flex max-h-72 flex-col gap-1 overflow-y-auto rounded-sm border border-border p-2">
+            {variants.map((variant) => {
+              const state = selected[variant.id];
+              return (
+                <div key={variant.id} className="flex items-center gap-2 text-sm">
+                  <label className="flex flex-1 items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={state?.checked ?? false}
+                      onChange={(e) => toggleVariant(variant.id, e.target.checked)}
+                      className="size-4 accent-accent"
+                    />
+                    {variant.label}
+                  </label>
+                  {state?.checked && (
+                    <MoneyInput
+                      label="Surcharge"
+                      minorUnits={state.surcharge}
+                      onChange={(v) => setSurcharge(variant.id, v)}
+                      className="w-24"
+                    />
+                  )}
+                </div>
+              );
+            })}
+            {variants.length === 0 && (
+              <p className="text-muted-foreground">No products/variants found.</p>
+            )}
+          </div>
+        </div>
+
+        <button type="submit" disabled={isBusy} className={`${buttonClass} self-start`}>
           Create
         </button>
       </form>
-      <p className="mt-2 text-xs text-muted-foreground">
+      <p className="mt-2 max-w-2xl text-xs text-muted-foreground">
         New bundles are created disabled — enable one only once you&apos;ve
-        confirmed the variant ids and fixed total are correct. Currency is
-        fixed to EGP here.
+        confirmed the variants and fixed total are correct real business
+        values. Currency is fixed to EGP here.
       </p>
     </div>
   );
+}
+
+function flattenVariants(products: AdminProduct[]): SelectableVariant[] {
+  const out: SelectableVariant[] = [];
+  for (const product of products) {
+    for (const variant of product.variants) {
+      out.push({
+        id: variant.id,
+        label: `${product.nameEn} — ${variant.sku}`,
+      });
+    }
+  }
+  return out;
 }

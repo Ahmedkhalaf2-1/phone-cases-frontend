@@ -6,6 +6,7 @@ import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { ReceiptViewer } from "@/components/admin/ReceiptViewer";
 import type { AdminOrder, FulfillmentStatus, PaymentStatus } from "@/lib/admin/types";
 
 const FULFILLMENT_VALUES: FulfillmentStatus[] = [
@@ -24,7 +25,7 @@ export default function AdminOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { accessToken, staff } = useAdminAuth();
+  const { accessToken, authorizedFetch, staff } = useAdminAuth();
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -41,15 +42,14 @@ export default function AdminOrderDetailPage({
 
   function load() {
     if (!accessToken) return;
-    adminClient
-      .getOrder(accessToken, id)
+    authorizedFetch((token) => adminClient.getOrder(token, id))
       .then(setOrder)
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Could not load order."),
       );
   }
 
-  useEffect(load, [accessToken, id]);
+  useEffect(load, [accessToken, authorizedFetch, id]);
 
   async function withBusy(action: () => Promise<void>) {
     setIsBusy(true);
@@ -91,10 +91,12 @@ export default function AdminOrderDetailPage({
               value={order.fulfillmentStatus}
               onChange={(e) =>
                 withBusy(async () => {
-                  const updated = await adminClient.updateFulfillmentStatus(
-                    accessToken!,
-                    order.id,
-                    e.target.value as FulfillmentStatus,
+                  const updated = await authorizedFetch((token) =>
+                    adminClient.updateFulfillmentStatus(
+                      token,
+                      order.id,
+                      e.target.value as FulfillmentStatus,
+                    ),
                   );
                   setOrder(updated);
                 })
@@ -118,10 +120,12 @@ export default function AdminOrderDetailPage({
               value={order.paymentStatus}
               onChange={(e) =>
                 withBusy(async () => {
-                  const updated = await adminClient.updatePaymentStatus(
-                    accessToken!,
-                    order.id,
-                    e.target.value as PaymentStatus,
+                  const updated = await authorizedFetch((token) =>
+                    adminClient.updatePaymentStatus(
+                      token,
+                      order.id,
+                      e.target.value as PaymentStatus,
+                    ),
                   );
                   setOrder(updated);
                 })
@@ -153,10 +157,8 @@ export default function AdminOrderDetailPage({
                   disabled={isBusy || !lateNote}
                   onClick={() =>
                     withBusy(async () => {
-                      const updated = await adminClient.flagLatePayment(
-                        accessToken!,
-                        order.id,
-                        lateNote,
+                      const updated = await authorizedFetch((token) =>
+                        adminClient.flagLatePayment(token, order.id, lateNote),
                       );
                       setOrder(updated);
                       setLateNote("");
@@ -180,37 +182,48 @@ export default function AdminOrderDetailPage({
             <div>
               <label className="text-sm font-semibold text-ink">Receipts</label>
               {order.receipts.map((receipt) => (
-                <div key={receipt.id} className="mt-1 flex items-center gap-2 text-sm">
-                  <StatusBadge status={receipt.status} />
-                  {receipt.status === "PENDING_REVIEW" && (
-                    <>
-                      <input
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="Rejection reason"
-                        className="rounded-sm border border-border bg-background px-2 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                      />
-                      <button
-                        type="button"
-                        disabled={isBusy || !rejectReason}
-                        onClick={() =>
-                          withBusy(async () => {
-                            await adminClient.rejectReceipt(
-                              accessToken!,
-                              order.id,
-                              receipt.id,
-                              rejectReason,
-                            );
-                            setRejectReason("");
-                            load();
-                          })
-                        }
-                        className="rounded-sm border border-border px-2 py-1 font-semibold text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
+                <div key={receipt.id} className="mt-2 flex items-start gap-3 border-b border-border pb-2 text-sm">
+                  <ReceiptViewer receiptId={receipt.id} />
+                  <div className="flex flex-col gap-1">
+                    <StatusBadge status={receipt.status} />
+                    {receipt.rejectionReason && (
+                      <p className="text-xs text-muted-foreground">
+                        Reason: {receipt.rejectionReason}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Uploaded {new Date(receipt.createdAt).toLocaleString()}
+                    </p>
+                    {receipt.status === "PENDING_REVIEW" && (
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <input
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          placeholder="Rejection reason"
+                          className="rounded-sm border border-border bg-background px-2 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        />
+                        <button
+                          type="button"
+                          disabled={isBusy || !rejectReason}
+                          onClick={() =>
+                            withBusy(async () => {
+                              await authorizedFetch((token) =>
+                                adminClient.rejectReceipt(token, order.id, receipt.id, rejectReason),
+                              );
+                              setRejectReason("");
+                              load();
+                            })
+                          }
+                          className="rounded-sm border border-border px-2 py-1 font-semibold text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        >
+                          Reject
+                        </button>
+                        <span className="text-xs text-muted-foreground">
+                          Or mark payment status &quot;PAID&quot; above once verified.
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -269,10 +282,12 @@ export default function AdminOrderDetailPage({
                         disabled={isBusy || !rowState.quantity || !rowState.reason}
                         onClick={() =>
                           withBusy(async () => {
-                            await adminClient.createItemReturn(accessToken!, order.id, item.id, {
-                              quantity: Number(rowState.quantity),
-                              reason: rowState.reason,
-                            });
+                            await authorizedFetch((token) =>
+                              adminClient.createItemReturn(token, order.id, item.id, {
+                                quantity: Number(rowState.quantity),
+                                reason: rowState.reason,
+                              }),
+                            );
                             setReturnState((s) => ({ ...s, [item.id]: { quantity: "", reason: "" } }));
                             load();
                           })
@@ -330,12 +345,14 @@ export default function AdminOrderDetailPage({
                     disabled={isBusy || !refundAmount || !refundReason}
                     onClick={() =>
                       withBusy(async () => {
-                        await adminClient.createRefund(accessToken!, order.id, {
-                          amount: Number(refundAmount),
-                          currency: order.currency,
-                          reason: refundReason,
-                          idempotencyKey: `admin-refund-${order.id}-${Date.now()}`,
-                        });
+                        await authorizedFetch((token) =>
+                          adminClient.createRefund(token, order.id, {
+                            amount: Number(refundAmount),
+                            currency: order.currency,
+                            reason: refundReason,
+                            idempotencyKey: `admin-refund-${order.id}-${Date.now()}`,
+                          }),
+                        );
                         setRefundAmount("");
                         setRefundReason("");
                         load();

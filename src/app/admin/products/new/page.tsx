@@ -8,7 +8,7 @@ import { MoneyInput } from "@/components/admin/MoneyInput";
 
 export default function NewProductPage() {
   const router = useRouter();
-  const { accessToken } = useAdminAuth();
+  const { accessToken, authorizedFetch } = useAdminAuth();
   const formId = useId();
 
   const [slug, setSlug] = useState("");
@@ -25,13 +25,15 @@ export default function NewProductPage() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const product = await adminClient.createProduct(accessToken, {
-        slug,
-        nameEn,
-        nameAr,
-        descriptionEn: descriptionEn || undefined,
-        basePrice: basePrice ?? undefined,
-      });
+      const product = await authorizedFetch((token) =>
+        adminClient.createProduct(token, {
+          slug,
+          nameEn,
+          nameAr,
+          descriptionEn: descriptionEn || undefined,
+          basePrice: basePrice ?? undefined,
+        }),
+      );
       router.push(`/admin/products/${product.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create product.");

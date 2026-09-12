@@ -1,7 +1,11 @@
-import { apiRequest, ApiError } from "@/lib/api/http";
+import { apiRequest, ApiError, buildApiUrl } from "@/lib/api/http";
 import type {
   AdminBundle,
+  AdminCaseType,
+  AdminCollection,
   AdminCoupon,
+  AdminPhoneBrand,
+  AdminPhoneModel,
   AuditLogResult,
   AdminHomepageSection,
   AdminItemReturnInput,
@@ -14,19 +18,27 @@ import type {
   AdminVariant,
   AuthSession,
   CreateBundleInput,
+  CreateCaseTypeInput,
+  CreateCollectionInput,
   CreateCouponInput,
   CreateHomepageSectionInput,
   CreatePageInput,
+  CreatePhoneBrandInput,
+  CreatePhoneModelInput,
   CreateProductInput,
   CreateShippingRateInput,
   CreateShippingZoneInput,
   CreateStaffInput,
   CreateVariantInput,
+  StockItem,
+  StockMovement,
+  StockReservation,
   FulfillmentStatus,
   MediaAsset,
   PaymentStatus,
   ProductMediaAttachment,
   ProductStatus,
+  ShippingRate,
   ShippingZone,
   StaffMember,
   UpdateStaffInput,
@@ -124,6 +136,19 @@ export const adminClient = {
       json: { reason },
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+  },
+
+  // Receipt bytes need an Authorization header, so a plain <img src> can't
+  // load them — fetch as a Blob and let the caller manage an object URL.
+  async getReceiptFile(accessToken: string, receiptId: string): Promise<Blob> {
+    const url = buildApiUrl(`/admin/receipts/${receiptId}/file`);
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) {
+      throw new ApiError("Could not load the receipt image.", response.status);
+    }
+    return response.blob();
   },
 
   flagLatePayment(
@@ -286,6 +311,43 @@ export const adminClient = {
     });
   },
 
+  listStockItems(accessToken: string): Promise<StockItem[]> {
+    return apiRequest<StockItem[]>("/admin/stock-items", {
+      headers: authHeader(accessToken),
+    });
+  },
+
+  createStockItem(
+    accessToken: string,
+    input: { sku: string; nameEn: string; nameAr?: string; onHand?: number },
+  ): Promise<StockItem> {
+    return apiRequest<StockItem>("/admin/stock-items", {
+      method: "POST",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  getStockItemMovements(
+    accessToken: string,
+    stockItemId: string,
+  ): Promise<StockMovement[]> {
+    return apiRequest<StockMovement[]>(
+      `/admin/stock-items/${stockItemId}/movements`,
+      { headers: authHeader(accessToken) },
+    );
+  },
+
+  getStockItemReservations(
+    accessToken: string,
+    stockItemId: string,
+  ): Promise<StockReservation[]> {
+    return apiRequest<StockReservation[]>(
+      `/admin/stock-items/${stockItemId}/reservations`,
+      { headers: authHeader(accessToken) },
+    );
+  },
+
   adjustStock(
     accessToken: string,
     stockItemId: string,
@@ -347,9 +409,34 @@ export const adminClient = {
     accessToken: string,
     zoneId: string,
     input: CreateShippingRateInput,
-  ): Promise<unknown> {
-    return apiRequest(`/admin/shipping-zones/${zoneId}/rates`, {
+  ): Promise<ShippingRate> {
+    return apiRequest<ShippingRate>(`/admin/shipping-zones/${zoneId}/rates`, {
       method: "POST",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  updateShippingZone(
+    accessToken: string,
+    zoneId: string,
+    input: Partial<CreateShippingZoneInput>,
+  ): Promise<ShippingZone> {
+    return apiRequest<ShippingZone>(`/admin/shipping-zones/${zoneId}`, {
+      method: "PATCH",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  updateShippingRate(
+    accessToken: string,
+    zoneId: string,
+    rateId: string,
+    input: Partial<CreateShippingRateInput>,
+  ): Promise<ShippingRate> {
+    return apiRequest<ShippingRate>(`/admin/shipping-zones/${zoneId}/rates/${rateId}`, {
+      method: "PATCH",
       json: input,
       headers: authHeader(accessToken),
     });
@@ -502,6 +589,141 @@ export const adminClient = {
     return apiRequest<AuditLogResult>(`/admin/audit-logs?${query.toString()}`, {
       headers: authHeader(accessToken),
     });
+  },
+
+  // --- Phone brands ---
+  listPhoneBrands(accessToken: string): Promise<AdminPhoneBrand[]> {
+    return apiRequest<AdminPhoneBrand[]>("/admin/phone-brands", {
+      headers: authHeader(accessToken),
+    });
+  },
+  createPhoneBrand(
+    accessToken: string,
+    input: CreatePhoneBrandInput,
+  ): Promise<AdminPhoneBrand> {
+    return apiRequest<AdminPhoneBrand>("/admin/phone-brands", {
+      method: "POST",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+  updatePhoneBrand(
+    accessToken: string,
+    id: string,
+    input: Partial<CreatePhoneBrandInput>,
+  ): Promise<AdminPhoneBrand> {
+    return apiRequest<AdminPhoneBrand>(`/admin/phone-brands/${id}`, {
+      method: "PATCH",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  // --- Phone models ---
+  listPhoneModels(accessToken: string): Promise<AdminPhoneModel[]> {
+    return apiRequest<AdminPhoneModel[]>("/admin/phone-models", {
+      headers: authHeader(accessToken),
+    });
+  },
+  createPhoneModel(
+    accessToken: string,
+    input: CreatePhoneModelInput,
+  ): Promise<AdminPhoneModel> {
+    return apiRequest<AdminPhoneModel>("/admin/phone-models", {
+      method: "POST",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+  updatePhoneModel(
+    accessToken: string,
+    id: string,
+    input: Partial<CreatePhoneModelInput>,
+  ): Promise<AdminPhoneModel> {
+    return apiRequest<AdminPhoneModel>(`/admin/phone-models/${id}`, {
+      method: "PATCH",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  // --- Case types ---
+  listCaseTypesAdmin(accessToken: string): Promise<AdminCaseType[]> {
+    return apiRequest<AdminCaseType[]>("/admin/case-types", {
+      headers: authHeader(accessToken),
+    });
+  },
+  createCaseTypeAdmin(
+    accessToken: string,
+    input: CreateCaseTypeInput,
+  ): Promise<AdminCaseType> {
+    return apiRequest<AdminCaseType>("/admin/case-types", {
+      method: "POST",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+  updateCaseTypeAdmin(
+    accessToken: string,
+    id: string,
+    input: Partial<CreateCaseTypeInput>,
+  ): Promise<AdminCaseType> {
+    return apiRequest<AdminCaseType>(`/admin/case-types/${id}`, {
+      method: "PATCH",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  // --- Collections (admin) ---
+  listCollectionsAdmin(accessToken: string): Promise<AdminCollection[]> {
+    return apiRequest<AdminCollection[]>("/admin/collections", {
+      headers: authHeader(accessToken),
+    });
+  },
+  createCollectionAdmin(
+    accessToken: string,
+    input: CreateCollectionInput,
+  ): Promise<AdminCollection> {
+    return apiRequest<AdminCollection>("/admin/collections", {
+      method: "POST",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+  updateCollectionAdmin(
+    accessToken: string,
+    id: string,
+    input: Partial<CreateCollectionInput>,
+  ): Promise<AdminCollection> {
+    return apiRequest<AdminCollection>(`/admin/collections/${id}`, {
+      method: "PATCH",
+      json: input,
+      headers: authHeader(accessToken),
+    });
+  },
+
+  // --- Product <-> collection association ---
+  attachCollectionToProduct(
+    accessToken: string,
+    productId: string,
+    collectionId: string,
+  ): Promise<AdminProduct> {
+    return apiRequest<AdminProduct>(`/admin/products/${productId}/collections`, {
+      method: "POST",
+      json: { collectionId },
+      headers: authHeader(accessToken),
+    });
+  },
+  detachCollectionFromProduct(
+    accessToken: string,
+    productId: string,
+    collectionId: string,
+  ): Promise<void> {
+    return apiRequest<void>(
+      `/admin/products/${productId}/collections/${collectionId}`,
+      { method: "DELETE", headers: authHeader(accessToken) },
+    );
   },
 };
 

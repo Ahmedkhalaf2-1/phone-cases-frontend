@@ -127,6 +127,14 @@ export interface AdminVariant {
   isActive: boolean;
   isUnlimitedStock: boolean;
   stockItemId: string | null;
+  stockItem: StockItem | null;
+}
+
+export interface AdminProductCollectionRef {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
 }
 
 export type ProductStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -169,6 +177,7 @@ export interface AdminProduct {
   updatedAt: string;
   variants: AdminVariant[];
   media: ProductMediaAttachment[];
+  collections: AdminProductCollectionRef[];
 }
 
 export interface AdminProductsResult {
@@ -366,6 +375,7 @@ export interface CreateHomepageSectionInput {
   titleAr?: string;
   bodyEn?: string;
   bodyAr?: string;
+  mediaAssetId?: string;
   linkUrl?: string;
   isEnabled?: boolean;
   displayOrder?: number;
@@ -398,4 +408,130 @@ export interface AuditLogResult {
 export interface AdminItemReturnInput {
   quantity: number;
   reason: string;
+}
+
+export interface StockItem {
+  id: string;
+  sku: string;
+  nameEn: string;
+  nameAr: string | null;
+  onHand: number;
+  reserved: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockMovement {
+  id: string;
+  stockItemId: string;
+  delta: number;
+  reason: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  staffUserId: string;
+  createdAt: string;
+}
+
+export type ReservationStatus = "ACTIVE" | "RELEASED" | "EXPIRED" | "CONSUMED";
+
+export interface StockReservation {
+  id: string;
+  stockItemId: string;
+  cartId: string | null;
+  orderId: string | null;
+  quantity: number;
+  status: ReservationStatus;
+  expiresAt: string | null;
+  releasedAt: string | null;
+  consumedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminPhoneBrand {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePhoneBrandInput {
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface AdminPhoneModel {
+  id: string;
+  brandId: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  releaseYear: number | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  brand: AdminPhoneBrand;
+}
+
+export interface CreatePhoneModelInput {
+  brandId: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  releaseYear?: number;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface AdminCaseType {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCaseTypeInput {
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  descriptionEn?: string;
+  descriptionAr?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface AdminCollection {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  descriptionEn: string | null;
+  descriptionAr: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCollectionInput {
+  slug: string;
+  nameEn: string;
+  nameAr: string;
+  descriptionEn?: string;
+  descriptionAr?: string;
+  displayOrder?: number;
+  isActive?: boolean;
 }

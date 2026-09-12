@@ -13,7 +13,7 @@ const buttonClass =
   "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export default function AdminPagesPage() {
-  const { accessToken } = useAdminAuth();
+  const { accessToken, authorizedFetch } = useAdminAuth();
   const [pages, setPages] = useState<AdminPage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +27,7 @@ export default function AdminPagesPage() {
 
   function load() {
     if (!accessToken) return;
-    adminClient
-      .listPages(accessToken)
+    authorizedFetch((token) => adminClient.listPages(token))
       .then((result) => {
         setPages(result);
         setError(null);
@@ -39,7 +38,7 @@ export default function AdminPagesPage() {
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(load, [accessToken]);
+  useEffect(load, [accessToken, authorizedFetch]);
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -47,7 +46,9 @@ export default function AdminPagesPage() {
     setIsBusy(true);
     setError(null);
     try {
-      await adminClient.createPage(accessToken, { slug, titleEn, titleAr, bodyEn, bodyAr });
+      await authorizedFetch((token) =>
+        adminClient.createPage(token, { slug, titleEn, titleAr, bodyEn, bodyAr }),
+      );
       setSlug("");
       setTitleEn("");
       setTitleAr("");
@@ -65,10 +66,12 @@ export default function AdminPagesPage() {
     if (!accessToken) return;
     setIsBusy(true);
     try {
-      await adminClient.updatePageStatus(
-        accessToken,
-        page.id,
-        page.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED",
+      await authorizedFetch((token) =>
+        adminClient.updatePageStatus(
+          token,
+          page.id,
+          page.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED",
+        ),
       );
       load();
     } catch (err) {

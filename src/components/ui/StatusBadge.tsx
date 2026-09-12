@@ -20,6 +20,11 @@ const COLORS: Record<string, string> = {
   DRAFT: "bg-surface text-muted-foreground",
   PUBLISHED: "bg-green-100 text-green-800",
   ARCHIVED: "bg-red-100 text-red-800",
+  // Stock reservations
+  ACTIVE: "bg-blue-100 text-blue-800",
+  RELEASED: "bg-surface text-muted-foreground",
+  EXPIRED: "bg-surface text-muted-foreground",
+  CONSUMED: "bg-green-100 text-green-800",
 };
 
 export function StatusBadge({ status }: { status: string }) {

@@ -10,21 +10,20 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { AdminProduct } from "@/lib/admin/types";
 
 export default function AdminProductsPage() {
-  const { accessToken } = useAdminAuth();
+  const { accessToken, authorizedFetch } = useAdminAuth();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!accessToken) return;
-    adminClient
-      .listProducts(accessToken, { pageSize: 50 })
+    authorizedFetch((token) => adminClient.listProducts(token, { pageSize: 50 }))
       .then((result) => setProducts(result.items))
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Could not load products."),
       )
       .finally(() => setIsLoading(false));
-  }, [accessToken]);
+  }, [accessToken, authorizedFetch]);
 
   return (
     <div>

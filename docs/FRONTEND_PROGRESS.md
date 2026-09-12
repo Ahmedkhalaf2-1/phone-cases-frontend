@@ -1,5 +1,170 @@
 # Frontend progress
 
+## Milestone 10 — bounded 401 recovery, catalog/inventory admin, homepage CMS wiring
+
+Follow-up to a review that milestone 9's delivery (commit `488dcbf`)
+left several explicitly requested workflows unfinished. Everything
+below was implemented, not just documented; verified with one final
+`tsc`/`eslint`/`build` pass (all clean) at the end. No commit was made —
+changes are left local per instruction.
+
+### Shared bounded 401 recovery (`authorizedFetch`)
+
+`AdminAuthProvider` gained `authorizedFetch(fn)`: every admin page now
+calls the client through it instead of reading `accessToken` and
+calling `adminClient.x(accessToken, ...)` directly. On a 401 it
+refreshes once (never on 403) and retries the call exactly once;
+concurrent 401s across multiple in-flight requests share one refresh
+via an in-flight-promise guard, not one refresh per request. A
+`loggedOutAt` timestamp captured before each refresh attempt is
+compared after the refresh resolves — if it changed (the user logged
+out mid-refresh), the stale refreshed session is discarded instead of
+resurrecting a signed-out session. Cross-tab session sync (existing
+`storage` listener) and the real `POST /auth/logout` call on sign-out
+are preserved. Rolled out to all 15 admin pages that make authenticated
+calls.
+
+### Catalog administration (new)
+
+- `/admin/catalog/brands`, `/admin/catalog/models`, `/admin/catalog/case-types`,
+  `/admin/catalog/collections` — full list + create + activate/deactivate
+  screens against `/admin/phone-brands`, `/admin/phone-models`,
+  `/admin/case-types`, `/admin/collections`, verified live against the
+  real backend (all four share `{id, slug, nameEn, nameAr, displayOrder,
+  isActive, createdAt, updatedAt}` plus entity-specific fields). Phone
+  models use a real brand `<select>`, not a pasted brand id.
+- `/admin/products/[id]` — product↔collection association added
+  (attach via a readable `<select>` of admin collections, detach with a
+  ×), using the backend's real `POST/DELETE
+  /admin/products/:id/collections[/:collectionId]`.
+
+### Variant editing (was create + active-toggle only)
+
+`/admin/products/[id]` variants now have a full inline "Edit" form:
+SKU, price, compare-at price, phone model, case type, active, and
+stock (unlimited vs. a specific stock item) via `PATCH
+/admin/products/:productId/variants/:variantId` (all fields optional
+in the backend's DTO, confirmed from source — nothing is
+immutable here). Unlimited-stock and stock-item association are
+mutually exclusive in the UI (checking "unlimited" clears the selected
+stock item and disables that dropdown, matching the backend rule that
+both can't be set together). Duplicate-SKU/invalid-combination backend
+errors surface as-is instead of a generic message.
+
+### Inventory administration (was adjust-by-pasted-uuid only)
+
+`/admin/stock` rebuilt: browse all stock items (SKU, on-hand, reserved,
+available), create a new stock item, and — for the selected item — see
+on-hand/reserved/available, adjust with a required non-empty reason
+(validated client-side), and view movement history and active/
+released/expired/consumed reservations. No stock movements were
+created except the one adjustment used to verify the form live, which
+was left as real created state (append-only ledger — there's no delete
+endpoint to clean it up, consistent with the backend's audit design).
+
+### Bundles & coupons — exposed the remaining backend-supported fields
+
+- Bundles: eligible variants are now a readable checkbox list (product
+  name + SKU) instead of pasted UUIDs, each with an optional per-variant
+  `MoneyInput` surcharge, plus `requireDifferentPhoneModels`,
+  `isRepeatable`, `allowCouponStacking` toggles — all real `CreateBundleDto`
+  fields that had no form control before.
+- Coupons: added `minSpend` (`MoneyInput`), `startsAt`/`expiresAt` (date
+  range), `usageLimit` to the create form and the list table.
+
+### Shipping — edit and activate/deactivate existing zones/rates
+
+Verified `PATCH /admin/shipping-zones/:zoneId` and `PATCH
+/admin/shipping-zones/:zoneId/rates/:rateId` directly from the
+backend's controller/DTO source (both accept a partial of the create
+DTO, including `isActive`) before adding `updateShippingZone`/
+`updateShippingRate` to the admin client. `/admin/shipping` now has
+inline edit forms for an existing zone (name/countries) and rate
+(name/price/free-shipping threshold/estimated days), plus an
+active/inactive toggle for both — previously only creation existed.
+
+### Admin receipt viewer (was: status badge only, no image)
+
+Added `getReceiptFile(accessToken, receiptId)` to the admin client — a
+raw `fetch` with an `Authorization` header (receipt bytes can't load
+via a plain `<img src>`, verified from `receipts-admin.controller.ts`:
+`GET /admin/receipts/:receiptId/file`, JWT-guarded). New
+`ReceiptViewer` component loads the blob, renders a thumbnail, and
+opens an enlarged lightbox on click; the object URL is revoked on
+unmount/re-fetch. Wired into `/admin/orders/[id]`, which now shows
+every receipt's thumbnail, status, rejection reason (if any), and
+upload timestamp — not just the pending ones needing action. Payment
+confirmation stays an explicit separate staff action (setting payment
+status to PAID) — approving a receipt was never a thing the backend
+does automatically, and this still doesn't add one.
+
+### InstaPay recipient — centralized, still honestly unconfigured
+
+Moved `INSTAPAY_RECIPIENT` out of `checkout/page.tsx` and into
+`src/config/site.ts` (same file already used for brand name/nav/footer
+config) so a future real recipient is a single edit, not a
+per-component one. Still `null` — no recipient exists anywhere in the
+backend (re-verified: no env var, settings endpoint, or seed data) — so
+checkout continues to show the honest "not configured" state and
+disables that path; Cash on Delivery is unaffected. The customer-side
+receipt-replacement flow (`orders/track/[token]`, using the preserved
+original cart credential from `order-credentials.ts`) was reviewed
+against this session's requirements and was already correct from
+milestone 9 — no changes needed.
+
+### Homepage sections — now rendered on the real homepage
+
+This was the biggest documented gap from milestone 9 ("sections
+created here have no visible effect on the site"). Verified the public
+contract directly (`homepage-sections-public.controller.ts`:
+`GET /homepage-sections` returns only `isEnabled: true` sections,
+sorted by `displayOrder`, with `{id, type, title, body, linkUrl,
+displayOrder, media}`; `HomepageSectionType` is exactly `BANNER |
+PROMO_STRIP`, confirmed from `schema.prisma`). Added
+`getEnabledHomepageSections()` (returns `[]` in demo mode and on a CMS
+fetch failure — never fabricated placeholder content) and a new
+`CmsHomepageSections` component that maps each type onto the existing
+reference design rather than a generic page builder: `PROMO_STRIP`
+renders as a thin dark announcement bar above the header; `BANNER`
+renders as a full-width image/title/body panel between "Pick your
+mood" and "Caught our eye". No enabled sections means nothing renders
+— the hero/collections/featured-products composition is unchanged
+when the CMS has nothing published. The admin page's "not wired yet"
+warning was removed and replaced with accurate placement copy; its
+create/edit forms also gained `type`, `body`, `linkUrl`, and a banner
+image upload (previously title-only, always created as a disabled
+BANNER).
+
+### Sections re-verified, not changed (already correct)
+
+- Checkout idempotency, quote staleness/reconfirmation, discount
+  display, and cart/checkout/tracking total breakdowns — all already
+  correct from milestone 9; re-read against this session's spec and no
+  defect found.
+- SEO/config basics (sitemap pagination via real pagination `meta`, not
+  a silent 100-item cap; `noindex` on `/admin/**`, `/checkout`,
+  `/orders/track/**`; out-of-stock-but-published products still listed)
+  — already correct, re-confirmed by reading the current route files.
+
+### Verification performed this session
+
+- `npx tsc --noEmit` — clean (one run, no errors after fixes).
+- `npx eslint .` — clean (one run, exit 0).
+- `npm run build` — succeeded, all 30 routes compiled (one run).
+- No browser/screenshot tool is available in this environment (a probe
+  for `playwright`/`chromium-cli` found nothing installed, and
+  installing a browser for a one-off visual check was judged out of
+  scope for a "leave uncommitted, don't add dependencies" pass). Visual
+  correctness of the new admin screens, the receipt lightbox, and the
+  homepage banner/promo-strip placement at ~1440px/~390px has **not**
+  been confirmed in an actual browser — please check manually,
+  especially: the variant edit form's field wrapping on mobile, the
+  receipt thumbnail/lightbox sizing, and the new banner's text contrast
+  over an uploaded image.
+- No production mutations beyond what milestone 9 already documents;
+  this session created zero new orders/refunds/returns/stock-movements
+  for testing beyond reading existing live data.
+
 ## Milestone 9 — visual rebuild, checkout/cart/auth reliability, remaining admin gaps
 
 Prompted by an owner review that the storefront didn't reproduce the

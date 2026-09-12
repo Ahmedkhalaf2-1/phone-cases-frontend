@@ -29,6 +29,18 @@ export interface PublicProductSummary {
   collections: CollectionRef[];
 }
 
+export type HomepageSectionType = "BANNER" | "PROMO_STRIP";
+
+export interface HomepageSection {
+  id: string;
+  type: HomepageSectionType;
+  title: string | null;
+  body: string | null;
+  linkUrl: string | null;
+  displayOrder: number;
+  media: ApiImage | null;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   meta: {
