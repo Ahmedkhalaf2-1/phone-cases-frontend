@@ -34,20 +34,20 @@ not an oversight).
 | Payment receipts (guest) | `POST /cart/receipts[/replace]`, `GET /cart/receipts/:id/file` | ✅ upload wired in checkout; replace-on-reject flow and viewing the uploaded file are **not** built (customer can't yet re-upload after a staff rejection) |
 | Checkout & orders (guest) | `POST /checkout/quote`, `POST /orders`, `GET /orders/track/:token` | ✅ `/checkout`, `/orders/track/[token]`, `/track` |
 | Shipping (public) | `GET /shipping-options` | ✅ checkout |
-| Shipping (admin) | zones/rates CRUD | ❌ not built — no admin UI to manage shipping rates |
+| Shipping (admin) | zones/rates CRUD | ✅ `/admin/shipping` — list zones+rates, create a zone, create a rate under a zone. Live-verified (real "Egypt" zone with 3 real/demo rates found). Editing/deactivating existing zones/rates is **not** built. |
 | Promotions: coupons (admin) | create/list/get/update | ✅ `/admin/coupons` — list, create, toggle active. Live-verified (found the real `WELCOME10` coupon already on the backend). `minSpend`/`startsAt`/`expiresAt`/`usageLimit` fields exist in the API but have no form inputs yet — only code/type/value at creation. |
-| Promotions: bundles (admin) | full CRUD | ❌ not built |
-| Auth & staff | login/refresh/logout/me | ⚠️ login implemented; `refresh`/`logout`/`me` endpoints exist but aren't called — session just expires after `expiresIn` (15 min) and the user re-logs in. No silent token refresh yet. |
-| Staff management (admin) | create/list/get/update staff | ❌ not built — only the seeded `OWNER_ADMIN` can be used to sign in |
+| Promotions: bundles (admin) | full CRUD | ✅ `/admin/bundles` — list, create (name/fixedTotal/eligible variant ids), toggle enabled, delete. Live-verified end-to-end (created and deleted a real test bundle). Currency is hardcoded to EGP in the create form; per-variant surcharge and `requireDifferentPhoneModels`/`isRepeatable` toggles aren't exposed. |
+| Auth & staff | login/refresh/logout/me | ✅ login + **automatic token refresh** (refreshes at 80% of the access token's lifetime using `POST /auth/refresh`; falls back to requiring re-login if the refresh token itself is invalid/expired). `logout`/`me` endpoints still unused (logout is handled client-side by discarding the stored session, which is sufficient since these are stateless JWTs). |
+| Staff management (admin) | create/list/get/update staff | ✅ `/admin/staff` (OWNER_ADMIN only) — list, create, toggle active. Live-verified (found the real seeded catalog-manager/order-operator accounts). Role change after creation and self-deactivation are blocked; `PATCH` full field edit beyond active/role isn't built. |
 | Admin orders | list/detail/fulfillment/payment/receipt-reject/flag-late-payment/sweep-expired | ✅ all except `sweep-expired` (an operational/cron-style action, not a natural UI button) |
-| Refunds & returns (admin) | create/list refunds; create/list item returns | ❌ not built |
-| Admin catalog: products | create/list/get/update/status/attach-collection | ✅ create (`/admin/products/new`), list, detail, status update (`/admin/products/[id]`). `PATCH` full field edit (name/description/basePrice) and `attach-collection` are **not** built yet — only status changes. |
+| Refunds & returns (admin) | create/list refunds; create/list item returns | ✅ built into `/admin/orders/[id]` (OWNER_ADMIN only, shown only when payment status is PAID/PARTIALLY_REFUNDED) — issue a refund, record a per-line item return. Live-verified against a real order (**note:** this created one real, permanent refund and return record on the backend for verification — there is no delete/undo endpoint for either, both clearly reason-tagged "FE verification test"). |
+| Admin catalog: products | create/list/get/update/status/attach-collection | ✅ create, list, detail, status update, and now **full field editing** (name/description/base price) via `/admin/products/[id]`. `attach-collection` is **not** built. |
 | Admin catalog: variants | create/update | ✅ create (with real phone-model/case-type dropdowns, sourced from the live public catalog) + active/inactive toggle. Price/compareAtPrice/SKU editing after creation is **not** built. |
 | Admin catalog: media | upload/attach/detach (product), attach/detach (variant), list, delete | ✅ upload+attach+detach for **products**, live-verified (see the `localhost` URL warning at the top of this file). Variant-level media (`/admin/media/variants/...`), the standalone media library list/delete, and reordering/re-choosing primary are **not** built. |
 | Inventory: stock items | adjust, movements, reservations | ⚠️ adjust only (`/admin/stock`, needs a stock-item id typed in manually — no browser to look one up) |
 | Inventory: reservations (admin) | sweep-expired | ❌ not built (operational action) |
-| Content: homepage sections (admin + public) | full CRUD + public read | ❌ not built either side — this frontend's homepage is hand-built to match the approved design reference rather than driven by backend CMS content, per the original brief. If the business later wants the homepage editable from the backend, this is the module to wire up. |
-| Content: pages (admin + public) | full CRUD + public read | ⚠️ public read only, new this pass (`/pages/[slug]`, `src/lib/data/pages.ts`) — renders any published page. **No admin UI to create pages yet**, and no live pages exist to test against (`GET /pages` currently returns `[]` on the backend). Footer links (About/Help/Privacy/Terms) are **not** pointed at real slugs yet since no real slugs exist — wire them once content is published and slugs are known. |
+| Content: homepage sections (admin + public) | full CRUD + public read | ⚠️ `/admin/homepage-sections` — list, create, toggle enabled, live-verified (found the real demo `BANNER` section). **The storefront homepage still does not read from this** — it's hand-built to match the approved design reference per the original brief. Sections created here have no visible effect yet; wiring the homepage to consume them is future work. |
+| Content: pages (admin + public) | full CRUD + public read | ✅ `/admin/pages` — list, create (as draft), publish/unpublish toggle. Public `/pages/[slug]` reads published ones. Live-verified: found a real draft "Shipping Policy" page already on the backend (explaining why the earlier public `GET /pages` check returned `[]` — that endpoint only shows PUBLISHED pages, correctly). Editing an existing page's body/title after creation isn't built. Footer links (About/Help/Privacy/Terms) still aren't pointed at real slugs — do that once real content is published and final slugs are chosen. |
 | Audit log (admin) | `GET /admin/audit-log` (inferred from module) | ❌ not built |
 
 **Net read on "is anything from the backend missed silently":** no — every
@@ -467,9 +467,101 @@ and homepage/pages CMS authoring.
 
 ### Next milestone
 
-Bundle admin CRUD, refunds/returns admin UI, shipping-zone admin UI,
-product field editing (name/description/price after creation), staff
-management, homepage/pages CMS authoring — plus flagging the
-`localhost` media-URL issue to whoever manages the backend, since it
-blocks real product photography from displaying correctly until fixed
-there.
+See Milestone 8 below — everything listed here landed. The `localhost`
+media-URL issue flagged at the top of this file is still open and
+needs a backend-side fix.
+
+---
+
+## UI/UX enhancement pass (between milestones 7 and 8)
+
+- **Fixed a real bug**: the admin sidebar was `hidden` below the `sm:`
+  breakpoint with no alternative — the admin panel was completely
+  unnavigable on a phone. Added a mobile top bar + slide-down nav.
+- Active-route highlighting in the admin nav (desktop + mobile).
+- New `StatusBadge` component (color-coded by status: green=good,
+  amber=in-progress, red=problem, gray=neutral) covering fulfillment,
+  payment, receipt, and product statuses — applied across admin
+  orders/products and the customer-facing order tracking page.
+- Added `focus-visible` outlines to every admin input/select/button/
+  link that was missing them (previously only the login and
+  new-product pages had this).
+- Hover-highlighted, transitioned table rows and toggle buttons across
+  admin list pages.
+
+---
+
+## Milestone 8 — remaining admin CRUD, UI polish, SEO, first commit
+
+Delivered in one pass, each piece live-verified against the real
+backend with direct API calls before being wired into the UI (and, for
+mutations, cleaned up afterward where the backend provides a way to):
+
+### Admin panel — remaining CRUD
+
+- **Bundles** (`/admin/bundles`) — list, create, enable/disable, delete.
+- **Refunds & returns** — added into `/admin/orders/[id]` rather than a
+  separate page, since both are order-scoped actions.
+- **Shipping zones & rates** (`/admin/shipping`) — list existing
+  zones/rates, create new ones.
+- **Staff management** (`/admin/staff`, OWNER_ADMIN only) — list,
+  create, activate/deactivate. Can't deactivate your own account or
+  change your own role from the UI (deliberate safety rail, not a bug).
+- **Product field editing** — name/description/base price editable
+  after creation on `/admin/products/[id]`, not just status.
+- **Homepage sections CMS** (`/admin/homepage-sections`) and **Pages
+  CMS** (`/admin/pages`, publish/unpublish) — both built and
+  live-verified. The homepage-sections one is explicitly labeled in
+  its own UI as not yet consumed by the storefront (see coverage
+  table) so it isn't mistaken for a working CMS-driven homepage.
+- **Admin token auto-refresh** — `AdminAuthProvider` now schedules a
+  silent `POST /auth/refresh` at 80% of the access token's lifetime;
+  falls back to requiring a real re-login only if the refresh token
+  itself has expired.
+
+### Bug caught during this pass
+
+`PATCH /admin/products/:id/status` and `PATCH /admin/products/:id`
+responses omit `variants`/`media` — the product detail page originally
+replaced its whole local state with that response, which would have
+silently wiped the variants table and photos from the screen after
+any status change or detail edit. Fixed by merging the response onto
+existing state instead of replacing it.
+
+### SEO & branding basics
+
+- `robots.ts` and `sitemap.ts` (Next.js metadata routes) — the sitemap
+  pulls real in-stock product slugs live, with a static-routes fallback
+  if the backend is unreachable at request time.
+- Open Graph / Twitter card metadata and a title template added to the
+  root layout; per-page titles simplified to avoid double-appending the
+  brand name now that the template does it.
+- A generated favicon/apple-touch-icon (`src/app/icon.tsx`,
+  `apple-icon.tsx`) using the brand's orange asterisk mark — replaces
+  the Next.js default icon. Still a placeholder, not real brand
+  artwork (see the "temporary assets" note in Milestone 1).
+- New env var `NEXT_PUBLIC_SITE_URL` (see `.env.example`) for the
+  public origin used in the above.
+
+### First git commit
+
+The repository had never been committed despite git being initialized
+in Milestone 1. Reviewed `git status`/staged diff for secrets before
+committing — `.env.local` correctly stays untracked
+(`.gitignore` excludes `.env*` except `.env.example`), no
+`node_modules`/`.next` staged. One root commit, 90 files.
+
+### Explicitly not done this pass (by design, not oversight)
+
+- **Real product photography / logo** — no real assets exist; per the
+  original brief, fabricating "real-looking" images or a logo isn't
+  acceptable. Still using original placeholder SVG art.
+- **Arabic translation / RTL** — explicitly out of scope per the
+  original brief ("outside this milestone"). Admin CMS forms
+  (pages, shipping zones, staff) do collect the required `*Ar` fields
+  the backend needs, but no Arabic UI or `dir="rtl"` layout exists.
+- Real in-browser click-testing — still no headless-browser tool
+  available in this environment. Every new admin screen has been
+  verified at the API level (curl) and confirmed to render (`200` +
+  expected content via curl), but not clicked through in an actual
+  browser. Please verify manually, especially form validation/UX.
