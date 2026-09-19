@@ -45,7 +45,7 @@ export function SiteSidebar() {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 hidden w-[68px] flex-col items-center bg-[#fafafa] py-5 lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-50 hidden w-[68px] flex-col items-center bg-background py-5 lg:flex">
       <Link
         href="/"
         aria-label="Home"
@@ -67,7 +67,7 @@ export function SiteSidebar() {
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
               className={`${ICON_BUTTON} ${
-                isActive ? "bg-background text-ink" : "text-ink/70 hover:bg-background hover:text-ink"
+                isActive ? "bg-surface text-ink" : "text-ink/70 hover:bg-surface hover:text-ink"
               }`}
             >
               <Icon />
@@ -80,7 +80,7 @@ export function SiteSidebar() {
         href="/cart"
         aria-label={`Shopping bag${itemCount > 0 ? `, ${itemCount} item${itemCount === 1 ? "" : "s"}` : ""}`}
         className={`relative ${ICON_BUTTON} ${
-          pathname === "/cart" ? "bg-background text-ink" : "text-ink/70 hover:bg-background hover:text-ink"
+          pathname === "/cart" ? "bg-surface text-ink" : "text-ink/70 hover:bg-surface hover:text-ink"
         }`}
       >
         <BagIcon />
