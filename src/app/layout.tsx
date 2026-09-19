@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Anton, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import { CartProvider } from "@/lib/cart/CartProvider";
+import { AppShell } from "@/components/layout/AppShell";
 import { SITE } from "@/config/site";
 import { SITE_URL } from "@/lib/env";
 import "./globals.css";
 
-const displayFont = Anton({
+const displayFont = Inter({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["500", "600"],
 });
 
 const bodyFont = Inter({
@@ -45,8 +46,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${displayFont.variable} ${bodyFont.variable} h-full`}
     >
-      <body className="flex min-h-full flex-col bg-background text-foreground antialiased">
-        <CartProvider>{children}</CartProvider>
+      <body className="min-h-full overflow-x-hidden bg-background text-foreground antialiased">
+        <CartProvider>
+          <AppShell>{children}</AppShell>
+        </CartProvider>
       </body>
     </html>
   );

@@ -32,7 +32,7 @@ export function SiteFooter() {
               ))}
             </nav>
 
-            <p className="border-white/15 text-sm font-semibold tracking-wide text-white/60 uppercase md:border-s md:ps-8">
+            <p className="border-white/15 text-sm font-medium tracking-tight text-white/60 md:border-s md:ps-8">
               More than a case.
             </p>
           </div>

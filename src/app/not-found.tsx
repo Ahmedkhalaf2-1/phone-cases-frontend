@@ -8,7 +8,7 @@ export default function NotFound() {
       <SiteHeader />
       <main className="flex flex-1 items-center justify-center px-4 py-24 text-center sm:px-6">
         <div className="max-w-md">
-          <h1 className="font-display text-4xl tracking-tight text-ink uppercase">
+          <h1 className="font-display text-4xl tracking-tighter text-ink">
             Page not found
           </h1>
           <p className="mt-4 text-muted-foreground">
@@ -16,7 +16,7 @@ export default function NotFound() {
           </p>
           <Link
             href="/"
-            className="mt-8 inline-flex items-center gap-2 rounded-sm bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="mt-8 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             Back to home
           </Link>

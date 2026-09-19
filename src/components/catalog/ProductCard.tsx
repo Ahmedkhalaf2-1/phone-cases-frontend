@@ -20,9 +20,9 @@ export function ProductCard({
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group rounded-sm border border-border bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="group rounded-card bg-surface shadow-card transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-t-sm bg-surface p-3">
+      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-card-inner m-2 bg-surface">
         {product.primaryImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -39,26 +39,26 @@ export function ProductCard({
 
       <div className="flex items-start justify-between gap-2 p-3 sm:p-4">
         <div>
-          <p className="font-semibold text-ink">{product.name}</p>
+          <p className="font-medium tracking-tight text-ink">{product.name}</p>
           <p className="text-sm text-muted-foreground">
             {hasVariants(product)
               ? getCompatibilityLabel(product.variants)
               : (product.collections[0]?.name ?? "")}
           </p>
           {!product.isAvailable && (
-            <p className="mt-1 text-xs font-semibold text-accent uppercase">
+            <p className="mt-1 text-xs font-medium text-accent">
               Out of stock
             </p>
           )}
           {source === "live" && product.effectivePriceFrom !== null && (
-            <p className="mt-1 text-sm font-semibold text-ink">
+            <p className="mt-1 text-sm font-medium text-ink">
               {formatPrice(product.effectivePriceFrom, product.currency)}
             </p>
           )}
         </div>
         <span
           aria-hidden
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm border border-border text-ink transition-colors group-hover:border-accent group-hover:text-accent"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-pill border border-border text-ink transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-white"
         >
           →
         </span>

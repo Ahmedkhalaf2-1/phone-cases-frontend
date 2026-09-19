@@ -33,7 +33,7 @@ export default function AdminProductsPage() {
         </h1>
         <Link
           href="/admin/products/new"
-          className="rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           New product
         </Link>

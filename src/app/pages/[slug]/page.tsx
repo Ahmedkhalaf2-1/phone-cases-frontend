@@ -29,14 +29,14 @@ export default async function StaticPage({
         <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
           {page ? (
             <>
-              <h1 className="font-display text-4xl tracking-tight text-ink uppercase">
+              <h1 className="font-display text-4xl tracking-tighter text-ink">
                 {page.title}
               </h1>
               <div className="mt-6 whitespace-pre-wrap text-ink">{page.body}</div>
             </>
           ) : (
             <div className="py-16 text-center">
-              <h1 className="font-display text-3xl tracking-tight text-ink uppercase">
+              <h1 className="font-display text-3xl tracking-tighter text-ink">
                 Not published yet
               </h1>
               <p className="mt-3 text-muted-foreground">
@@ -46,7 +46,7 @@ export default async function StaticPage({
               </p>
               <Link
                 href="/"
-                className="mt-6 inline-flex items-center gap-2 rounded-sm bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase hover:bg-accent"
+                className="mt-6 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent"
               >
                 Back to home
               </Link>

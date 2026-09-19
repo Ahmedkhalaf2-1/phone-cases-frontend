@@ -13,7 +13,7 @@ export function CartLineThumbnail({
       <img
         src={thumbnail.url}
         alt={thumbnail.altText ?? productSlug}
-        className={`shrink-0 rounded-sm bg-surface object-contain p-1 ${className}`}
+        className={`shrink-0 rounded-2xl bg-surface object-contain p-1 shadow-soft ${className}`}
       />
     );
   }
@@ -21,7 +21,7 @@ export function CartLineThumbnail({
   return (
     <div
       aria-hidden
-      className={`flex shrink-0 items-center justify-center rounded-sm bg-surface text-sm font-semibold text-muted-foreground ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-2xl bg-surface text-sm font-medium text-muted-foreground shadow-soft ${className}`}
     >
       {productSlug.slice(0, 2).toUpperCase()}
     </div>

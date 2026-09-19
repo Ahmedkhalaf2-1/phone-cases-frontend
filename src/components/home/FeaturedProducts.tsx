@@ -16,7 +16,7 @@ export function FeaturedProducts({
     >
       <h2
         id="featured-heading"
-        className="mb-6 font-display text-4xl tracking-tight text-ink uppercase sm:text-5xl"
+        className="mb-6 font-display text-4xl tracking-tighter text-ink sm:text-5xl"
       >
         Caught our eye
       </h2>
@@ -28,7 +28,7 @@ export function FeaturedProducts({
       </div>
 
       {source === "demo" && (
-        <p className="mt-4 text-right text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+        <p className="mt-4 text-right text-[10px] font-medium tracking-tight text-muted-foreground uppercase">
           DESIGN CONCEPT — SAMPLE IMAGES & NAMES
         </p>
       )}

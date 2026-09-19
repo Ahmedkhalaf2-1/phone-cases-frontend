@@ -8,9 +8,9 @@ import type { AdminHomepageSection, HomepageSectionType } from "@/lib/admin/type
 
 const SECTION_TYPES: HomepageSectionType[] = ["BANNER", "PROMO_STRIP"];
 const inputClass =
-  "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
-  "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 interface SectionFormState {
   type: HomepageSectionType;
@@ -166,7 +166,7 @@ export default function AdminHomepageSectionsPage() {
       {!isLoading && (
         <div className="mt-4 flex flex-col gap-3">
           {sections.map((section) => (
-            <div key={section.id} className="rounded-sm border border-border p-4">
+            <div key={section.id} className="rounded-2xl border border-border p-4">
               {editingId === section.id ? (
                 <form onSubmit={(e) => handleSaveEdit(e, section.id)} className="flex flex-col gap-3">
                   <SectionFields form={editForm} setForm={setEditForm} onFile={setEditMediaFile} />

@@ -35,12 +35,12 @@ export default function CartPage() {
       <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-          <h1 className="mb-6 font-display text-4xl tracking-tight text-ink uppercase sm:text-5xl">
+          <h1 className="mb-6 font-display text-4xl tracking-tighter text-ink sm:text-5xl">
             Your bag
           </h1>
 
           {source === "demo" && (
-            <p className="mb-6 rounded-sm border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
+            <p className="mb-6 rounded-pill bg-surface px-4 py-3 text-sm text-muted-foreground shadow-soft">
               Demo mode — this cart is simulated locally in your browser
               (backend offline). It is not a real order.
             </p>
@@ -49,7 +49,7 @@ export default function CartPage() {
           {isLoading && <LoadingRow label="Loading your bag…" />}
 
           {!isLoading && error && (
-            <div className="flex items-center justify-between gap-4 rounded-sm border border-accent/40 bg-accent/5 px-4 py-3 text-sm text-accent">
+            <div className="flex items-center justify-between gap-4 rounded-pill bg-accent/5 px-4 py-3 text-sm text-accent">
               <span>{error}</span>
               {!cart && (
                 <button
@@ -68,7 +68,7 @@ export default function CartPage() {
               <p className="text-muted-foreground">Your bag is empty.</p>
               <Link
                 href="/phone-cases"
-                className="mt-4 inline-flex items-center gap-2 rounded-sm bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="mt-4 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 Browse phone cases
               </Link>
@@ -114,7 +114,7 @@ export default function CartPage() {
                       </div>
 
                       <div className="mt-2 flex items-center gap-4">
-                        <div className="flex items-center rounded-sm border border-border">
+                        <div className="flex items-center rounded-pill border border-border">
                           <button
                             type="button"
                             onClick={() =>
@@ -177,8 +177,8 @@ export default function CartPage() {
                 ))}
               </ul>
 
-              <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-5 lg:sticky lg:top-24 lg:self-start">
-                <h2 className="font-display text-xl tracking-wide text-ink uppercase">
+              <div className="flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card lg:sticky lg:top-24 lg:self-start">
+                <h2 className="font-display text-xl tracking-tight text-ink">
                   Summary
                 </h2>
 
@@ -220,12 +220,12 @@ export default function CartPage() {
                       value={couponInput}
                       onChange={(event) => setCouponInput(event.target.value)}
                       placeholder="Coupon code"
-                      className="w-full rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="w-full rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     />
                     <button
                       type="submit"
                       disabled={couponBusy}
-                      className="rounded-sm border border-border px-3 py-2 text-sm font-semibold text-ink hover:border-accent hover:text-accent disabled:opacity-50"
+                      className="rounded-pill border border-border px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent disabled:opacity-50"
                     >
                       Apply
                     </button>
@@ -270,7 +270,7 @@ export default function CartPage() {
 
                 <Link
                   href="/checkout"
-                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-sm bg-ink px-6 py-3.5 text-sm font-semibold tracking-wide text-white uppercase hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   Checkout
                 </Link>
@@ -328,7 +328,7 @@ function CartItemVariantEditor({
           type="button"
           disabled={!variant.isAvailable || variant.id === currentVariantId}
           onClick={() => onSelect(variant.id)}
-          className={`rounded-sm border px-2 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          className={`rounded-pill border px-3 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
             variant.id === currentVariantId
               ? "border-accent text-accent"
               : "border-border text-ink hover:border-accent hover:text-accent"

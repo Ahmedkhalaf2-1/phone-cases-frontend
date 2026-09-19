@@ -9,9 +9,9 @@ import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { AdminBundle, AdminProduct } from "@/lib/admin/types";
 
 const inputClass =
-  "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
-  "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 interface SelectableVariant {
   id: string;
@@ -150,7 +150,7 @@ export default function AdminBundlesPage() {
           {bundles.map((bundle) => (
             <div
               key={bundle.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border p-4"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border p-4"
             >
               <div>
                 <p className="font-semibold text-ink">{bundle.name}</p>
@@ -244,7 +244,7 @@ export default function AdminBundlesPage() {
           <p className="text-sm font-semibold text-ink">
             Eligible variants ({selectedCount} selected, need 2+)
           </p>
-          <div className="mt-2 flex max-h-72 flex-col gap-1 overflow-y-auto rounded-sm border border-border p-2">
+          <div className="mt-2 flex max-h-72 flex-col gap-1 overflow-y-auto rounded-2xl border border-border p-2">
             {variants.map((variant) => {
               const state = selected[variant.id];
               return (

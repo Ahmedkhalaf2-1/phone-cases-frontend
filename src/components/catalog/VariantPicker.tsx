@@ -79,7 +79,7 @@ export function VariantPicker({
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor={modelId}
-            className="text-sm font-semibold tracking-wide text-ink uppercase"
+            className="text-sm font-medium tracking-tight text-ink"
           >
             Phone model
           </label>
@@ -90,7 +90,7 @@ export function VariantPicker({
               setSelectedModelSlug(event.target.value);
               setSelectedCaseTypeSlug("");
             }}
-            className="w-full max-w-xs rounded-sm border border-border bg-background px-3 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {models.map((model) =>
               model ? (
@@ -107,7 +107,7 @@ export function VariantPicker({
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor={caseTypeId}
-            className="text-sm font-semibold tracking-wide text-ink uppercase"
+            className="text-sm font-medium tracking-tight text-ink"
           >
             Case type
           </label>
@@ -115,7 +115,7 @@ export function VariantPicker({
             id={caseTypeId}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
-            className="w-full max-w-xs rounded-sm border border-border bg-background px-3 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {caseTypesForModel.map((caseType) =>
               caseType ? (
@@ -161,7 +161,7 @@ export function VariantPicker({
           <label htmlFor={`${modelId}-qty`} className="sr-only">
             Quantity
           </label>
-          <div className="flex items-center rounded-sm border border-border">
+          <div className="flex items-center rounded-pill border border-border">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -215,7 +215,7 @@ export function VariantPicker({
             ? "This combination is out of stock"
             : undefined
         }
-        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 rounded-sm bg-ink px-6 py-3.5 text-sm font-semibold tracking-wide text-white uppercase transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
+        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
       >
         {status === "adding" ? "Adding…" : "Add to cart"}
       </button>

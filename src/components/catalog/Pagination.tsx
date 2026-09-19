@@ -53,7 +53,7 @@ function PageLink({
       <span
         aria-disabled
         aria-label={label}
-        className="rounded-sm border border-border px-3 py-1.5 text-sm text-muted-foreground/50"
+        className="rounded-pill border border-border px-4 py-1.5 text-sm text-muted-foreground/50"
       >
         {children}
       </span>
@@ -64,7 +64,7 @@ function PageLink({
     <Link
       href={href}
       aria-label={label}
-      className="rounded-sm border border-border px-3 py-1.5 text-sm text-ink hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="rounded-pill border border-border px-4 py-1.5 text-sm text-ink hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       {children}
     </Link>

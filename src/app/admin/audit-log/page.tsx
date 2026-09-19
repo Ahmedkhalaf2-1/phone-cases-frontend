@@ -91,7 +91,7 @@ export default function AdminAuditLogPage() {
                 type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="rounded-sm border border-border px-3 py-1.5 disabled:opacity-40"
+                className="rounded-2xl border border-border px-3 py-1.5 disabled:opacity-40"
               >
                 ← Prev
               </button>
@@ -102,7 +102,7 @@ export default function AdminAuditLogPage() {
                 type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-sm border border-border px-3 py-1.5 disabled:opacity-40"
+                className="rounded-2xl border border-border px-3 py-1.5 disabled:opacity-40"
               >
                 Next →
               </button>

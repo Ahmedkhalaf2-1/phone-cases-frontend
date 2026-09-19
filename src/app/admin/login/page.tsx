@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface px-4">
-      <div className="w-full max-w-sm rounded-sm border border-border bg-background p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-8">
         <h1 className="font-display text-2xl tracking-wide text-ink uppercase">
           {SITE.brandName} Admin
         </h1>
@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -64,14 +64,14 @@ export default function AdminLoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-sm border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </div>
           {loginError && <p className="text-sm text-accent">{loginError}</p>}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-2 inline-flex items-center justify-center gap-2 rounded-sm bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50"
+            className="mt-2 inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white transition-colors enabled:hover:bg-accent disabled:opacity-50"
           >
             {isSubmitting ? "Signing in…" : "Sign in"}
           </button>

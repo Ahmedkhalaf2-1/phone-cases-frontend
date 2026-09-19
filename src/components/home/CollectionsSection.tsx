@@ -16,13 +16,13 @@ export function CollectionsSection({
       <div className="mb-6 flex items-end justify-between gap-4">
         <h2
           id="collections-heading"
-          className="font-display text-4xl tracking-tight text-ink uppercase sm:text-5xl"
+          className="font-display text-4xl tracking-tighter text-ink sm:text-5xl"
         >
           Pick your mood
         </h2>
         <Link
           href="/phone-cases"
-          className="hidden shrink-0 items-center gap-2 text-sm font-semibold text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:inline-flex"
+          className="hidden shrink-0 items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:inline-flex"
         >
           View all collections <span aria-hidden>→</span>
         </Link>
@@ -33,7 +33,7 @@ export function CollectionsSection({
           <Link
             key={collection.id}
             href={`/phone-cases?collection=${collection.slug}`}
-            className={`group relative isolate flex h-60 overflow-hidden rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-80 lg:h-[340px] ${
+            className={`group relative isolate flex h-60 overflow-hidden rounded-card shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-80 lg:h-[340px] ${
               index === 2 ? "col-span-2 sm:col-span-2" : "col-span-1"
             }`}
           >
@@ -43,7 +43,7 @@ export function CollectionsSection({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-black/0" />
             <div className="relative mt-auto flex flex-col gap-1 p-5 text-white">
-              <span className="font-display text-2xl tracking-wide uppercase">
+              <span className="font-display text-2xl tracking-tight">
                 {collection.name}
               </span>
               <span className="text-sm text-white/85">
@@ -56,7 +56,7 @@ export function CollectionsSection({
 
       <Link
         href="/phone-cases"
-        className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:hidden"
+        className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:hidden"
       >
         View all collections <span aria-hidden>→</span>
       </Link>

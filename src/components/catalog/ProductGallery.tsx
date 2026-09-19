@@ -32,7 +32,7 @@ export function ProductGallery({
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
       <div>
-        <div className="aspect-square overflow-hidden rounded-sm bg-surface">
+        <div className="aspect-square overflow-hidden rounded-card bg-surface shadow-card">
           {activeImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -59,7 +59,7 @@ export function ProductGallery({
                 }}
                 aria-label={`Show image ${index + 1}`}
                 aria-current={!variantImage && galleryIndex === index}
-                className={`size-16 shrink-0 overflow-hidden rounded-sm border bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`size-16 shrink-0 overflow-hidden rounded-2xl border bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   !variantImage && galleryIndex === index ? "border-accent" : "border-border"
                 }`}
               >
@@ -77,7 +77,7 @@ export function ProductGallery({
       </div>
 
       <div>
-        <h1 className="font-display text-4xl tracking-tight text-ink uppercase sm:text-5xl">
+        <h1 className="font-display text-4xl tracking-tighter text-ink sm:text-5xl">
           {product.name}
         </h1>
         {product.description && (
@@ -90,7 +90,7 @@ export function ProductGallery({
               <Link
                 key={collection.id}
                 href={`/phone-cases?collection=${collection.slug}`}
-                className="rounded-full border border-border px-3 py-1 text-xs font-semibold tracking-wide text-ink uppercase hover:border-accent hover:text-accent"
+                className="rounded-pill border border-border px-3 py-1 text-xs font-medium tracking-tight text-ink hover:border-accent hover:text-accent"
               >
                 {collection.name}
               </Link>

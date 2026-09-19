@@ -8,9 +8,9 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { StockItem, StockMovement, StockReservation } from "@/lib/admin/types";
 
 const inputClass =
-  "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
-  "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export default function AdminStockPage() {
   const { accessToken, authorizedFetch } = useAdminAuth();
@@ -204,7 +204,7 @@ export default function AdminStockPage() {
             </form>
           </div>
 
-          <div className="rounded-sm border border-border bg-surface p-4">
+          <div className="rounded-2xl border border-border bg-surface p-4">
             {!selectedItem ? (
               <p className="text-sm text-muted-foreground">
                 Select a stock item to see its movements, reservations, and adjust it.

@@ -13,9 +13,9 @@ import type { CaseType, PhoneModel } from "@/lib/api/types";
 
 const STATUS_VALUES: ProductStatus[] = ["DRAFT", "PUBLISHED", "ARCHIVED"];
 const inputClass =
-  "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
-  "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 interface VariantFormState {
   sku: string;
@@ -373,7 +373,7 @@ export default function AdminProductDetailPage({
               <button
                 type="button"
                 onClick={() => setIsEditingDetails(false)}
-                className="rounded-sm border border-border px-4 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="rounded-2xl border border-border px-4 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 Cancel
               </button>
@@ -536,13 +536,13 @@ export default function AdminProductDetailPage({
         {product.media.map((attachment) => (
           <div
             key={attachment.id}
-            className="relative w-28 rounded-sm border border-border p-1"
+            className="relative w-28 rounded-2xl border border-border p-1"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={attachment.mediaAsset.url}
               alt={attachment.mediaAsset.altTextEn ?? ""}
-              className="aspect-square w-full rounded-sm bg-surface object-cover"
+              className="aspect-square w-full rounded-2xl bg-surface object-cover"
             />
             {attachment.isPrimary && (
               <span className="absolute start-1 top-1 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">

@@ -1,17 +1,116 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #141414;
-  --muted-foreground: #5c5952;
-  --border: #e4e0d8;
-  --surface: #f3f2ef;
-  --accent: #ff4d1a;
-  --accent-foreground: #ffffff;
-  --ink: #141210;
+  /* ---- Design tokens, verbatim from DESIGN.md ---- */
+  --color-canvas-mist: #f2f4f5;
+  --color-pure-white: #ffffff;
+  --color-ink-black: #000000;
+  --color-faint-border: #ebebeb;
+  --color-muted-gray: #787574;
+  --color-cool-stone: #cccccc;
+  --color-warm-fog: #acb0aa;
+  --color-shop-violet: #5433eb;
+  --color-violet-wash: #c0b5f3;
+  --color-slate-ink: #332f2d;
+  --color-ash-veil: #665a54;
+
+  --font-gt-standard: "GT Standard", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-shopify-sans: "Shopify Sans", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --text-caption: 11px;
+  --leading-caption: 1.33;
+  --text-body-sm: 12px;
+  --leading-body-sm: 1.33;
+  --text-body: 14px;
+  --leading-body: 1.33;
+  --text-body-lg: 16px;
+  --leading-body-lg: 1.33;
+
+  --spacing-4: 4px;
+  --spacing-6: 6px;
+  --spacing-8: 8px;
+  --spacing-10: 10px;
+  --spacing-11: 11px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-38: 38px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+
+  --page-max-width: 1200px;
+  --section-gap: 64px;
+  --card-padding: 0px;
+  --element-gap: 12px;
+
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 11.4046px;
+  --radius-2xl: 17.1064px;
+  --radius-2xl-2: 20px;
+  --radius-2xl-3: 22.8092px;
+  --radius-3xl: 28px;
+  --radius-3xl-2: 32px;
+  --radius-full: 9999px;
+
+  --radius-cards: 28px;
+  --radius-chips: 9999px;
+  --radius-pills: 20px;
+  --radius-inputs: 9999px;
+  --radius-search: 9999px;
+  --radius-buttons: 9999px;
+
+  --shadow-sm: rgba(0, 0, 0, 0.06) 0px 2px 8px 0px;
+  --shadow-sm-2: rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px;
+  --shadow-lg: rgba(0, 0, 0, 0.12) 0px 4px 24px 0px;
+  --shadow-lg-2: rgba(69, 36, 219, 0.34) 0px 4px 24px 0px;
+
+  --surface-canvas: #f2f4f5;
+  --surface-surface: #ffffff;
+  --surface-elevated-card: #ffffff;
+  --surface-accent-product-image: #000000;
+
+  /* ---- Semantic aliases the components use, mapped onto the tokens
+     above so the codebase reads by role while the palette stays a
+     direct copy of DESIGN.md's values. ---- */
+  --background: var(--color-canvas-mist);
+  --foreground: var(--color-ink-black);
+  --muted-foreground: var(--color-muted-gray);
+  --border: var(--color-faint-border);
+  --surface: var(--color-pure-white);
+  --accent: var(--color-shop-violet);
+  --accent-foreground: var(--color-pure-white);
+  --accent-wash: var(--color-violet-wash);
+  --ink: var(--color-ink-black);
+
+  --radius-card: var(--radius-cards);
+  --radius-card-inner: var(--radius-2xl-2);
+  --radius-pill: var(--radius-pills);
+
+  --shadow-card: var(--shadow-sm-2);
+  --shadow-soft: var(--shadow-sm);
+  --shadow-lifted: var(--shadow-lg);
+  --shadow-accent: var(--shadow-lg-2);
 }
 
 @theme inline {
+  --color-canvas-mist: var(--color-canvas-mist);
+  --color-pure-white: var(--color-pure-white);
+  --color-ink-black: var(--color-ink-black);
+  --color-faint-border: var(--color-faint-border);
+  --color-muted-gray: var(--color-muted-gray);
+  --color-cool-stone: var(--color-cool-stone);
+  --color-warm-fog: var(--color-warm-fog);
+  --color-shop-violet: var(--color-shop-violet);
+  --color-violet-wash: var(--color-violet-wash);
+  --color-slate-ink: var(--color-slate-ink);
+  --color-ash-veil: var(--color-ash-veil);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
@@ -19,23 +118,45 @@
   --color-surface: var(--surface);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-wash: var(--accent-wash);
   --color-ink: var(--ink);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
+  --font-gt-standard: var(--font-gt-standard);
+  --font-shopify-sans: var(--font-shopify-sans);
+
+  --radius-card: var(--radius-card);
+  --radius-card-inner: var(--radius-card-inner);
+  --radius-pill: var(--radius-pill);
+  --radius-cards: var(--radius-cards);
+  --radius-chips: var(--radius-chips);
+  --radius-pills: var(--radius-pills);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lifted: var(--shadow-lifted);
+  --shadow-accent: var(--shadow-accent);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-sm-2: var(--shadow-sm-2);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-lg-2: var(--shadow-lg-2);
 }
 
 /*
-  The storefront intentionally uses a single fixed light theme (white
-  background, near-black text, orange accent) regardless of OS color
-  scheme, matching the approved brand reference. This is a deliberate
+  The storefront intentionally uses a single fixed light theme (soft-gray
+  canvas, white surfaces, near-black text, violet accent) regardless of OS
+  color scheme, matching the approved brand reference. This is a deliberate
   choice, not an oversight — dark mode is out of scope for this milestone.
 */
 body {
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.011em;
 }
 
 .font-display {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.03em;
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {

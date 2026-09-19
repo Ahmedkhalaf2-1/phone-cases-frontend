@@ -88,6 +88,7 @@ export default function CheckoutPage() {
   const formId = useId();
 
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [isShippingLoading, setIsShippingLoading] = useState(true);
   const [shippingRateId, setShippingRateId] = useState("");
   const [quote, setQuote] = useState<CheckoutQuote | null>(null);
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
@@ -131,7 +132,8 @@ export default function CheckoutPage() {
         setQuoteError(
           err instanceof ApiError ? err.message : "Could not load shipping options.",
         ),
-      );
+      )
+      .finally(() => setIsShippingLoading(false));
   }, []);
 
   // A signature of everything that should invalidate the current quote:
@@ -305,7 +307,7 @@ export default function CheckoutPage() {
           <p className="text-muted-foreground">Your bag is empty.</p>
           <Link
             href="/phone-cases"
-            className="mt-4 inline-flex items-center gap-2 rounded-sm bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase hover:bg-accent"
+            className="mt-4 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent"
           >
             Browse phone cases
           </Link>
@@ -326,7 +328,7 @@ export default function CheckoutPage() {
       <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-          <h1 className="mb-2 font-display text-4xl tracking-tight text-ink uppercase sm:text-5xl">
+          <h1 className="mb-2 font-display text-4xl tracking-tighter text-ink sm:text-5xl">
             Checkout
           </h1>
           <p className="mb-6 text-sm text-muted-foreground">
@@ -334,7 +336,7 @@ export default function CheckoutPage() {
           </p>
 
           {source === "demo" && (
-            <p className="mb-6 rounded-sm border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
+            <p className="mb-6 rounded-pill bg-surface px-4 py-3 text-sm text-muted-foreground shadow-soft">
               Demo mode — placing this order does not contact a real
               backend. It will produce a demo order you can track locally,
               not a real purchase.
@@ -342,7 +344,7 @@ export default function CheckoutPage() {
           )}
 
           {quoteIssues.length > 0 && (
-            <p className="mb-6 rounded-sm border border-accent/40 bg-accent/5 px-4 py-3 text-sm text-accent">
+            <p className="mb-6 rounded-pill bg-accent/5 px-4 py-3 text-sm text-accent">
               Some items in your bag are unavailable ({quoteIssues.join(", ")}
               ). Go back to your{" "}
               <Link href="/cart" className="underline">
@@ -353,7 +355,7 @@ export default function CheckoutPage() {
           )}
 
           {priceChange && (
-            <div className="mb-6 rounded-sm border border-accent/40 bg-accent/5 px-4 py-3 text-sm">
+            <div className="mb-6 rounded-2xl bg-accent/5 px-4 py-3 text-sm shadow-soft">
               <p className="font-semibold text-accent">
                 The price changed since you loaded this page.
               </p>
@@ -364,7 +366,7 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={handleConfirmPriceChange}
                 disabled={isSubmitting}
-                className="mt-2 rounded-sm bg-ink px-4 py-2 text-xs font-semibold tracking-wide text-white uppercase enabled:hover:bg-accent disabled:opacity-50"
+                className="mt-2 rounded-pill bg-ink px-4 py-2 text-xs font-medium tracking-tight text-white enabled:hover:bg-accent disabled:opacity-50"
               >
                 Confirm new total &amp; place order
               </button>
@@ -374,7 +376,7 @@ export default function CheckoutPage() {
           <form onSubmit={handleSubmit} className="grid gap-10 lg:grid-cols-3 lg:gap-12">
             <div className="flex flex-col gap-6 lg:col-span-2">
               <fieldset className="flex flex-col gap-4">
-                <legend className="font-display text-xl tracking-wide text-ink uppercase">
+                <legend className="font-display text-xl tracking-tight text-ink">
                   Contact & shipping
                 </legend>
                 <Field label="Full name" htmlFor={`${formId}-name`}>
@@ -442,13 +444,20 @@ export default function CheckoutPage() {
               </fieldset>
 
               <fieldset className="flex flex-col gap-3">
-                <legend className="font-display text-xl tracking-wide text-ink uppercase">
+                <legend className="font-display text-xl tracking-tight text-ink">
                   Shipping method
                 </legend>
+                {shippingOptions.length === 0 && !isShippingLoading && (
+                  <p className="text-sm text-accent">
+                    No shipping options are available right now, so an order
+                    can&apos;t be placed yet. Please contact us, or try again
+                    later.
+                  </p>
+                )}
                 {shippingOptions.map((option) => (
                   <label
                     key={option.id}
-                    className="flex cursor-pointer items-center justify-between gap-3 rounded-sm border border-border p-3 has-[:checked]:border-accent"
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-border p-3 has-[:checked]:border-accent"
                   >
                     <span className="flex items-center gap-3">
                       <input
@@ -478,10 +487,10 @@ export default function CheckoutPage() {
               </fieldset>
 
               <fieldset className="flex flex-col gap-3">
-                <legend className="font-display text-xl tracking-wide text-ink uppercase">
+                <legend className="font-display text-xl tracking-tight text-ink">
                   Payment
                 </legend>
-                <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border p-3 has-[:checked]:border-accent">
+                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border p-3 has-[:checked]:border-accent">
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -491,7 +500,7 @@ export default function CheckoutPage() {
                   />
                   Cash on delivery
                 </label>
-                <label className="flex cursor-pointer items-center gap-3 rounded-sm border border-border p-3 has-[:checked]:border-accent">
+                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border p-3 has-[:checked]:border-accent">
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -514,8 +523,8 @@ export default function CheckoutPage() {
               </fieldset>
             </div>
 
-            <div className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-5 lg:sticky lg:top-24 lg:self-start">
-              <h2 className="font-display text-xl tracking-wide text-ink uppercase">
+            <div className="flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card lg:sticky lg:top-24 lg:self-start">
+              <h2 className="font-display text-xl tracking-tight text-ink">
                 Order total
               </h2>
               <dl className="flex flex-col gap-1.5 text-sm">
@@ -563,7 +572,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="inline-flex items-center justify-center gap-2 rounded-sm bg-ink px-6 py-3.5 text-sm font-semibold tracking-wide text-white uppercase transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
+                className="inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
               >
                 {isSubmitting ? "Placing order…" : isQuoteLoading ? "Calculating total…" : "Place order"}
               </button>
@@ -577,7 +586,7 @@ export default function CheckoutPage() {
 }
 
 const inputClass =
-  "w-full rounded-sm border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 function Field({
   label,
@@ -626,7 +635,7 @@ function InstaPayInstructions({
   const recipient = INSTAPAY_RECIPIENT;
   if (!recipient) {
     return (
-      <div className="rounded-sm border border-accent/40 bg-accent/5 p-3 text-sm text-accent">
+      <div className="rounded-2xl bg-accent/5 p-3 text-sm text-accent">
         InstaPay transfer details aren&apos;t configured yet. Please choose
         Cash on delivery, or contact us to arrange payment.
       </div>
@@ -634,7 +643,7 @@ function InstaPayInstructions({
   }
 
   return (
-    <div className="rounded-sm border border-border bg-surface p-3">
+    <div className="rounded-2xl bg-surface p-3 shadow-soft">
       <p className="text-sm font-semibold text-ink">Transfer instructions</p>
       <div className="mt-2 flex items-center justify-between text-sm">
         <span>
@@ -660,6 +669,20 @@ function InstaPayInstructions({
           {copied === "amount" ? "Copied" : "Copy"}
         </button>
       </div>
+
+      <p className="mt-3 rounded-pill bg-accent/5 px-3 py-2 text-xs text-ink">
+        After transferring, send a screenshot of the payment to our WhatsApp
+        at{" "}
+        <a
+          href={`https://wa.me/2${recipient.whatsappNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-accent underline underline-offset-4"
+        >
+          {recipient.whatsappNumber}
+        </a>{" "}
+        so we can confirm it faster.
+      </p>
 
       <label htmlFor={`${formId}-receipt`} className="mt-3 block text-sm font-semibold text-ink">
         Upload payment receipt

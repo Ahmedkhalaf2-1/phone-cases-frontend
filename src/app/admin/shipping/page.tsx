@@ -9,9 +9,9 @@ import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { ShippingRate, ShippingZone } from "@/lib/admin/types";
 
 const inputClass =
-  "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
-  "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 interface ZoneEditState {
   nameEn: string;
@@ -239,7 +239,7 @@ export default function AdminShippingPage() {
       {!isLoading && (
         <div className="mt-4 flex flex-col gap-6">
           {zones.map((zone) => (
-            <div key={zone.id} className="rounded-sm border border-border p-4">
+            <div key={zone.id} className="rounded-2xl border border-border p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 {editingZoneId === zone.id ? (
                   <form

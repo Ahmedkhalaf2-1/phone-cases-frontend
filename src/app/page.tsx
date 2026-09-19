@@ -26,7 +26,10 @@ export default async function Home() {
       <CmsHomepageSections sections={promoStrips} />
       <SiteHeader />
       <main className="flex-1">
-        <Hero />
+        <Hero
+          products={featuredProducts.products}
+          collections={moodCollections.collections}
+        />
         <PhoneSelector models={phoneModels.models} source={phoneModels.source} />
         <CollectionsSection collections={moodCollections.collections} />
         <CmsHomepageSections sections={banners} />

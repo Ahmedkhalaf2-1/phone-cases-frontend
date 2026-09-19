@@ -9,7 +9,7 @@ import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { AdminCoupon, CouponType } from "@/lib/admin/types";
 
 const inputClass =
-  "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export default function AdminCouponsPage() {
   const { accessToken, authorizedFetch } = useAdminAuth();
@@ -260,7 +260,7 @@ export default function AdminCouponsPage() {
         <button
           type="submit"
           disabled={isCreating}
-          className="self-start rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="self-start rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {isCreating ? "Creating…" : "Create"}
         </button>

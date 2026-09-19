@@ -28,6 +28,7 @@ export default function OrderTrackingPage({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tokenCopied, setTokenCopied] = useState(false);
 
   async function load() {
     if (loaded) setIsRefreshing(true);
@@ -66,6 +67,16 @@ export default function OrderTrackingPage({
     }
   }
 
+  async function copyToken() {
+    try {
+      await navigator.clipboard.writeText(token);
+      setTokenCopied(true);
+      setTimeout(() => setTokenCopied(false), 1500);
+    } catch {
+      // Clipboard API unavailable — the token is still visible on screen.
+    }
+  }
+
   return (
     <>
       {/* Contains a secret tracking token — must never be indexed. */}
@@ -77,13 +88,13 @@ export default function OrderTrackingPage({
 
           {!isLoading && error && (
             <div className="py-16 text-center">
-              <h1 className="font-display text-3xl tracking-tight text-ink uppercase">
+              <h1 className="font-display text-3xl tracking-tighter text-ink">
                 Order not found
               </h1>
               <p className="mt-2 text-muted-foreground">{error}</p>
               <Link
                 href="/track"
-                className="mt-6 inline-flex items-center gap-2 rounded-sm bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase hover:bg-accent"
+                className="mt-6 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent"
               >
                 Try another tracking link
               </Link>
@@ -93,32 +104,51 @@ export default function OrderTrackingPage({
           {!isLoading && order && (
             <>
               {justPlaced && CART_SOURCE === "demo" && (
-                <p className="mb-6 rounded-sm border border-accent/40 bg-accent/5 px-4 py-3 text-sm text-accent">
+                <p className="mb-6 rounded-pill bg-accent/5 px-4 py-3 text-sm text-accent">
                   Demo mode — this is a simulated order confirmation stored
                   only in your browser. No real order was placed and no
                   backend was contacted.
                 </p>
               )}
               {justPlaced && CART_SOURCE === "live" && (
-                <p className="mb-6 rounded-sm border border-border bg-surface px-4 py-3 text-sm text-ink">
+                <p className="mb-6 rounded-pill bg-surface px-4 py-3 text-sm text-ink shadow-soft">
                   Thank you — your order was placed.
                 </p>
               )}
 
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h1 className="font-display text-4xl tracking-tight text-ink uppercase sm:text-5xl">
+                  <h1 className="font-display text-4xl tracking-tighter text-ink sm:text-5xl">
                     Order {order.orderNumber}
                   </h1>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Placed {new Date(order.createdAt).toLocaleString()}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>
+                      Tracking token: <code className="font-mono text-ink">{token}</code>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={copyToken}
+                      className="font-semibold text-accent underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      {tokenCopied ? "Copied" : "Copy token"}
+                    </button>
+                  </div>
+                  <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                    Save this token — it&apos;s what you enter on the{" "}
+                    <Link href="/track" className="underline underline-offset-4 hover:text-accent">
+                      Track order
+                    </Link>{" "}
+                    page (the order number above won&apos;t work there).
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={copyLink}
-                    className="rounded-sm border border-border px-3 py-2 text-xs font-semibold text-ink hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="rounded-pill border border-border px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
                     {copied ? "Link copied" : "Copy tracking link"}
                   </button>
@@ -126,7 +156,7 @@ export default function OrderTrackingPage({
                     type="button"
                     onClick={() => load()}
                     disabled={isRefreshing}
-                    className="rounded-sm border border-border px-3 py-2 text-xs font-semibold text-ink hover:border-accent hover:text-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="rounded-pill border border-border px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
                     {isRefreshing ? "Refreshing…" : "Refresh status"}
                   </button>
@@ -169,8 +199,8 @@ export default function OrderTrackingPage({
                   ))}
                 </ul>
 
-                <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-5">
-                  <h2 className="font-display text-lg tracking-wide text-ink uppercase">
+                <div className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card">
+                  <h2 className="font-display text-lg tracking-tight text-ink">
                     Shipping to
                   </h2>
                   <p className="text-sm text-ink">
@@ -230,7 +260,7 @@ export default function OrderTrackingPage({
 
 function OrderStatusBadge({ label, value }: { label: string; value: string }) {
   return (
-    <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+    <span className="flex items-center gap-1.5 text-xs font-medium tracking-tight text-muted-foreground uppercase">
       {label}: <StatusBadge status={value} />
     </span>
   );
@@ -283,7 +313,7 @@ function ReceiptSection({
       </div>
 
       {latest.status === "REJECTED" && (
-        <div className="mt-2 rounded-sm border border-accent/40 bg-accent/5 p-3">
+        <div className="mt-2 rounded-2xl bg-accent/5 p-3">
           {cartCredential ? (
             <>
               <label

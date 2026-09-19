@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <Link
           href="/admin/orders"
-          className="rounded-sm border border-border p-5 hover:border-accent"
+          className="rounded-2xl border border-border p-5 hover:border-accent"
         >
           <h2 className="font-semibold text-ink">Orders</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -27,7 +27,7 @@ export default function AdminDashboardPage() {
         </Link>
         <Link
           href="/admin/products"
-          className="rounded-sm border border-border p-5 hover:border-accent"
+          className="rounded-2xl border border-border p-5 hover:border-accent"
         >
           <h2 className="font-semibold text-ink">Products</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
         </Link>
         <Link
           href="/admin/stock"
-          className="rounded-sm border border-border p-5 hover:border-accent"
+          className="rounded-2xl border border-border p-5 hover:border-accent"
         >
           <h2 className="font-semibold text-ink">Stock</h2>
           <p className="mt-1 text-sm text-muted-foreground">

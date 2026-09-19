@@ -75,7 +75,7 @@ export default function AdminOrdersPage() {
         <select
           value={fulfillmentStatus}
           onChange={(e) => setFulfillmentStatus(e.target.value as FulfillmentStatus | "")}
-          className="rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <option value="">All fulfillment statuses</option>
           {FULFILLMENT_VALUES.map((v) => (
@@ -87,7 +87,7 @@ export default function AdminOrdersPage() {
         <select
           value={paymentStatus}
           onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus | "")}
-          className="rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <option value="">All payment statuses</option>
           {PAYMENT_VALUES.map((v) => (

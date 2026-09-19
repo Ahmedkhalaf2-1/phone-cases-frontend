@@ -7,9 +7,9 @@ import { LoadingRow } from "@/components/ui/Spinner";
 import type { AdminCaseType } from "@/lib/admin/types";
 
 const inputClass =
-  "rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
-  "rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export default function AdminCaseTypesPage() {
   const { accessToken, authorizedFetch } = useAdminAuth();
@@ -89,7 +89,7 @@ export default function AdminCaseTypesPage() {
       {!isLoading && (
         <div className="mt-4 flex flex-col gap-3">
           {caseTypes.map((caseType) => (
-            <div key={caseType.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border p-4">
+            <div key={caseType.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border p-4">
               <div>
                 <p className="font-semibold text-ink">{caseType.nameEn}</p>
                 {caseType.descriptionEn && (

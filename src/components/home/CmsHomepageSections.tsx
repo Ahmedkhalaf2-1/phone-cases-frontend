@@ -26,7 +26,7 @@ export function CmsHomepageSections({ sections }: { sections: HomepageSection[] 
 
 function PromoStrip({ section }: { section: HomepageSection }) {
   const content = (
-    <p className="mx-auto max-w-[1440px] px-4 py-2.5 text-center text-sm font-semibold tracking-wide text-white uppercase sm:px-6 lg:px-8">
+    <p className="mx-auto max-w-[1440px] px-4 py-2.5 text-center text-sm font-medium tracking-tight text-white sm:px-6 lg:px-8">
       {section.title ?? section.body}
     </p>
   );
@@ -45,7 +45,7 @@ function PromoStrip({ section }: { section: HomepageSection }) {
 
 function Banner({ section }: { section: HomepageSection }) {
   const body = (
-    <div className="relative isolate flex min-h-[280px] items-end overflow-hidden rounded-sm sm:min-h-[360px]">
+    <div className="relative isolate flex min-h-[280px] items-end overflow-hidden rounded-card shadow-card sm:min-h-[360px]">
       {section.media ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -59,7 +59,7 @@ function Banner({ section }: { section: HomepageSection }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
       <div className="relative flex flex-col gap-2 p-6 text-white sm:p-10">
         {section.title && (
-          <h2 className="font-display text-3xl tracking-tight uppercase sm:text-4xl">
+          <h2 className="font-display text-3xl tracking-tighter sm:text-4xl">
             {section.title}
           </h2>
         )}

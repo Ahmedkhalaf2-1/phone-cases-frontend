@@ -57,7 +57,7 @@ export function MoneyInput({
           required={required}
           value={text}
           onChange={(e) => commit(e.target.value)}
-          className={`w-full rounded-sm border border-border bg-background py-2 ps-14 pe-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${className}`}
+          className={`w-full rounded-pill border border-border bg-background py-2 ps-14 pe-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${className}`}
         />
       </div>
     </div>

@@ -96,7 +96,7 @@ export default function NewProductPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center justify-center gap-2 rounded-sm bg-ink px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase enabled:hover:bg-accent disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white enabled:hover:bg-accent disabled:opacity-50"
         >
           {isSubmitting ? "Creating…" : "Create product"}
         </button>
@@ -106,7 +106,7 @@ export default function NewProductPage() {
 }
 
 const inputClass =
-  "w-full rounded-sm border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 function Field({
   label,

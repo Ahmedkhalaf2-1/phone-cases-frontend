@@ -44,7 +44,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             aria-current={isActive ? "page" : undefined}
-            className={`rounded-sm px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+            className={`rounded-2xl px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
               isActive
                 ? "bg-ink text-white"
                 : "text-ink hover:bg-background"
@@ -106,7 +106,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
           aria-controls={menuId}
           aria-label={isMobileNavOpen ? "Close menu" : "Open menu"}
           onClick={() => setIsMobileNavOpen((open) => !open)}
-          className="rounded-sm p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="rounded-2xl p-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
             {isMobileNavOpen ? (

@@ -42,11 +42,14 @@ export const FOOTER_LINKS: NavLink[] = [
 ];
 
 /**
- * No InstaPay recipient (phone/name) is configured anywhere in the
- * backend (verified against its source — no env var, settings endpoint,
- * or seed data exposes one). Rather than invent a recipient, checkout
- * shows an honest "not configured" state and disables the upload step
- * while this is null. Fill this in once the shop owner provides real
- * transfer details — a single edit here, not duplicated per component.
+ * Real InstaPay transfer recipient, provided directly by the shop owner.
+ * `whatsappNumber` is where a customer must send a screenshot of their
+ * transfer after paying — the receipt upload alone doesn't notify anyone,
+ * so checkout tells the customer to message it too.
  */
-export const INSTAPAY_RECIPIENT: { name: string; identifier: string } | null = null;
+export const INSTAPAY_RECIPIENT: { name: string; identifier: string; whatsappNumber: string } | null =
+  {
+    name: SITE.brandName,
+    identifier: "01030750304",
+    whatsappNumber: "01030750304",
+  };

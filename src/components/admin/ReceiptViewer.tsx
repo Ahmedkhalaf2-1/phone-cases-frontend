@@ -36,7 +36,7 @@ export function ReceiptViewer({ receiptId }: { receiptId: string }) {
       <button
         type="button"
         onClick={() => setIsEnlarged(true)}
-        className="block w-24 overflow-hidden rounded-sm border border-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="block w-24 overflow-hidden rounded-2xl border border-border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={objectUrl} alt="Payment receipt" className="aspect-square w-full object-cover" />
@@ -53,7 +53,7 @@ export function ReceiptViewer({ receiptId }: { receiptId: string }) {
           <img
             src={objectUrl}
             alt="Payment receipt (enlarged)"
-            className="max-h-full max-w-full rounded-sm object-contain"
+            className="max-h-full max-w-full rounded-2xl object-contain"
           />
           <button
             type="button"

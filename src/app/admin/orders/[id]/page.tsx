@@ -101,7 +101,7 @@ export default function AdminOrderDetailPage({
                   setOrder(updated);
                 })
               }
-              className="mt-1 block w-full max-w-xs rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="mt-1 block w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {FULFILLMENT_VALUES.map((v) => (
                 <option key={v} value={v}>
@@ -130,7 +130,7 @@ export default function AdminOrderDetailPage({
                   setOrder(updated);
                 })
               }
-              className="mt-1 block w-full max-w-xs rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
+              className="mt-1 block w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50"
             >
               {PAYMENT_VALUES.map((v) => (
                 <option key={v} value={v}>
@@ -150,7 +150,7 @@ export default function AdminOrderDetailPage({
                   value={lateNote}
                   onChange={(e) => setLateNote(e.target.value)}
                   placeholder="Note"
-                  className="w-full max-w-xs rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
                 <button
                   type="button"
@@ -164,7 +164,7 @@ export default function AdminOrderDetailPage({
                       setLateNote("");
                     })
                   }
-                  className="rounded-sm border border-border px-3 py-2 text-sm font-semibold transition-colors hover:border-accent hover:text-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="rounded-2xl border border-border px-3 py-2 text-sm font-semibold transition-colors hover:border-accent hover:text-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   Flag
                 </button>
@@ -200,7 +200,7 @@ export default function AdminOrderDetailPage({
                           value={rejectReason}
                           onChange={(e) => setRejectReason(e.target.value)}
                           placeholder="Rejection reason"
-                          className="rounded-sm border border-border bg-background px-2 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          className="rounded-pill border border-border bg-background px-3 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         />
                         <button
                           type="button"
@@ -214,7 +214,7 @@ export default function AdminOrderDetailPage({
                               load();
                             })
                           }
-                          className="rounded-sm border border-border px-2 py-1 font-semibold text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          className="rounded-2xl border border-border px-2 py-1 font-semibold text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                           Reject
                         </button>
@@ -230,7 +230,7 @@ export default function AdminOrderDetailPage({
           )}
         </div>
 
-        <div className="rounded-sm border border-border bg-surface p-4">
+        <div className="rounded-2xl border border-border bg-surface p-4">
           <h2 className="font-semibold text-ink">Items</h2>
           <ul className="mt-2 flex flex-col gap-2 text-sm">
             {order.items.map((item) => {
@@ -264,7 +264,7 @@ export default function AdminOrderDetailPage({
                             [item.id]: { ...rowState, quantity: e.target.value },
                           }))
                         }
-                        className="w-16 rounded-sm border border-border bg-background px-2 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        className="w-16 rounded-pill border border-border bg-background px-3 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                       />
                       <input
                         placeholder="Return reason"
@@ -275,7 +275,7 @@ export default function AdminOrderDetailPage({
                             [item.id]: { ...rowState, reason: e.target.value },
                           }))
                         }
-                        className="rounded-sm border border-border bg-background px-2 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        className="rounded-pill border border-border bg-background px-3 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                       />
                       <button
                         type="button"
@@ -292,7 +292,7 @@ export default function AdminOrderDetailPage({
                             load();
                           })
                         }
-                        className="rounded-sm border border-border px-2 py-1 text-xs font-semibold transition-colors hover:border-accent hover:text-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        className="rounded-2xl border border-border px-2 py-1 text-xs font-semibold transition-colors hover:border-accent hover:text-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                       >
                         Record return
                       </button>
@@ -332,13 +332,13 @@ export default function AdminOrderDetailPage({
                     placeholder="Amount (minor units)"
                     value={refundAmount}
                     onChange={(e) => setRefundAmount(e.target.value)}
-                    className="w-40 rounded-sm border border-border bg-background px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="w-40 rounded-pill border border-border bg-background px-3 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   />
                   <input
                     placeholder="Reason"
                     value={refundReason}
                     onChange={(e) => setRefundReason(e.target.value)}
-                    className="rounded-sm border border-border bg-background px-2 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="rounded-pill border border-border bg-background px-3 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   />
                   <button
                     type="button"
@@ -358,7 +358,7 @@ export default function AdminOrderDetailPage({
                         load();
                       })
                     }
-                    className="rounded-sm bg-ink px-3 py-1 text-sm font-semibold text-white uppercase transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="rounded-pill bg-ink px-3 py-1 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
                     Refund
                   </button>

@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { PRIMARY_NAV, SITE } from "@/config/site";
 import { useCart } from "@/lib/cart/CartProvider";
 
+/**
+ * The left sidebar (SiteSidebar, lg+ only) is the primary nav on desktop
+ * now, mirroring the DESIGN.md reference's icon rail. This header keeps
+ * only brand/search/cart at lg+, and falls back to its own text nav +
+ * cart icon below lg where the sidebar is hidden.
+ */
+
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -35,29 +42,29 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex items-center gap-2 rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <span aria-hidden className="text-xl text-accent">
             ✳
           </span>
-          <span className="font-display text-lg tracking-wide text-ink uppercase">
+          <span className="font-display text-lg tracking-tight text-ink">
             {SITE.brandName}
           </span>
         </Link>
 
         <nav
           aria-label="Primary"
-          className="hidden items-center gap-8 md:flex"
+          className="hidden items-center gap-8 md:flex lg:hidden"
         >
           {PRIMARY_NAV.map((item) => (
             <Link
               key={item.label}
               href={item.href}
-              className="text-sm font-semibold tracking-wide text-ink uppercase transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="text-sm font-medium tracking-tight text-ink transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               {item.label}
             </Link>
@@ -71,21 +78,21 @@ export function SiteHeader() {
             aria-controls={searchId}
             aria-label={isSearchOpen ? "Close search" : "Search"}
             onClick={() => setIsSearchOpen((open) => !open)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <SearchIcon />
           </button>
-          <span aria-hidden className="hidden h-5 w-px bg-border sm:inline-block" />
+          <span aria-hidden className="hidden h-5 w-px bg-border sm:inline-block lg:hidden" />
           <Link
             href="/cart"
             aria-label={`Shopping bag${itemCount > 0 ? `, ${itemCount} item${itemCount === 1 ? "" : "s"}` : ""}`}
-            className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:hidden"
           >
             <BagIcon />
             {itemCount > 0 && (
               <span
                 aria-hidden
-                className="absolute end-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-white"
+                className="absolute end-0.5 top-0.5 flex size-4 items-center justify-center rounded-pill bg-accent text-[10px] font-medium text-white shadow-accent"
               >
                 {itemCount > 9 ? "9+" : itemCount}
               </span>
@@ -94,7 +101,7 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm p-2 md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             aria-expanded={isMenuOpen}
             aria-controls={menuId}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
@@ -106,11 +113,11 @@ export function SiteHeader() {
       </div>
 
       {isSearchOpen && (
-        <div id={searchId} className="border-t border-border bg-surface px-4 py-3 sm:px-6 lg:px-8">
+        <div id={searchId} className="border-t border-border bg-background px-4 py-3 sm:px-6 lg:px-8">
           <form
             role="search"
             onSubmit={submitSearch}
-            className="mx-auto flex max-w-[1440px] gap-2"
+            className="mx-auto flex max-w-[1440px] items-center gap-1 rounded-pill border border-border bg-surface p-1 pl-4 shadow-soft"
           >
             <label htmlFor={`${searchId}-input`} className="sr-only">
               Search phone cases
@@ -122,13 +129,14 @@ export function SiteHeader() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search phone cases…"
-              className="w-full rounded-sm border border-border bg-background px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted-foreground"
             />
             <button
               type="submit"
-              className="rounded-sm bg-ink px-4 py-2 text-sm font-semibold text-white uppercase hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              aria-label="Search"
+              className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-accent text-white shadow-accent transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              Search
+              <SearchIcon />
             </button>
           </form>
         </div>
@@ -140,7 +148,7 @@ export function SiteHeader() {
         // menu's links out of both the tab order and the a11y tree —
         // collapsing height alone still leaves them keyboard-focusable.
         inert={!isMenuOpen}
-        className={`grid overflow-hidden border-t border-border transition-[grid-template-rows] duration-300 ease-out md:hidden ${
+        className={`grid overflow-hidden border-t border-border transition-[grid-template-rows] duration-300 ease-out lg:hidden ${
           isMenuOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
@@ -154,7 +162,7 @@ export function SiteHeader() {
                 key={item.label}
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
-                className="min-h-11 rounded-sm px-2 py-3 text-sm font-semibold tracking-wide text-ink uppercase hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="min-h-11 rounded-pill px-3 py-3 text-sm font-medium tracking-tight text-ink hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {item.label}
               </Link>
