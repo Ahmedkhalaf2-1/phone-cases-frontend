@@ -16,8 +16,10 @@ export function VariantPicker({
 }) {
   const modelId = useId();
   const caseTypeId = useId();
+  const noteId = useId();
   const { addItem, error: cartError } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [itemNote, setItemNote] = useState("");
   const [status, setStatus] = useState<"idle" | "adding" | "added" | "error">("idle");
 
   const models = useMemo(() => {
@@ -161,6 +163,33 @@ export function VariantPicker({
         </div>
       )}
 
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor={noteId}
+          className="flex items-center justify-between text-sm font-medium tracking-tight text-ink max-w-xs"
+        >
+          <span>Note / Instructions (optional)</span>
+          <span className="text-xs font-normal text-muted-foreground" dir="rtl">
+            ملاحظات خاصة (اختياري)
+          </span>
+        </label>
+        <textarea
+          id={noteId}
+          dir="auto"
+          rows={2}
+          maxLength={500}
+          value={itemNote}
+          onChange={(e) => setItemNote(e.target.value)}
+          placeholder="e.g. Add name 'Ahmed' on the back / مثال: اكتب اسم أحمد على الجراب"
+          className="w-full max-w-xs rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-ink placeholder:text-muted-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y"
+        />
+        <div className="flex justify-end max-w-xs">
+          <span className="text-[11px] text-muted-foreground">
+            {itemNote.length} / 500
+          </span>
+        </div>
+      </div>
+
       {selectedVariant ? (
         <div>
           <p className="font-display text-3xl text-ink">
@@ -247,7 +276,11 @@ export function VariantPicker({
           if (!canAddToCart || !selectedVariant) return;
           setStatus("adding");
           try {
-            await addItem(selectedVariant.id, quantity);
+            await addItem(
+              selectedVariant.id,
+              quantity,
+              itemNote.trim() || undefined,
+            );
             setStatus("added");
           } catch {
             // cartError (from context) already carries the message; just

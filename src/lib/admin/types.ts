@@ -58,6 +58,7 @@ export interface AdminOrderItem {
   lineDiscount: number;
   bundleDiscount: number;
   lineTotal: number;
+  note?: string | null;
   createdAt: string;
   returns: { id: string; quantity: number; reason: string }[];
 }

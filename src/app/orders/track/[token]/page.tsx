@@ -191,6 +191,11 @@ export default function OrderTrackingPage({
                             .join(" · ")}{" "}
                           × {item.quantity}
                         </p>
+                        {item.note && (
+                          <p className="mt-1 text-xs text-ink/80 italic whitespace-pre-wrap" dir="auto">
+                            Note: {item.note}
+                          </p>
+                        )}
                       </div>
                       <p className="font-semibold text-ink">
                         {formatPrice(item.lineTotal, order.currency)}

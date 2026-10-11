@@ -258,6 +258,11 @@ export default function AdminOrderDetailPage({
                       {returnedQty > 0 && (
                         <span className="text-muted-foreground"> ({returnedQty} returned)</span>
                       )}
+                      {item.note && (
+                        <span className="mt-1 block rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900 whitespace-pre-wrap" dir="auto">
+                          Item Note: {item.note}
+                        </span>
+                      )}
                     </span>
                     <span>{formatPrice(item.lineTotal, order.currency)}</span>
                   </div>

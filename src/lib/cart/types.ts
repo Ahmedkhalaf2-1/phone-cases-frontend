@@ -41,6 +41,7 @@ export interface CartItemView {
   isAvailable: boolean;
   unavailableReason?: string;
   bundleDiscount: number;
+  note?: string | null;
 }
 
 export interface CartView {
@@ -125,6 +126,7 @@ export interface GuestOrderItemView {
   lineDiscount: number;
   bundleDiscount: number;
   lineTotal: number;
+  note?: string | null;
 }
 
 export interface GuestOrderView {

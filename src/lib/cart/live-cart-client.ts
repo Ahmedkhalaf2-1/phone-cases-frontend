@@ -25,7 +25,7 @@ export const liveCartClient = {
 
   addItem(
     token: string,
-    input: { variantId: string; quantity: number },
+    input: { variantId: string; quantity: number; note?: string },
   ): Promise<CartView> {
     return apiRequest<CartView>("/cart/items", {
       method: "POST",

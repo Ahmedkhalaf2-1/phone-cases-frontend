@@ -35,7 +35,7 @@ interface CartContextValue {
   token: string | null;
   itemCount: number;
   /** Throws on failure — callers must not report success without awaiting this. */
-  addItem: (variantId: string, quantity: number) => Promise<void>;
+  addItem: (variantId: string, quantity: number, note?: string) => Promise<void>;
   updateItemQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   replaceVariant: (itemId: string, newVariantId: string) => Promise<void>;
@@ -138,8 +138,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addItem = useCallback(
-    (variantId: string, quantity: number) =>
-      run((t) => cartClient.addItem(t, { variantId, quantity })),
+    (variantId: string, quantity: number, note?: string) =>
+      run((t) => cartClient.addItem(t, { variantId, quantity, note })),
     [run],
   );
 

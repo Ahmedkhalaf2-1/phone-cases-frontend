@@ -45,7 +45,7 @@ const DEMO_SHIPPING_RATES: Record<string, ShippingOption> = {
 };
 
 interface DemoCartState {
-  items: { id: string; variantId: string; quantity: number }[];
+  items: { id: string; variantId: string; quantity: number; note?: string | null }[];
   couponCode: string | null;
 }
 
@@ -92,6 +92,7 @@ function buildCartView(state: DemoCartState): CartView {
         isAvailable: false,
         unavailableReason: "No longer sold",
         bundleDiscount: 0,
+        note: entry.note ?? null,
       };
     }
     const { product, variant } = found;
@@ -117,6 +118,7 @@ function buildCartView(state: DemoCartState): CartView {
       isAvailable: variant.isAvailable,
       unavailableReason: variant.isAvailable ? undefined : "Out of stock",
       bundleDiscount: 0,
+      note: entry.note ?? null,
     };
   });
 
@@ -166,10 +168,13 @@ export const demoCartClient = {
 
   async addItem(
     _token: string,
-    input: { variantId: string; quantity: number },
+    input: { variantId: string; quantity: number; note?: string },
   ): Promise<CartView> {
     const state = readState();
-    const existing = state.items.find((i) => i.variantId === input.variantId);
+    const cleanNote = input.note?.trim() || null;
+    const existing = state.items.find(
+      (i) => i.variantId === input.variantId && (i.note ?? null) === cleanNote,
+    );
     if (existing) {
       existing.quantity = Math.min(20, existing.quantity + input.quantity);
     } else {
@@ -177,6 +182,7 @@ export const demoCartClient = {
         id: `demo-item-${crypto.randomUUID()}`,
         variantId: input.variantId,
         quantity: Math.min(20, input.quantity),
+        note: cleanNote,
       });
     }
     writeState(state);
@@ -353,6 +359,7 @@ export const demoCartClient = {
         lineDiscount: 0,
         bundleDiscount: 0,
         lineTotal: item.lineSubtotal,
+        note: item.note ?? null,
       })),
       createdAt: new Date().toISOString(),
     };
