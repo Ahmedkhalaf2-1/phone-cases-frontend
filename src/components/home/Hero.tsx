@@ -1,95 +1,50 @@
 import Link from "next/link";
-import { SITE } from "@/config/site";
 import type { PublicProductSummary } from "@/lib/api/types";
 import type { DemoProduct } from "@/lib/demo/products.demo";
 import type { MoodCollection } from "@/lib/demo/collections.demo";
 
 /**
- * TEMPORARY ASSET — used only for products with no real photography yet
- * (see FeaturedProducts/ProductCard for the same fallback pattern). Not
- * a claim that a separate production asset exists.
+ * Fallback poster image while the video loads or if video is unavailable.
  */
-const FALLBACK_IMAGE = "/temp-reference/hero-collage.webp";
-
-/**
- * Floating, slightly overlapping "constellation" of product cards above
- * the centered wordmark + search, matching the DESIGN.md hero reference.
- * Rotation/offset per card is fixed (not randomized) so server and
- * client render identically.
- */
-const CARD_LAYOUT = [
-  { rotate: -6, translateY: 8, size: "w-20 sm:w-32 md:w-40" },
-  { rotate: 4, translateY: -10, size: "w-24 sm:w-40 md:w-52" },
-  { rotate: -3, translateY: 14, size: "w-16 sm:w-28 md:w-36" },
-];
+const POSTER_IMAGE = "/temp-reference/hero-collage.webp";
 
 export function Hero({
-  products,
   collections,
+  videoSrc = "/hero-video.mp4",
 }: {
-  products: (PublicProductSummary | DemoProduct)[];
+  products?: (PublicProductSummary | DemoProduct)[];
   collections: MoodCollection[];
+  videoSrc?: string;
 }) {
-  const cards = CARD_LAYOUT.map((layout, index) => ({
-    ...layout,
-    product: products[index],
-  })).filter((c) => c.product);
-
   return (
-    <section className="mx-auto max-w-[1200px] overflow-x-hidden px-4 pt-10 pb-6 sm:px-6 sm:pt-16 lg:px-8">
-      {cards.length > 0 && (
-        <div className="mb-6 flex animate-rise-in items-end justify-center gap-2 sm:mb-10 sm:gap-4 md:gap-6">
-          {cards.map(({ product, rotate, translateY, size }, index) => (
-            <Link
-              key={product!.id}
-              href={`/products/${product!.slug}`}
-              style={{
-                transform: `rotate(${rotate}deg) translateY(${translateY}px)`,
-              }}
-              className={`${size} shrink-0 overflow-hidden rounded-card bg-surface shadow-card transition-transform duration-300 ease-out hover:-translate-y-1 hover:rotate-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent ${
-                index === 1 ? "z-10" : "z-0"
-              }`}
-            >
-              <div className="aspect-square overflow-hidden rounded-card-inner m-2 bg-surface">
-                {product!.primaryImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={product!.primaryImage.url}
-                    alt=""
-                    aria-hidden
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={FALLBACK_IMAGE}
-                    alt=""
-                    aria-hidden
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+    <section className="w-full pb-8">
+      {/* 1. Full-Width 16:9 Video Banner (Edge to Edge) */}
+      <div className="relative aspect-video w-full overflow-hidden bg-neutral-950 shadow-md">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster={POSTER_IMAGE}
+          className="h-full w-full object-cover"
+        >
+          <source src={videoSrc} type="video/mp4" />
+        </video>
+      </div>
 
-      <div className="animate-rise-in text-center [animation-delay:80ms]">
-        <h1 className="font-display text-[clamp(2.75rem,10vw,5.5rem)] leading-[0.95] tracking-tighter text-ink">
-          {SITE.brandName.toLowerCase()}
-          <span aria-hidden className="text-accent">
-            .
-          </span>
-        </h1>
-        <p className="mx-auto mt-3 max-w-md text-base text-muted-foreground sm:text-lg">
+      {/* 2. Clean Search & Collections below the video */}
+      <div className="mx-auto mt-8 flex max-w-[1200px] flex-col items-center px-4 text-center sm:px-6 lg:px-8 animate-rise-in">
+        <p className="mb-4 text-xs font-semibold tracking-widest uppercase text-muted-foreground">
           A design you choose. A style you own.
         </p>
 
+        {/* Clean Search Bar */}
         <form
           action="/phone-cases"
           method="GET"
           role="search"
-          className="mx-auto mt-6 flex max-w-lg items-center gap-1 rounded-pill border border-border bg-surface p-1 pl-5 shadow-soft"
+          className="flex w-full max-w-md items-center gap-1 rounded-pill border border-border bg-surface p-1.5 pl-5 shadow-soft transition-all focus-within:border-accent focus-within:bg-white focus-within:shadow-md"
         >
           <label htmlFor="hero-search" className="sr-only">
             What are you shopping for today?
@@ -104,7 +59,7 @@ export function Hero({
           <button
             type="submit"
             aria-label="Search"
-            className="flex size-11 shrink-0 items-center justify-center rounded-pill bg-accent text-white shadow-accent transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex size-10 shrink-0 items-center justify-center rounded-pill bg-accent text-white shadow-accent transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path
@@ -118,25 +73,26 @@ export function Hero({
           </button>
         </form>
 
+        {/* Collections Tags - Clean layout */}
         {collections.length > 0 && (
           <nav
             aria-label="Shop by mood"
-            className="mx-auto mt-5 flex max-w-2xl flex-wrap items-center justify-center gap-2"
+            className="mt-6 flex max-w-4xl flex-wrap items-center justify-center gap-2"
           >
-            {collections.map((collection) => (
+            {collections.slice(0, 10).map((collection) => (
               <Link
                 key={collection.id}
                 href={`/phone-cases?collection=${collection.slug}`}
-                className="rounded-pill border border-border bg-surface px-4 py-2 text-sm font-medium tracking-tight text-ink shadow-soft transition-colors hover:border-accent hover:text-accent"
+                className="rounded-pill border border-border bg-surface px-4 py-2 text-xs font-medium tracking-tight text-ink shadow-soft transition-colors hover:border-accent hover:text-accent sm:text-sm"
               >
                 {collection.name}
               </Link>
             ))}
             <Link
               href="/phone-cases"
-              className="rounded-pill bg-ink px-4 py-2 text-sm font-medium tracking-tight text-white shadow-soft transition-colors hover:bg-accent"
+              className="rounded-pill bg-ink px-4 py-2 text-xs font-medium tracking-tight text-white shadow-soft transition-colors hover:bg-accent sm:text-sm"
             >
-              Shop all →
+              Shop all ({collections.length}) →
             </Link>
           </nav>
         )}

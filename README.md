@@ -27,8 +27,7 @@ Set in `.env.local` (never committed — see `.gitignore`):
 
 - `NEXT_PUBLIC_API_BASE_URL` — base URL of `phone-cases-backend`'s public
   API, **including** the `/api/v1` prefix, e.g.
-  `http://192.168.1.7:3010/api/v1` for a backend on another machine on the
-  local network, or `http://localhost:3010/api/v1` for one running
+  `http://127.0.0.1:3010/api/v1` for a backend running in the local VM or
   locally.
 - `NEXT_PUBLIC_DEMO_MODE` — `true` (default) renders the storefront with
   local, clearly-labeled fixture data instead of calling the backend.

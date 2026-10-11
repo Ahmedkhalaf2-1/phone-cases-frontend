@@ -34,11 +34,18 @@ export function VariantPicker({
   // rather than rendering empty selects that can never match a variant.
   const isAccessory = models.length === 0;
 
-  const [selectedModelSlug, setSelectedModelSlug] = useState(
-    models[0]?.slug ?? "",
-  );
+  const allCaseTypes = useMemo(() => {
+    const seen = new Map<string, PublicVariant["caseType"]>();
+    for (const variant of variants) {
+      if (variant.caseType) seen.set(variant.caseType.slug, variant.caseType);
+    }
+    return Array.from(seen.values());
+  }, [variants]);
+
+  const [selectedModelSlug, setSelectedModelSlug] = useState("");
 
   const caseTypesForModel = useMemo(() => {
+    if (!selectedModelSlug) return [];
     const seen = new Map<string, PublicVariant["caseType"]>();
     for (const variant of variants) {
       if (variant.phoneModel?.slug === selectedModelSlug && variant.caseType) {
@@ -48,23 +55,40 @@ export function VariantPicker({
     return Array.from(seen.values());
   }, [variants, selectedModelSlug]);
 
-  const [selectedCaseTypeSlug, setSelectedCaseTypeSlug] = useState(
-    caseTypesForModel[0]?.slug ?? "",
-  );
+  const [selectedCaseTypeSlug, setSelectedCaseTypeSlug] = useState("");
 
   const activeCaseTypeSlug = caseTypesForModel.some(
     (c) => c?.slug === selectedCaseTypeSlug,
   )
     ? selectedCaseTypeSlug
-    : (caseTypesForModel[0]?.slug ?? "");
+    : "";
+
+  const isSelectionComplete =
+    isAccessory ||
+    (Boolean(selectedModelSlug) &&
+      (caseTypesForModel.length === 0 || Boolean(activeCaseTypeSlug)));
 
   const selectedVariant = isAccessory
     ? variants[0]
-    : variants.find(
-        (variant) =>
-          variant.phoneModel?.slug === selectedModelSlug &&
-          variant.caseType?.slug === activeCaseTypeSlug,
-      );
+    : isSelectionComplete
+      ? variants.find(
+          (variant) =>
+            variant.phoneModel?.slug === selectedModelSlug &&
+            (caseTypesForModel.length === 0 ||
+              variant.caseType?.slug === activeCaseTypeSlug),
+        )
+      : undefined;
+
+  const minPrice = useMemo(() => {
+    if (variants.length === 0) return 0;
+    return Math.min(...variants.map((v) => v.price));
+  }, [variants]);
+
+  const currency = variants[0]?.currency ?? "EGP";
+
+  const canAddToCart = Boolean(
+    isSelectionComplete && selectedVariant?.isAvailable && status !== "adding",
+  );
 
   useEffect(() => {
     onVariantChange?.(selectedVariant);
@@ -92,6 +116,7 @@ export function VariantPicker({
             }}
             className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
+            <option value="">Select phone model</option>
             {models.map((model) =>
               model ? (
                 <option key={model.slug} value={model.slug}>
@@ -103,7 +128,7 @@ export function VariantPicker({
         </div>
       )}
 
-      {!isAccessory && caseTypesForModel.length > 0 && (
+      {!isAccessory && allCaseTypes.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor={caseTypeId}
@@ -113,10 +138,18 @@ export function VariantPicker({
           </label>
           <select
             id={caseTypeId}
+            disabled={!selectedModelSlug}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
-            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
+            <option value="">
+              {!selectedModelSlug
+                ? "Select phone model first"
+                : caseTypesForModel.length === 0
+                ? "No case types available"
+                : "Select case type"}
+            </option>
             {caseTypesForModel.map((caseType) =>
               caseType ? (
                 <option key={caseType.slug} value={caseType.slug}>
@@ -147,6 +180,18 @@ export function VariantPicker({
             }`}
           >
             {selectedVariant.isAvailable ? "In stock" : "Out of stock"}
+          </p>
+        </div>
+      ) : !isSelectionComplete ? (
+        <div>
+          <p className="font-display text-3xl text-ink">
+            <span className="text-lg font-normal text-muted-foreground">From </span>
+            {formatPrice(minPrice, currency)}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {!selectedModelSlug
+              ? "Select your phone model to check availability and options."
+              : "Select your case type to continue."}
           </p>
         </div>
       ) : (
@@ -197,9 +242,9 @@ export function VariantPicker({
 
       <button
         type="button"
-        disabled={!selectedVariant?.isAvailable || status === "adding"}
+        disabled={!canAddToCart}
         onClick={async () => {
-          if (!selectedVariant) return;
+          if (!canAddToCart || !selectedVariant) return;
           setStatus("adding");
           try {
             await addItem(selectedVariant.id, quantity);
@@ -211,14 +256,34 @@ export function VariantPicker({
           }
         }}
         title={
-          !selectedVariant?.isAvailable
+          !isAccessory && !selectedModelSlug
+            ? "Please select a phone model first"
+            : !isAccessory && !activeCaseTypeSlug && caseTypesForModel.length > 0
+            ? "Please select a case type first"
+            : selectedVariant && !selectedVariant.isAvailable
             ? "This combination is out of stock"
             : undefined
         }
         className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
       >
-        {status === "adding" ? "Adding…" : "Add to cart"}
+        {status === "adding"
+          ? "Adding…"
+          : !isAccessory && !selectedModelSlug
+          ? "Select phone model"
+          : !isAccessory && !activeCaseTypeSlug && caseTypesForModel.length > 0
+          ? "Select case type"
+          : selectedVariant && !selectedVariant.isAvailable
+          ? "Out of stock"
+          : "Add to cart"}
       </button>
+
+      {!isSelectionComplete && (
+        <p className="text-xs text-muted-foreground">
+          {!selectedModelSlug
+            ? "Please select your phone model to continue."
+            : "Please select your case type to continue."}
+        </p>
+      )}
 
       {status === "added" && !cartError && (
         <p className="text-sm text-ink">

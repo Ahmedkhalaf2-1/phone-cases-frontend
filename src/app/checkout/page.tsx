@@ -102,6 +102,8 @@ export default function CheckoutPage() {
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [customerNote, setCustomerNote] = useState("");
+  const [customerNoteError, setCustomerNoteError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] =
     useState<OrderPaymentMethod>("CASH_ON_DELIVERY");
   const [receiptId, setReceiptId] = useState<string | null>(null);
@@ -196,6 +198,7 @@ export default function CheckoutPage() {
   }
 
   function buildOrderPayload(expectedTotal: number) {
+    const trimmedNote = customerNote.trim();
     return {
       customerFullName: fullName,
       customerEmail: email || undefined,
@@ -209,16 +212,22 @@ export default function CheckoutPage() {
       expectedTotal,
       paymentMethod,
       receiptId: paymentMethod === "INSTAPAY_MANUAL" ? (receiptId ?? undefined) : undefined,
+      customerNote: trimmedNote ? trimmedNote : undefined,
     };
   }
 
   async function submitOrder(expectedTotal: number) {
     if (!token) return;
+    if (customerNote.trim().length > 1000) {
+      setCustomerNoteError("customerNote must not exceed 1000 characters");
+      return;
+    }
     const payload = buildOrderPayload(expectedTotal);
     const idempotencyKey = getOrCreateIdempotencyKey(token, payload);
 
     setIsSubmitting(true);
     setSubmitError(null);
+    setCustomerNoteError(null);
     try {
       const order = await cartClient.createOrder(token, { idempotencyKey, ...payload });
       // Order is placed — this is the point of no return for "success".
@@ -236,7 +245,13 @@ export default function CheckoutPage() {
       });
       router.push(`/orders/track/${order.trackingToken}?justPlaced=1`);
     } catch (err) {
-      if (err instanceof ApiError && err.code === "PRICE_CHANGED") {
+      if (
+        err instanceof ApiError &&
+        err.status === 400 &&
+        err.message.includes("customerNote")
+      ) {
+        setCustomerNoteError(err.message);
+      } else if (err instanceof ApiError && err.code === "PRICE_CHANGED") {
         const details = err.details as
           | { subtotal: number; discountTotal: number; shippingTotal: number; total: number; currency: string }
           | undefined;
@@ -441,6 +456,43 @@ export default function CheckoutPage() {
                     className={inputClass}
                   />
                 </Field>
+                <Field
+                  label={
+                    <span className="flex items-center justify-between">
+                      <span>Order notes (optional)</span>
+                      <span className="text-xs font-normal text-muted-foreground" dir="rtl">
+                        ملاحظات على الطلب (اختياري)
+                      </span>
+                    </span>
+                  }
+                  htmlFor={`${formId}-note`}
+                >
+                  <textarea
+                    id={`${formId}-note`}
+                    dir="auto"
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="e.g. Call me before delivery / مثال: اتصل بي قبل التوصيل"
+                    value={customerNote}
+                    onChange={(e) => {
+                      setCustomerNote(e.target.value);
+                      if (customerNoteError) setCustomerNoteError(null);
+                    }}
+                    className={`${textareaClass} ${
+                      customerNoteError ? "border-accent ring-1 ring-accent" : ""
+                    }`}
+                  />
+                  <div className="flex items-center justify-between text-xs">
+                    {customerNoteError ? (
+                      <span className="text-accent">{customerNoteError}</span>
+                    ) : (
+                      <span />
+                    )}
+                    <span className="text-muted-foreground ms-auto">
+                      {customerNote.length} / 1000
+                    </span>
+                  </div>
+                </Field>
               </fieldset>
 
               <fieldset className="flex flex-col gap-3">
@@ -588,12 +640,15 @@ export default function CheckoutPage() {
 const inputClass =
   "w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
+const textareaClass =
+  "w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y";
+
 function Field({
   label,
   htmlFor,
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   htmlFor: string;
   children: React.ReactNode;
 }) {

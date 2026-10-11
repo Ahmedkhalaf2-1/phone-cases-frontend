@@ -104,6 +104,7 @@ export interface CreateOrderInput {
   expectedTotal: number;
   paymentMethod: OrderPaymentMethod;
   receiptId?: string;
+  customerNote?: string;
 }
 
 export interface OrderReceiptView {
@@ -150,6 +151,7 @@ export interface GuestOrderView {
     addressLine2: string | null;
     postalCode: string | null;
   };
+  customerNote: string | null;
   items: GuestOrderItemView[];
   createdAt: string;
 }

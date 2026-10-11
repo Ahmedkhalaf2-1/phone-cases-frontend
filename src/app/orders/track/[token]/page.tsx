@@ -221,6 +221,16 @@ export default function OrderTrackingPage({
                   <p className="text-sm text-muted-foreground">
                     {order.shippingRateName}
                   </p>
+                  {order.customerNote && (
+                    <div className="border-t border-border pt-3">
+                      <h3 className="font-display text-sm tracking-tight text-ink uppercase">
+                        Order notes
+                      </h3>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-ink/90" dir="auto">
+                        {order.customerNote}
+                      </p>
+                    </div>
+                  )}
                   <dl className="mt-2 flex flex-col gap-1 border-t border-border pt-3 text-sm">
                     <div className="flex justify-between">
                       <dt className="text-muted-foreground">Subtotal</dt>

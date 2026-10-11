@@ -80,6 +80,17 @@ export default function AdminOrderDetailPage({
         <StatusBadge status={order.paymentStatus} />
       </div>
 
+      {order.customerNote && (
+        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50/80 p-4 shadow-soft">
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-900">
+            Customer Note
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-amber-950" dir="auto">
+            {order.customerNote}
+          </p>
+        </div>
+      )}
+
       {actionError && <p className="mt-3 text-sm text-accent">{actionError}</p>}
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2">

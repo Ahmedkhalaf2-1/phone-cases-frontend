@@ -297,6 +297,10 @@ export const demoCartClient = {
       );
     }
 
+    if (input.customerNote && input.customerNote.trim().length > 1000) {
+      throw new ApiError("customerNote must not exceed 1000 characters", 400);
+    }
+
     const shippingTotal =
       rate.freeShippingThreshold !== null && cart.total >= rate.freeShippingThreshold
         ? 0
@@ -337,6 +341,7 @@ export const demoCartClient = {
         addressLine2: input.shippingAddressLine2 ?? null,
         postalCode: input.shippingPostalCode ?? null,
       },
+      customerNote: input.customerNote?.trim() ? input.customerNote.trim() : null,
       items: cart.items.map((item) => ({
         sku: item.sku,
         productName: item.productName,

@@ -98,6 +98,7 @@ export interface AdminOrder {
   customerFullName: string;
   customerEmail: string | null;
   customerPhone: string;
+  customerNote: string | null;
   shippingCountry: string;
   shippingCity: string;
   shippingAddressLine1: string;
