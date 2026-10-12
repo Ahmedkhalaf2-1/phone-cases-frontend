@@ -16,9 +16,20 @@ export function HeroVideo({ src, mobileSrc }: { src: string; mobileSrc?: string 
     const video = videoRef.current;
     if (!video) return;
 
+    // iOS Safari / Brave only allow autoplay for video that is muted and
+    // inline at the moment play() runs — set both as properties *and*
+    // attributes, since some engines check one and some the other.
+    const ensureMutedInline = () => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.setAttribute("muted", "");
+      video.setAttribute("playsinline", "");
+    };
+
     const tryPlay = () => {
       if (!video.paused) return;
-      video.muted = true;
+      ensureMutedInline();
       video.play().catch(() => {
         // Blocked by browser policy — leave it stopped.
       });
