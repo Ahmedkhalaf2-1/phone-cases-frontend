@@ -6,14 +6,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const AUTO_SPEED = 32;
 /** How long the rail stays still after the visitor touches, wheels or clicks it. */
 const RESUME_DELAY_MS = 3000;
+/** Auto-slide only from Tailwind's `sm` breakpoint up; phones swipe manually. */
+const AUTO_SLIDE_QUERY = "(min-width: 640px)";
 
 /**
  * Horizontal rail that slowly slides its cards on its own, in a seamless
  * loop (the cards are rendered twice and the scroll position wraps).
  *
  * The slide pauses on hover, keyboard focus, touch, wheel and arrow
- * clicks, and never starts when the visitor prefers reduced motion or the
- * cards already fit. Paused, it behaves like a normal scroll-snap rail.
+ * clicks, and never starts on phones (below Tailwind's `sm`), when the
+ * visitor prefers reduced motion, or when the cards already fit. Without
+ * the slide it's a normal swipeable scroll-snap rail.
  */
 export function ProductRail({
   label,
@@ -55,14 +58,15 @@ export function ProductRail({
     };
   }, [update]);
 
-  // Turn the loop on only when the single set of cards overflows and the
-  // visitor hasn't asked for reduced motion.
+  // Turn the loop on only when the single set of cards overflows, the
+  // screen is at least `sm`, and the visitor hasn't asked for reduced motion.
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const wide = window.matchMedia(AUTO_SLIDE_QUERY);
     const evaluate = () => {
-      if (motion.matches) return setLoops(false);
+      if (motion.matches || !wide.matches) return setLoops(false);
       // Once looping, the track holds two copies; judge by half of it.
       setLoops((current) =>
         current ? true : el.scrollWidth > el.clientWidth + 4,
@@ -70,7 +74,11 @@ export function ProductRail({
     };
     evaluate();
     motion.addEventListener("change", evaluate);
-    return () => motion.removeEventListener("change", evaluate);
+    wide.addEventListener("change", evaluate);
+    return () => {
+      motion.removeEventListener("change", evaluate);
+      wide.removeEventListener("change", evaluate);
+    };
   }, []);
 
   const shouldSlide = useCallback(
