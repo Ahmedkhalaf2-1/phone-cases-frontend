@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { VariantPicker } from "@/components/catalog/VariantPicker";
-import type { PublicProductDetail } from "@/lib/api/types";
+import type { PublicProductDetail, PublicVariant } from "@/lib/api/types";
 import type { DemoProduct } from "@/lib/demo/products.demo";
 
 /**
@@ -96,6 +96,19 @@ export function ProductGallery({
               </Link>
             ))}
           </div>
+        )}
+
+        {(product.variants as PublicVariant[]).some((v) => v.isPersonalizable) && (
+          <Link
+            href={`/customize?product=${product.slug}`}
+            className="mt-6 flex items-center justify-between gap-3 rounded-card border border-accent bg-accent-wash px-4 py-3 text-sm text-ink transition-colors hover:bg-accent hover:text-white"
+          >
+            <span>
+              <span className="block font-semibold">Personalize this case</span>
+              <span className="opacity-80">Upload your own photo and preview it</span>
+            </span>
+            <span aria-hidden>→</span>
+          </Link>
         )}
 
         <div className="mt-8">

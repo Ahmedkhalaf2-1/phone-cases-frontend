@@ -13,6 +13,7 @@ import { useCart } from "@/lib/cart/CartProvider";
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: HomeIcon, match: "home" as const },
   { href: "/collections", label: "Collections", icon: GridIcon, match: "prefix" as const },
+  { href: "/customize", label: "Design your case", icon: BrushIcon, match: "prefix" as const },
   { href: "/track", label: "Track order", icon: TagIcon, match: "prefix" as const },
 ];
 
@@ -115,6 +116,16 @@ function GridIcon() {
   );
 }
 
+
+function BrushIcon() {
+  return (
+    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" stroke="currentColor" strokeWidth={STROKE} />
+      <path d="M9.5 15.5l2-3 1.5 2 1-1.2 1.5 2.2" stroke="currentColor" strokeWidth={STROKE} strokeLinejoin="round" />
+      <circle cx="10.5" cy="8.5" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
 
 function TagIcon() {
   return (

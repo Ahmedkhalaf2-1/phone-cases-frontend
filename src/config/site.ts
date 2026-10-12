@@ -16,10 +16,20 @@ export interface NavLink {
   href: string;
 }
 
+/**
+ * The product /customize opens with when the customer arrives from the
+ * main nav (not from a specific product's "Personalize this case" link).
+ * It should be a blank case whose variants are marked personalizable in
+ * the admin. Override with NEXT_PUBLIC_CUSTOM_CASE_PRODUCT_SLUG.
+ */
+export const CUSTOM_CASE_PRODUCT_SLUG =
+  process.env.NEXT_PUBLIC_CUSTOM_CASE_PRODUCT_SLUG || "custom-case";
+
 /** Primary header navigation. */
 export const PRIMARY_NAV: NavLink[] = [
   { label: "New In", href: "/search?sort=newest" },
   { label: "Collections", href: "/collections" },
+  { label: "Design Your Case", href: "/customize" },
   { label: "Track Order", href: "/track" },
 ];
 

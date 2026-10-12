@@ -101,6 +101,14 @@ export default function CartPage() {
                               .filter(Boolean)
                               .join(" · ")}
                           </p>
+                          {(item.isPersonalized || item.customDesignId) && (
+                            <p className="mt-1 inline-block rounded-full bg-accent-wash px-2 py-0.5 text-xs font-semibold text-ink">
+                              Your own design
+                              {item.customizationPrice
+                                ? ` · includes ${formatPrice(item.customizationPrice, cart.currency)}`
+                                : ""}
+                            </p>
+                          )}
                           {item.note && (
                             <p className="mt-1 text-xs text-ink/80 italic whitespace-pre-wrap" dir="auto">
                               Note: {item.note}

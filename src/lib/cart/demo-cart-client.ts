@@ -168,7 +168,7 @@ export const demoCartClient = {
 
   async addItem(
     _token: string,
-    input: { variantId: string; quantity: number; note?: string },
+    input: { variantId: string; quantity: number; note?: string; customDesignId?: string },
   ): Promise<CartView> {
     const state = readState();
     const cleanNote = input.note?.trim() || null;

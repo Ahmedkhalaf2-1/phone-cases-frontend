@@ -118,7 +118,7 @@ export async function apiGet<T>(
 }
 
 export interface ApiRequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** JSON body — mutually exclusive with `formData`. */
   json?: unknown;
   /** multipart/form-data body — mutually exclusive with `json`. */

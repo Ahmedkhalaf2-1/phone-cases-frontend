@@ -191,6 +191,11 @@ export default function OrderTrackingPage({
                             .join(" · ")}{" "}
                           × {item.quantity}
                         </p>
+                        {item.hasCustomDesign && (
+                          <p className="mt-1 inline-block rounded-full bg-accent-wash px-2 py-0.5 text-xs font-semibold text-ink">
+                            Your own design
+                          </p>
+                        )}
                         {item.note && (
                           <p className="mt-1 text-xs text-ink/80 italic whitespace-pre-wrap" dir="auto">
                             Note: {item.note}

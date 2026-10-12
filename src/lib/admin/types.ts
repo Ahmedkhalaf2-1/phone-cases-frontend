@@ -59,8 +59,28 @@ export interface AdminOrderItem {
   bundleDiscount: number;
   lineTotal: number;
   note?: string | null;
+  customizationPrice?: number;
+  customDesign?: AdminOrderCustomDesign | null;
   createdAt: string;
   returns: { id: string; quantity: number; reason: string }[];
+}
+
+/** A customer-uploaded design on an order line. `files` are API paths that need staff auth. */
+export interface AdminOrderCustomDesign {
+  id: string;
+  fitMode: string;
+  original: { mimeType: string; sizeBytes: number; width: number; height: number };
+  print: {
+    widthPx: number;
+    heightPx: number;
+    dpi: number;
+    safeMarginPx: number | null;
+    outputFormat: string;
+    mimeType: string;
+    sizeBytes: number;
+  };
+  files: { original: string; print: string; preview: string };
+  designCreatedAt: string;
 }
 
 export interface AdminReceipt {
@@ -130,6 +150,10 @@ export interface AdminVariant {
   isUnlimitedStock: boolean;
   stockItemId: string | null;
   stockItem: StockItem | null;
+  /** Customers can upload their own image for this variant (/customize). */
+  isPersonalizable?: boolean;
+  /** Surcharge in minor units added when a custom design is attached. */
+  customizationPrice?: number;
 }
 
 export interface AdminProductCollectionRef {
@@ -219,10 +243,12 @@ export interface CreateVariantInput {
   phoneModelId?: string;
   caseTypeId?: string;
   price: number;
-  compareAtPrice?: number;
+  compareAtPrice?: number | null;
   isActive?: boolean;
   stockItemId?: string;
   isUnlimitedStock?: boolean;
+  isPersonalizable?: boolean;
+  customizationPrice?: number;
 }
 
 export interface CreateCouponInput {
@@ -524,6 +550,14 @@ export interface AdminCollection {
   descriptionAr: string | null;
   displayOrder: number;
   isActive: boolean;
+  /**
+   * Cover image. **Not in the live backend yet** — requested in
+   * docs/FRONTEND_PROGRESS.md ("Backend request: collection covers").
+   * Until it lands these are always absent and the admin/storefront fall
+   * back to the static covers in `src/config/collection-covers.ts`.
+   */
+  coverMediaAssetId?: string | null;
+  coverMediaAsset?: MediaAsset | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -536,4 +570,6 @@ export interface CreateCollectionInput {
   descriptionAr?: string;
   displayOrder?: number;
   isActive?: boolean;
+  /** See `AdminCollection.coverMediaAssetId`. `null` clears the cover. */
+  coverMediaAssetId?: string | null;
 }

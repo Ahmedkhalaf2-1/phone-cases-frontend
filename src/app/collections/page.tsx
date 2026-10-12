@@ -55,7 +55,7 @@ export default async function CollectionsPage() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tiles.map(({ collection, previews, total }) => {
-                const cover = getCollectionCover(collection.slug);
+                const cover = getCollectionCover(collection.slug, collection.coverImage);
                 return (
                   <Link
                     key={collection.id}

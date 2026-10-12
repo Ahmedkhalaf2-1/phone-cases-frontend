@@ -1,9 +1,10 @@
-import { apiRequest } from "@/lib/api/http";
+import { ApiError, apiRequest, buildApiUrl } from "@/lib/api/http";
 import type {
   CartView,
   CheckoutQuote,
   CreatedCart,
   CreateOrderInput,
+  CustomDesign,
   GuestOrderView,
   ShippingOption,
 } from "@/lib/cart/types";
@@ -25,7 +26,7 @@ export const liveCartClient = {
 
   addItem(
     token: string,
-    input: { variantId: string; quantity: number; note?: string },
+    input: { variantId: string; quantity: number; note?: string; customDesignId?: string },
   ): Promise<CartView> {
     return apiRequest<CartView>("/cart/items", {
       method: "POST",
@@ -78,6 +79,78 @@ export const liveCartClient = {
       method: "DELETE",
       headers: { "X-Cart-Token": token },
     });
+  },
+
+  /**
+   * Uploads a customer's image for a personalizable variant. Uses XHR
+   * rather than fetch because fetch can't report upload progress.
+   */
+  uploadCustomDesign(
+    token: string,
+    input: { file: File; variantId: string },
+    onProgress?: (fraction: number) => void,
+  ): Promise<CustomDesign> {
+    const url = buildApiUrl("/cart/custom-designs");
+    const formData = new FormData();
+    formData.append("file", input.file);
+    formData.append("variantId", input.variantId);
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.setRequestHeader("X-Cart-Token", token);
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+      };
+      xhr.onerror = () =>
+        reject(
+          new ApiError(
+            `Could not reach the API at ${url}. Is the backend running and reachable?`,
+            undefined,
+            undefined,
+            undefined,
+            "network",
+          ),
+        );
+      xhr.onload = () => {
+        let body: { message?: string | string[]; code?: string; details?: unknown } | null = null;
+        try {
+          body = JSON.parse(xhr.responseText);
+        } catch {
+          // Not JSON — handled below.
+        }
+        if (xhr.status >= 200 && xhr.status < 300 && body) {
+          resolve(body as unknown as CustomDesign);
+          return;
+        }
+        const message = Array.isArray(body?.message)
+          ? body.message.join(" ")
+          : body?.message ?? `Upload failed with status ${xhr.status}.`;
+        reject(new ApiError(message, xhr.status, body?.code, body?.details, "http"));
+      };
+      xhr.send(formData);
+    });
+  },
+
+  getCustomDesign(token: string, designId: string): Promise<CustomDesign> {
+    return apiRequest<CustomDesign>(`/cart/custom-designs/${designId}`, {
+      headers: { "X-Cart-Token": token },
+    });
+  },
+
+  /** The mockup JPEG. Needs the cart header, so it can't be an <img src>. */
+  async getCustomDesignPreview(token: string, designId: string): Promise<Blob> {
+    const url = buildApiUrl(`/cart/custom-designs/${designId}/preview`);
+    let response: Response;
+    try {
+      response = await fetch(url, { headers: { "X-Cart-Token": token } });
+    } catch {
+      throw new ApiError(`Could not reach the API at ${url}.`, undefined, undefined, undefined, "network");
+    }
+    if (!response.ok) {
+      throw new ApiError(`Could not load the preview (status ${response.status}).`, response.status);
+    }
+    return response.blob();
   },
 
   getShippingOptions(country: string): Promise<ShippingOption[]> {

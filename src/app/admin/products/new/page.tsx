@@ -1,15 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { use, useEffect, useId, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { MoneyInput } from "@/components/admin/MoneyInput";
 
-export default function NewProductPage() {
+export default function NewProductPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ collection?: string }>;
+}) {
+  const { collection: collectionId } = use(searchParams);
   const router = useRouter();
   const { accessToken, authorizedFetch } = useAdminAuth();
   const formId = useId();
+  const [collectionName, setCollectionName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessToken || !collectionId) return;
+    authorizedFetch((token) => adminClient.listCollectionsAdmin(token))
+      .then((all) => setCollectionName(all.find((c) => c.id === collectionId)?.nameEn ?? null))
+      .catch(() => {});
+  }, [accessToken, authorizedFetch, collectionId]);
 
   const [slug, setSlug] = useState("");
   const [nameEn, setNameEn] = useState("");
@@ -34,6 +47,18 @@ export default function NewProductPage() {
           basePrice: basePrice ?? undefined,
         }),
       );
+      if (collectionId) {
+        try {
+          await authorizedFetch((token) =>
+            adminClient.attachCollectionToProduct(token, product.id, collectionId),
+          );
+        } catch {
+          // The product exists either way; its page shows it isn't in a
+          // collection yet and can add it from there.
+        }
+        router.push(`/admin/products/${product.id}?collection=${collectionId}`);
+        return;
+      }
       router.push(`/admin/products/${product.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create product.");
@@ -46,6 +71,12 @@ export default function NewProductPage() {
       <h1 className="font-display text-3xl tracking-tight text-ink uppercase">
         New product
       </h1>
+      {collectionName && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Will be added to <strong className="text-ink">{collectionName}</strong>. Add images and prices on the next
+          screen.
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="mt-6 flex max-w-md flex-col gap-4">
         <Field label="Slug (kebab-case)" htmlFor={`${formId}-slug`}>
           <input

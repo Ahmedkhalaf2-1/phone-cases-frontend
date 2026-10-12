@@ -42,7 +42,7 @@ export default async function CollectionPage({
   if (!collection) notFound();
 
   const basePath = `/collections/${collection.slug}`;
-  const cover = getCollectionCover(collection.slug);
+  const cover = getCollectionCover(collection.slug, collection.coverImage);
 
   const [productList, phoneModelsResult, caseTypesResult] = await Promise.all([
     getProducts({ ...parseCatalogParams(query), collection: collection.slug }),

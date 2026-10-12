@@ -1,5 +1,53 @@
 # Frontend progress
 
+## Milestone 11 — image-first admin (collections, product media, sectioned product editor)
+
+- `/admin/catalog/collections` is a grid of cover cards with product
+  counts. Creating a collection opens its page right away.
+- New `/admin/catalog/collections/[id]` shows the large cover with
+  **Change cover image**, name/description editing, show/hide in shop,
+  and every product in the collection as image cards (price, status,
+  Edit). You can search and filter by status, add existing products
+  through a thumbnail picker, remove products, or start a **New product
+  here**, which attaches it to the collection on create.
+- `/admin/products` is now an image grid with search and filters for
+  status and collection.
+- `/admin/products/[id]` starts with a summary (thumbnail, name, price,
+  collections, Active / Draft / Hidden). Below it, the page is split into
+  Basic information · Pricing · Product images · Variants ·
+  Personalization · Inventory.
+  - Pricing edits every variant's price in one list and has "same
+    price for all". Clearing "Was" now sends `compareAtPrice: null`.
+  - Product images: a large main image and an ordered gallery with
+    Replace / Remove / Set as main / move left/right / drag-and-drop.
+- Every image upload in the admin previews first and shows the current
+  image next to the new one. Nothing uploads until you confirm.
+  Validation is client-side (JPG/PNG/WebP, 5 MB).
+- Status labels for staff: PUBLISHED → Active, DRAFT → Draft,
+  ARCHIVED → Hidden. API values are unchanged.
+
+### Backend follow-ups (shipped 2026-10-12, now used by the frontend)
+
+- **Media order:** `PUT /admin/media/products/:id/order` (`{ mediaAssetIds }`,
+  exact attached set, first = primary) is used for move / set as main /
+  replace / removing the main image. The detach-and-reattach workaround is gone.
+- **Collection covers:** `coverMediaAssetId` on collections. Admin responses
+  include `coverMediaAsset`, and public ones include `coverImage`. The
+  storefront prefers it over `src/config/collection-covers.ts`.
+- **Admin product list:** flattened `collections` + `media`, with filters
+  `collectionId` / `status` / `q`. The collection page loads its products
+  with `collectionId`. `catalog-store.ts` still holds the full list for the
+  picker and grids. Its public-list fallback only runs if items come back
+  incomplete.
+- **Personalization:** `isPersonalizable` / `customizationPrice` on variants
+  (admin form + `/customize`). The `custom-case` product (95 variants) opens
+  from the nav. Cart `unitPrice` already includes the surcharge.
+  Admin order items have `customDesign` with auth-only `files.{original,print,preview}`,
+  shown by `CustomDesignViewer`. Tracking has `hasCustomDesign`.
+- **Rate limit:** 120 requests/min per IP across the API (uploads 10/min).
+  Avoid per-product detail fan-out.
+- **Media URLs:** set `PUBLIC_BASE_URL` on the backend for non-localhost access.
+
 ## Milestone 10 — bounded 401 recovery, catalog/inventory admin, homepage CMS wiring
 
 Follow-up to a review that milestone 9's delivery (commit `488dcbf`)

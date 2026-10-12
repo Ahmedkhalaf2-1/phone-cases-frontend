@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           (c.description ?? "").toLowerCase().includes(needle),
       )
       .map((c) => {
-        const cover = getCollectionCover(c.slug);
+        const cover = getCollectionCover(c.slug, c.coverImage);
         return {
           slug: c.slug,
           name: c.name,

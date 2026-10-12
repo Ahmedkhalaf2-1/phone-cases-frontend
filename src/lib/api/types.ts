@@ -70,6 +70,8 @@ export interface Collection {
   slug: string;
   name: string;
   description: string | null;
+  /** Admin-uploaded cover — not returned by the backend yet (see collection-covers.ts). */
+  coverImage?: { url: string; altText: string | null } | null;
 }
 
 export interface CaseType {
@@ -100,6 +102,10 @@ export interface PublicVariant {
   currency: string;
   isAvailable: boolean;
   thumbnail: ApiImage | null;
+  /** The customer can upload their own image for this variant (see /customize). */
+  isPersonalizable?: boolean;
+  /** Surcharge (minor units) added to `price` when a custom design is attached. */
+  customizationPrice?: number;
   phoneModel: PublicVariantPhoneModel | null;
   caseType: PublicVariantCaseType | null;
 }

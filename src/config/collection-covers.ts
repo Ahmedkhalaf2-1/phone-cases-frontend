@@ -1,8 +1,10 @@
 /**
  * Collection cover images, keyed by collection slug.
  *
- * The backend `Collection` has no image field yet, so covers live here as
- * static files in `public/collections/`. Recommended size: 1600×1000
+ * Covers uploaded from the admin (`coverImage` on the backend collection)
+ * win; otherwise these static files in `public/collections/` are used.
+ * The backend field is requested in docs/FRONTEND_PROGRESS.md — until it
+ * ships, only the static files apply. Recommended size: 1600×1000
  * (16:10), WebP, keep the subject centred — the collection page banner is
  * wider (2:1) and trims the top/bottom. Covers with a title baked into the
  * top use `position: "top"` so only the bottom is trimmed.
@@ -43,6 +45,12 @@ const COLLECTION_COVERS: Record<string, CollectionCover> = {
   redbull: { src: "/collections/redbull.webp", position: "top" },
 };
 
-export function getCollectionCover(slug: string): CollectionCover | undefined {
+export function getCollectionCover(
+  slug: string,
+  coverImage?: { url: string } | null,
+): CollectionCover | undefined {
+  if (coverImage?.url) {
+    return { src: coverImage.url, position: COLLECTION_COVERS[slug]?.position ?? "center" };
+  }
   return COLLECTION_COVERS[slug];
 }

@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ReceiptViewer } from "@/components/admin/ReceiptViewer";
+import { CustomDesignViewer } from "@/components/admin/CustomDesignViewer";
 import type { AdminOrder, FulfillmentStatus, PaymentStatus } from "@/lib/admin/types";
 
 const FULFILLMENT_VALUES: FulfillmentStatus[] = [
@@ -266,6 +267,12 @@ export default function AdminOrderDetailPage({
                     </span>
                     <span>{formatPrice(item.lineTotal, order.currency)}</span>
                   </div>
+                  {item.customDesign && (
+                    <CustomDesignViewer
+                      design={item.customDesign}
+                      fileBaseName={`order-${order.sequenceNumber}-${item.variantSku}`}
+                    />
+                  )}
                   {isOwner && returnedQty < item.quantity && (
                     <div className="mt-1 flex flex-wrap gap-2">
                       <input

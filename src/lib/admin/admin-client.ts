@@ -165,7 +165,13 @@ export const adminClient = {
 
   listProducts(
     accessToken: string,
-    params: { page?: number; pageSize?: number } = {},
+    params: {
+      page?: number;
+      pageSize?: number;
+      collectionId?: string;
+      status?: ProductStatus;
+      q?: string;
+    } = {},
   ): Promise<AdminProductsResult> {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
@@ -174,6 +180,21 @@ export const adminClient = {
     return apiRequest<AdminProductsResult>(`/admin/products?${query.toString()}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+  },
+
+  /**
+   * Every product, walking all pages. The admin list endpoint has no
+   * collection filter, so collection pages filter this client-side.
+   */
+  async listAllProducts(accessToken: string): Promise<AdminProduct[]> {
+    const pageSize = 50;
+    const first = await adminClient.listProducts(accessToken, { page: 1, pageSize });
+    const items = [...first.items];
+    for (let page = 2; page <= first.meta.totalPages; page++) {
+      const next = await adminClient.listProducts(accessToken, { page, pageSize });
+      items.push(...next.items);
+    }
+    return items;
   },
 
   getProduct(accessToken: string, id: string): Promise<AdminProduct> {
@@ -269,6 +290,37 @@ export const adminClient = {
       `/admin/media/products/${productId}`,
       { method: "POST", json: input, headers: authHeader(accessToken) },
     );
+  },
+
+  /**
+   * Sets the gallery order in one transaction: `displayOrder` = index and
+   * the first id becomes primary. Must list exactly the attached set.
+   */
+  reorderProductMedia(
+    accessToken: string,
+    productId: string,
+    mediaAssetIds: string[],
+  ): Promise<void> {
+    return apiRequest<void>(`/admin/media/products/${productId}/order`, {
+      method: "PUT",
+      json: { mediaAssetIds },
+      headers: authHeader(accessToken),
+    });
+  },
+
+  /**
+   * A custom-design file for an order item (`customDesign.files.*`).
+   * Needs the staff Authorization header, so it's fetched as a Blob.
+   */
+  async getCustomDesignFile(accessToken: string, path: string): Promise<Blob> {
+    const url = buildApiUrl(path.replace(/^\/?api\/v1/, ""));
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) {
+      throw new ApiError("Could not load the design file.", response.status);
+    }
+    return response.blob();
   },
 
   detachMediaFromProduct(

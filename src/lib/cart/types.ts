@@ -42,6 +42,21 @@ export interface CartItemView {
   unavailableReason?: string;
   bundleDiscount: number;
   note?: string | null;
+  /** `unitPrice` already includes this surcharge — don't add it again. */
+  customizationPrice?: number;
+  customDesignId?: string | null;
+  customDesign?: { id: string } | null;
+  isPersonalized?: boolean;
+}
+
+/** A customer-uploaded image for a personalizable variant (`POST /cart/custom-designs`). */
+export interface CustomDesign {
+  id: string;
+  variantId: string;
+  fitMode: string;
+  original: { mimeType: string; sizeBytes: number; width: number; height: number };
+  print: { widthPx: number; heightPx: number; dpi: number };
+  createdAt: string;
 }
 
 export interface CartView {
@@ -127,6 +142,8 @@ export interface GuestOrderItemView {
   bundleDiscount: number;
   lineTotal: number;
   note?: string | null;
+  hasCustomDesign?: boolean;
+  customizationPrice?: number;
 }
 
 export interface GuestOrderView {
@@ -154,6 +171,7 @@ export interface GuestOrderView {
     postalCode: string | null;
   };
   customerNote: string | null;
+  hasCustomDesign?: boolean;
   items: GuestOrderItemView[];
   createdAt: string;
 }
