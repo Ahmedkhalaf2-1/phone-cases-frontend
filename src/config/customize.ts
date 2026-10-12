@@ -23,8 +23,14 @@ export interface MockupRect {
 export interface CaseMockupConfig {
   src: string;
   /**
-   * Areas never printed on, for photos where the camera block is too close
-   * in colour to the case for automatic detection to leave it out.
+   * Areas always printed on (where the case is opaque), e.g. the case's
+   * raised camera lip, whose shadowed groove automatic detection skips.
+   */
+  include?: MockupRect[];
+  /**
+   * Areas never printed on, for photos where the phone's camera plateau is
+   * too close in colour to the case for automatic detection to leave it out.
+   * Applied after `include`.
    */
   exclude?: MockupRect[];
 }
@@ -36,8 +42,10 @@ export interface CaseMockupConfig {
 export const CASE_MOCKUPS_BY_MODEL: Record<string, CaseMockupConfig> = {
   "iphone-17-pro-max": {
     src: "/customize/case-mockup-iphone-17-pro-max.png",
-    // Camera plateau and its raised rim (1024×1536 image).
-    exclude: [{ x: 180, y: 56, width: 662, height: 404, radius: 62 }],
+    // 1024×1536 image. The case's camera lip (including its groove) takes
+    // the design; only the phone's silver camera plateau inside it doesn't.
+    include: [{ x: 190, y: 66, width: 646, height: 384, radius: 66 }],
+    exclude: [{ x: 218, y: 88, width: 586, height: 328, radius: 40 }],
   },
 };
 
