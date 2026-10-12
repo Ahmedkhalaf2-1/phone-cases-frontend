@@ -103,11 +103,12 @@ export default function AdminOrdersPage() {
 
       {!isLoading && !error && (
         <div className="mt-6 overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+          <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-start text-muted-foreground">
                 <th className="p-2 text-start">#</th>
                 <th className="p-2 text-start">Customer</th>
+                <th className="p-2 text-start">Items</th>
                 <th className="p-2 text-start">Fulfillment</th>
                 <th className="p-2 text-start">Payment</th>
                 <th className="p-2 text-start">Total</th>
@@ -116,19 +117,49 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {orders.map((order) => {
+                const items = order.items ?? [];
+                const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+                const isPersonalized = items.some((item) => item.customDesign);
+                return (
                 <tr key={order.id} className="border-b border-border transition-colors hover:bg-surface">
-                  <td className="p-2">{order.sequenceNumber}</td>
-                  <td className="p-2">{order.customerFullName}</td>
-                  <td className="p-2">
+                  <td className="px-2 py-3 font-semibold text-ink">{order.sequenceNumber}</td>
+                  <td className="px-2 py-3">
+                    <span className="block text-ink">{order.customerFullName}</span>
+                    <span className="block text-xs text-muted-foreground">{order.customerPhone}</span>
+                  </td>
+                  <td className="max-w-56 px-2 py-3">
+                    {items.length > 0 ? (
+                      <>
+                        <span className="block truncate text-ink">
+                          {items[0].productNameEn}
+                          {items.length > 1 && ` +${items.length - 1} more`}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {itemCount} item{itemCount === 1 ? "" : "s"}
+                          {isPersonalized && " · Personalized"}
+                        </span>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="px-2 py-3">
                     <StatusBadge status={order.fulfillmentStatus} />
                   </td>
-                  <td className="p-2">
+                  <td className="px-2 py-3">
                     <StatusBadge status={order.paymentStatus} />
                   </td>
-                  <td className="p-2">{formatPrice(order.total, order.currency)}</td>
-                  <td className="p-2">{new Date(order.createdAt).toLocaleDateString()}</td>
-                  <td className="p-2">
+                  <td className="px-2 py-3 font-semibold text-ink">{formatPrice(order.total, order.currency)}</td>
+                  <td className="px-2 py-3 text-muted-foreground">
+                    {new Date(order.createdAt).toLocaleString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                  <td className="px-2 py-3">
                     <Link
                       href={`/admin/orders/${order.id}`}
                       className="font-semibold text-accent underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -137,10 +168,11 @@ export default function AdminOrdersPage() {
                     </Link>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-4 text-center text-muted-foreground">
                     No orders match these filters.
                   </td>
                 </tr>
