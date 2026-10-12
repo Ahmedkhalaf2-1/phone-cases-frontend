@@ -54,7 +54,8 @@ export default async function CollectionsPage() {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {tiles.map(({ collection, previews, total }) => {
+              {tiles.map(({ collection, previews, total }, tileIndex) => {
+                const imageLoading = tileIndex < 3 ? "eager" : "lazy";
                 const cover = getCollectionCover(collection.slug, collection.coverImage);
                 return (
                   <Link
@@ -68,6 +69,8 @@ export default async function CollectionsPage() {
                         <img
                           src={cover.src}
                           alt=""
+                          loading={imageLoading}
+                          decoding="async"
                           className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                         />
                       </div>
@@ -85,6 +88,8 @@ export default async function CollectionsPage() {
                                 <img
                                   src={image.url}
                                   alt=""
+                                  loading={imageLoading}
+                                  decoding="async"
                                   className="h-full w-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
                                 />
                               )}

@@ -12,6 +12,7 @@ export function CollectionProductsSection({
   products,
   totalItems,
   source,
+  eagerImageCount = 0,
 }: {
   name: string;
   slug: string;
@@ -19,6 +20,8 @@ export function CollectionProductsSection({
   products: (PublicProductSummary | DemoProduct)[];
   totalItems: number;
   source: "demo" | "live";
+  /** How many leading cards load eagerly (only the first rail is on screen at first paint). */
+  eagerImageCount?: number;
 }) {
   if (products.length === 0) return null;
 
@@ -63,12 +66,16 @@ export function CollectionProductsSection({
       </div>
 
       <ProductRail label={`${name} phone cases`}>
-        {products.map((product) => (
+        {products.map((product, index) => (
           <div
             key={product.id}
             className="w-[46%] shrink-0 snap-start sm:w-[31%] lg:w-[23%] xl:w-[19%]"
           >
-            <ProductCard product={product} source={source} />
+            <ProductCard
+              product={product}
+              source={source}
+              imageLoading={index < eagerImageCount ? "eager" : "lazy"}
+            />
           </div>
         ))}
 

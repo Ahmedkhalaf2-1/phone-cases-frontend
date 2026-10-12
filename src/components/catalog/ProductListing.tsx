@@ -24,8 +24,13 @@ export function ProductListing({
         <p className="py-16 text-center text-muted-foreground">{emptyMessage}</p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          {items.map((product) => (
-            <ProductCard key={product.id} product={product} source={source} />
+          {items.map((product, index) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              source={source}
+              imageLoading={index < 4 ? "eager" : "lazy"}
+            />
           ))}
         </div>
       )}

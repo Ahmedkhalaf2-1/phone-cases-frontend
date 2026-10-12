@@ -402,6 +402,8 @@ function Spotlight({
                   <img
                     src={product.image}
                     alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-contain transition-transform duration-300 group-hover/thumb:scale-110"
                   />
                 )}
@@ -496,6 +498,8 @@ function QueryResults({
                   <img
                     src={c.cover.src}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
                       c.cover.position === "top" ? "object-top" : "object-center"
                     }`}
@@ -532,7 +536,7 @@ function QueryResults({
                   <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[12px] border border-border bg-surface">
                     {p.image && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.image} alt="" className="h-full w-full object-contain" />
+                      <img src={p.image} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain" />
                     )}
                   </span>
                   <span className="min-w-0 flex-1">

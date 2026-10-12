@@ -68,6 +68,8 @@ export function ProductGallery({
                   src={item.url}
                   alt=""
                   aria-hidden
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-contain p-1"
                 />
               </button>

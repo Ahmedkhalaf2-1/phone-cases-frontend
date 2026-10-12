@@ -32,7 +32,7 @@ export default async function Home() {
       <SiteHeader />
       <main className="flex-1">
         <Hero />
-        {collectionRows.map(({ collection, products }) => (
+        {collectionRows.map(({ collection, products }, index) => (
           <CollectionProductsSection
             key={collection.id}
             name={collection.name}
@@ -41,6 +41,7 @@ export default async function Home() {
             products={products.items}
             totalItems={products.meta.totalItems}
             source={products.source}
+            eagerImageCount={index === 0 ? 5 : 0}
           />
         ))}
         <CmsHomepageSections sections={banners} />

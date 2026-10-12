@@ -13,9 +13,12 @@ function hasVariants(
 export function ProductCard({
   product,
   source,
+  imageLoading = "lazy",
 }: {
   product: PublicProductSummary | DemoProduct;
   source: "demo" | "live";
+  /** "eager" only for cards visible on first paint (first row of a grid/rail). */
+  imageLoading?: "lazy" | "eager";
 }) {
   return (
     <Link
@@ -28,6 +31,8 @@ export function ProductCard({
           <img
             src={product.primaryImage.url}
             alt={product.primaryImage.altText ?? product.name}
+            loading={imageLoading}
+            decoding="async"
             className="h-full w-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (

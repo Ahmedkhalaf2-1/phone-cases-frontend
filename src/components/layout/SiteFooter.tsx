@@ -11,6 +11,8 @@ export function SiteFooter() {
             <img
               src="/brand/contrast-logo-white.png"
               alt={SITE.brandName}
+              loading="lazy"
+              decoding="async"
               width={908}
               height={120}
               className="h-auto w-[70vw] max-w-[520px] sm:w-[45vw]"
@@ -24,6 +26,8 @@ export function SiteFooter() {
               <img
                 src="/brand/ct-emblem-white.png"
                 alt=""
+                loading="lazy"
+                decoding="async"
                 width={256}
                 height={256}
                 className="inline-block size-6 align-[-0.1em]"

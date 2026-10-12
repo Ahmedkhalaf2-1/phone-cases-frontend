@@ -68,6 +68,7 @@ export default async function CollectionPage({
               <img
                 src={cover.src}
                 alt=""
+                decoding="async"
                 className={`absolute inset-0 h-full w-full object-cover ${
                   cover.position === "top" ? "object-top" : "object-center"
                 }`}

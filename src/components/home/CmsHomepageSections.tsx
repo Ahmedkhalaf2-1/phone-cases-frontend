@@ -51,6 +51,8 @@ function Banner({ section }: { section: HomepageSection }) {
         <img
           src={section.media.url}
           alt={section.media.altText ?? ""}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (

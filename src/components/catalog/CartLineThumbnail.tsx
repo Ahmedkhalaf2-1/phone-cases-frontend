@@ -13,6 +13,8 @@ export function CartLineThumbnail({
       <img
         src={thumbnail.url}
         alt={thumbnail.altText ?? productSlug}
+        loading="lazy"
+        decoding="async"
         className={`shrink-0 rounded-2xl bg-surface object-contain p-1 shadow-soft ${className}`}
       />
     );
