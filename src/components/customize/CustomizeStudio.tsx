@@ -90,7 +90,7 @@ export function CustomizeStudio({
   variants: PublicVariant[];
 }) {
   const { token, addItem, source } = useCart();
-  const { mockup, isLoading: isMockupLoading } = useCaseMockup();
+
   const ids = { brand: useId(), model: useId(), file: useId(), note: useId() };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -123,6 +123,9 @@ export function CustomizeStudio({
     caseOptions.length === 1
       ? caseOptions[0]
       : caseOptions.find((v) => (v.caseType?.slug ?? "") === caseTypeSlug);
+
+  // Model-specific case photo when one exists (e.g. iPhone 17 Pro Max).
+  const { mockup, isLoading: isMockupLoading } = useCaseMockup(variant?.phoneModel?.slug ?? (modelSlug || undefined));
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);

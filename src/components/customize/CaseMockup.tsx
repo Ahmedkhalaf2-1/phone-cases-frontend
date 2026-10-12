@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CASE_MOCKUP_SRC } from "@/config/customize";
+import { caseMockupFor, type CaseMockupConfig, type MockupRect } from "@/config/customize";
 
 /**
  * Two kinds of case photo work:
@@ -98,7 +98,30 @@ function maskCanvas(selected: Uint8Array, width: number, height: number): HTMLCa
   return soft;
 }
 
-function analyse(image: HTMLImageElement): Mockup | null {
+function insideRoundedRect(px: number, py: number, rect: MockupRect) {
+  const r = Math.min(rect.radius ?? 0, rect.width / 2, rect.height / 2);
+  if (px < rect.x || py < rect.y || px >= rect.x + rect.width || py >= rect.y + rect.height) return false;
+  const cx = Math.min(Math.max(px, rect.x + r), rect.x + rect.width - r);
+  const cy = Math.min(Math.max(py, rect.y + r), rect.y + rect.height - r);
+  return (px - cx) ** 2 + (py - cy) ** 2 <= r * r;
+}
+
+/** Clears the configured never-print areas (e.g. the camera block) from a selection. */
+function applyExclusions(selected: Uint8Array, width: number, height: number, exclude: MockupRect[]) {
+  for (const rect of exclude) {
+    const x0 = Math.max(0, Math.floor(rect.x));
+    const y0 = Math.max(0, Math.floor(rect.y));
+    const x1 = Math.min(width, Math.ceil(rect.x + rect.width));
+    const y1 = Math.min(height, Math.ceil(rect.y + rect.height));
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        if (insideRoundedRect(x + 0.5, y + 0.5, rect)) selected[y * width + x] = 0;
+      }
+    }
+  }
+}
+
+function analyse(image: HTMLImageElement, exclude: MockupRect[] = []): Mockup | null {
   const width = image.naturalWidth;
   const height = image.naturalHeight;
   const canvas = document.createElement("canvas");
@@ -118,6 +141,7 @@ function analyse(image: HTMLImageElement): Mockup | null {
   const outside = floodFill(width, height, borderSeeds, (i) => alpha(i) <= ALPHA_THRESHOLD);
   const hole = new Uint8Array(width * height);
   for (let i = 0; i < hole.length; i++) hole[i] = alpha(i) <= ALPHA_THRESHOLD && !outside[i] ? 1 : 0;
+  applyExclusions(hole, width, height, exclude);
   const holeBounds = boundsOf(hole, width);
   if (holeBounds && holeBounds.width * holeBounds.height > width * height * 0.05) {
     return { image, width, height, mode: "hole", mask: maskCanvas(hole, width, height), bounds: holeBounds };
@@ -152,50 +176,59 @@ function analyse(image: HTMLImageElement): Mockup | null {
     [seed],
     (i) => alpha(i) > 200 && brightness(i) >= floor && saturation(i) < SURFACE_MAX_SATURATION,
   );
+  applyExclusions(surface, width, height, exclude);
   const surfaceBounds = boundsOf(surface, width);
   if (!surfaceBounds) return null;
   return { image, width, height, mode: "surface", mask: maskCanvas(surface, width, height), bounds: surfaceBounds };
 }
 
-let cached: Promise<Mockup | null> | null = null;
+const cache = new Map<string, Promise<Mockup | null>>();
 
-function loadMockup(): Promise<Mockup | null> {
-  cached ??= new Promise((resolve) => {
-    const image = new Image();
-    image.onload = () => {
-      let mockup: Mockup | null = null;
-      try {
-        mockup = analyse(image);
-      } catch {
-        mockup = null;
-      }
-      if (!mockup && process.env.NODE_ENV !== "production") {
-        console.warn(`[customize] Couldn't find a printable area in ${CASE_MOCKUP_SRC} — using the server preview.`);
-      }
-      resolve(mockup);
-    };
-    image.onerror = () => resolve(null);
-    image.src = CASE_MOCKUP_SRC;
-  });
-  return cached;
+function loadMockup(config: CaseMockupConfig): Promise<Mockup | null> {
+  let pending = cache.get(config.src);
+  if (!pending) {
+    pending = new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        let mockup: Mockup | null = null;
+        try {
+          mockup = analyse(image, config.exclude);
+        } catch {
+          mockup = null;
+        }
+        if (!mockup && process.env.NODE_ENV !== "production") {
+          console.warn(`[customize] Couldn't find a printable area in ${config.src} — using the server preview.`);
+        }
+        resolve(mockup);
+      };
+      image.onerror = () => resolve(null);
+      image.src = config.src;
+    });
+    cache.set(config.src, pending);
+  }
+  return pending;
 }
 
-/** The case photo, if it exists and has a usable printable area. */
-export function useCaseMockup(): { mockup: Mockup | null; isLoading: boolean } {
-  const [state, setState] = useState<{ mockup: Mockup | null; isLoading: boolean }>({
-    mockup: null,
-    isLoading: true,
-  });
+/**
+ * The case photo for this phone model (or the generic one), if it exists
+ * and has a usable printable area.
+ */
+export function useCaseMockup(phoneModelSlug?: string): { mockup: Mockup | null; isLoading: boolean } {
+  const config = caseMockupFor(phoneModelSlug);
+  const [state, setState] = useState<{ src: string | null; mockup: Mockup | null }>({ src: null, mockup: null });
   useEffect(() => {
     let cancelled = false;
-    loadMockup().then((mockup) => {
-      if (!cancelled) setState({ mockup, isLoading: false });
+    loadMockup(config).then((mockup) => {
+      if (!cancelled) setState({ src: config.src, mockup });
     });
     return () => {
       cancelled = true;
     };
-  }, []);
-  return state;
+    // `config` is derived from the slug; its src identifies it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.src]);
+  // Keep showing the previous photo until the new one is ready.
+  return { mockup: state.mockup, isLoading: state.src !== config.src };
 }
 
 /** Draws `design` into the printable area, covering it from the center — the same crop the backend prints. */
