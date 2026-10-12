@@ -184,3 +184,43 @@ body {
 .animate-rise-in {
   animation: rise-in 0.6s ease-out both;
 }
+
+/* Horizontal product rails: keep scrolling, hide the scrollbar chrome. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Header search panel: quick pop-in, and a soft fade for swapped content. */
+@keyframes search-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes search-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-search-pop {
+  transform-origin: top left;
+  animation: search-pop 0.18s ease-out both;
+}
+
+.animate-search-fade {
+  animation: search-fade 0.35s ease-out both;
+}

@@ -5,11 +5,15 @@ import { useId, useState } from "react";
 import type { Collection, PhoneModel, CaseType } from "@/lib/api/types";
 
 export function ProductFilters({
+  basePath,
   collections,
   phoneModels,
   caseTypes,
 }: {
-  collections: Collection[];
+  /** Listing route the filters push to (e.g. "/search", "/collections/anime"). */
+  basePath: string;
+  /** Omit to hide the collection filter (e.g. on a collection's own page). */
+  collections?: Collection[];
   phoneModels: PhoneModel[];
   caseTypes: CaseType[];
 }) {
@@ -26,7 +30,7 @@ export function ProductFilters({
       params.delete(key);
     }
     params.delete("page");
-    router.push(`/phone-cases?${params.toString()}`);
+    router.push(`${basePath}?${params.toString()}`);
   }
 
   function handleSearchSubmit(event: React.FormEvent) {
@@ -61,12 +65,14 @@ export function ProductFilters({
       </form>
 
       <div className="flex flex-wrap gap-3">
-        <FilterSelect
-          label="Collection"
-          value={searchParams.get("collection") ?? ""}
-          onChange={(value) => updateParam("collection", value)}
-          options={collections.map((c) => ({ value: c.slug, label: c.name }))}
-        />
+        {collections && (
+          <FilterSelect
+            label="Collection"
+            value={searchParams.get("collection") ?? ""}
+            onChange={(value) => updateParam("collection", value)}
+            options={collections.map((c) => ({ value: c.slug, label: c.name }))}
+          />
+        )}
         <FilterSelect
           label="Phone model"
           value={searchParams.get("phoneModel") ?? ""}

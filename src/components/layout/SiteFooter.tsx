@@ -6,16 +6,28 @@ export function SiteFooter() {
     <footer className="bg-ink text-white">
       <div className="mx-auto max-w-[1440px] px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-10 border-b border-white/15 pb-10 md:flex-row md:items-end md:justify-between">
-          <h2 className="font-display text-[16vw] leading-[0.85] tracking-tight text-transparent uppercase [-webkit-text-stroke:1.5px_white] sm:text-[9vw] md:text-[6.5vw]">
-            {SITE.brandName}
+          <h2>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/contrast-logo-white.png"
+              alt={SITE.brandName}
+              width={908}
+              height={120}
+              className="h-auto w-[70vw] max-w-[520px] sm:w-[45vw]"
+            />
           </h2>
 
           <div className="flex flex-col gap-6 border-white/15 md:flex-row md:items-center md:gap-8 md:border-s md:ps-8">
             <p className="font-display text-2xl leading-tight uppercase">
               Your style.{" "}
-              <span aria-hidden className="text-accent">
-                ✳
-              </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/ct-emblem-white.png"
+                alt=""
+                width={256}
+                height={256}
+                className="inline-block size-6 align-[-0.1em]"
+              />
               <br />
               Always with you.
             </p>

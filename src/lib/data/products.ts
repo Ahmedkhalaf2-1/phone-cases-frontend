@@ -98,7 +98,7 @@ function filterDemoProducts(params: ProductQueryParams): DemoProduct[] {
   return items;
 }
 
-/** Product listing for the /phone-cases store page. */
+/** Product listing for /search and the /collections/[slug] pages. */
 export async function getProducts(
   params: ProductQueryParams,
 ): Promise<ProductListResult> {

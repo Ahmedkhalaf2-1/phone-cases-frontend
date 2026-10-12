@@ -20,7 +20,7 @@ export function ProductCard({
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group rounded-card bg-surface shadow-card transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="group flex h-full flex-col rounded-card bg-surface shadow-card transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       <div className="flex aspect-square items-center justify-center overflow-hidden rounded-card-inner m-2 bg-surface">
         {product.primaryImage ? (
@@ -37,8 +37,8 @@ export function ProductCard({
         )}
       </div>
 
-      <div className="flex items-start justify-between gap-2 p-3 sm:p-4">
-        <div>
+      <div className="flex flex-1 items-start justify-between gap-2 p-3 sm:p-4">
+        <div className="min-w-0">
           <p className="font-medium tracking-tight text-ink">{product.name}</p>
           <p className="text-sm text-muted-foreground">
             {hasVariants(product)

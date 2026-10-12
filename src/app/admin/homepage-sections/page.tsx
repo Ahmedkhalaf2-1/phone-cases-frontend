@@ -287,7 +287,7 @@ function SectionFields({
         className={inputClass}
       />
       <input
-        placeholder="Link (optional, e.g. /phone-cases?collection=summer)"
+        placeholder="Link (optional, e.g. /collections/summer)"
         value={form.linkUrl}
         onChange={(e) => setForm((f) => ({ ...f, linkUrl: e.target.value }))}
         className={inputClass}

@@ -321,7 +321,7 @@ export default function CheckoutPage() {
         <main className="flex-1 px-4 py-24 text-center">
           <p className="text-muted-foreground">Your bag is empty.</p>
           <Link
-            href="/phone-cases"
+            href="/collections"
             className="mt-4 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent"
           >
             Browse phone cases

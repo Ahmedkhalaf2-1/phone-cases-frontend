@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/lib/cart/CartProvider";
 
@@ -13,8 +12,7 @@ import { useCart } from "@/lib/cart/CartProvider";
  */
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: HomeIcon, match: "home" as const },
-  { href: "/phone-cases", label: "Phone cases", icon: GridIcon, match: "prefix" as const },
-  { href: "/#collections", label: "Collections", icon: HeartIcon, match: "hash" as const },
+  { href: "/collections", label: "Collections", icon: GridIcon, match: "prefix" as const },
   { href: "/track", label: "Track order", icon: TagIcon, match: "prefix" as const },
 ];
 
@@ -24,23 +22,10 @@ const ICON_BUTTON =
 export function SiteSidebar() {
   const pathname = usePathname();
   const { itemCount } = useCart();
-  // Hash isn't part of `pathname`, so "Collections" (an anchor on "/")
-  // needs its own tracked state — otherwise it and "Home" would both
-  // read as active on every homepage visit regardless of scroll spot.
-  const [hash, setHash] = useState("");
-
-  useEffect(() => {
-    const readHash = () => setHash(window.location.hash);
-    readHash();
-    window.addEventListener("hashchange", readHash);
-    return () => window.removeEventListener("hashchange", readHash);
-  }, []);
-
   if (pathname.startsWith("/admin")) return null;
 
   function isItemActive(item: (typeof NAV_ITEMS)[number]) {
-    if (item.match === "home") return pathname === "/" && hash !== "#collections";
-    if (item.match === "hash") return pathname === "/" && hash === "#collections";
+    if (item.match === "home") return pathname === "/";
     return pathname.startsWith(item.href);
   }
 
@@ -49,11 +34,16 @@ export function SiteSidebar() {
       <Link
         href="/"
         aria-label="Home"
-        className="flex size-11 items-center justify-center rounded-[16px] text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="flex size-11 items-center justify-center rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <span aria-hidden className="text-lg">
-          ✳
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/ct-emblem.png"
+          alt=""
+          width={256}
+          height={256}
+          className="size-8"
+        />
       </Link>
 
       <nav className="flex flex-1 flex-col items-center justify-center gap-3">
@@ -125,18 +115,6 @@ function GridIcon() {
   );
 }
 
-function HeartIcon() {
-  return (
-    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 20s-7.5-4.6-9.5-9.2C1.1 7.6 3 4.5 6.3 4.5c2 0 3.5 1.2 4.2 2.6.7-1.4 2.2-2.6 4.2-2.6 3.3 0 5.2 3.1 3.8 6.3C19.5 15.4 12 20 12 20Z"
-        stroke="currentColor"
-        strokeWidth={STROKE}
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function TagIcon() {
   return (

@@ -1,22 +1,27 @@
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Hero } from "@/components/home/Hero";
-import { PhoneSelector } from "@/components/home/PhoneSelector";
-import { CollectionsSection } from "@/components/home/CollectionsSection";
+import { CollectionProductsSection } from "@/components/home/CollectionProductsSection";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { CmsHomepageSections } from "@/components/home/CmsHomepageSections";
-import { getPhoneModels } from "@/lib/data/phone-catalog";
+import { getFeaturedProducts, getProducts } from "@/lib/data/products";
 import { getMoodCollections } from "@/lib/data/collections";
-import { getFeaturedProducts } from "@/lib/data/products";
 import { getEnabledHomepageSections } from "@/lib/data/homepage-sections";
 
 export default async function Home() {
-  const [phoneModels, moodCollections, featuredProducts, homepageSections] = await Promise.all([
-    getPhoneModels(),
+  const [collectionsResult, featuredProducts, homepageSections] = await Promise.all([
     getMoodCollections(),
     getFeaturedProducts(4),
     getEnabledHomepageSections(),
   ]);
+
+  // One row per collection (Anime, Cars, …), each with its first few cases.
+  const collectionRows = await Promise.all(
+    collectionsResult.collections.map(async (collection) => ({
+      collection,
+      products: await getProducts({ collection: collection.slug, page: 1, pageSize: 10 }),
+    })),
+  );
 
   const promoStrips = homepageSections.filter((s) => s.type === "PROMO_STRIP");
   const banners = homepageSections.filter((s) => s.type === "BANNER");
@@ -26,12 +31,18 @@ export default async function Home() {
       <CmsHomepageSections sections={promoStrips} />
       <SiteHeader />
       <main className="flex-1">
-        <Hero
-          products={featuredProducts.products}
-          collections={moodCollections.collections}
-        />
-        <PhoneSelector models={phoneModels.models} source={phoneModels.source} />
-        <CollectionsSection collections={moodCollections.collections} />
+        <Hero />
+        {collectionRows.map(({ collection, products }) => (
+          <CollectionProductsSection
+            key={collection.id}
+            name={collection.name}
+            slug={collection.slug}
+            description={collection.description}
+            products={products.items}
+            totalItems={products.meta.totalItems}
+            source={products.source}
+          />
+        ))}
         <CmsHomepageSections sections={banners} />
         <FeaturedProducts
           products={featuredProducts.products}

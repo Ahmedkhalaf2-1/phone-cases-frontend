@@ -21,7 +21,7 @@ export function CollectionsSection({
           Pick your mood
         </h2>
         <Link
-          href="/phone-cases"
+          href="/collections"
           className="hidden shrink-0 items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:inline-flex"
         >
           View all collections <span aria-hidden>→</span>
@@ -32,7 +32,7 @@ export function CollectionsSection({
         {collections.map((collection, index) => (
           <Link
             key={collection.id}
-            href={`/phone-cases?collection=${collection.slug}`}
+            href={`/collections/${collection.slug}`}
             className={`group relative isolate flex h-60 overflow-hidden rounded-card shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:h-80 lg:h-[340px] ${
               index === 2 ? "col-span-2 sm:col-span-2" : "col-span-1"
             }`}
@@ -55,7 +55,7 @@ export function CollectionsSection({
       </div>
 
       <Link
-        href="/phone-cases"
+        href="/collections"
         className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:hidden"
       >
         View all collections <span aria-hidden>→</span>

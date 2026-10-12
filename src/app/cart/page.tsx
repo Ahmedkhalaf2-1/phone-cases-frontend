@@ -67,7 +67,7 @@ export default function CartPage() {
             <div className="py-16 text-center">
               <p className="text-muted-foreground">Your bag is empty.</p>
               <Link
-                href="/phone-cases"
+                href="/collections"
                 className="mt-4 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 Browse phone cases

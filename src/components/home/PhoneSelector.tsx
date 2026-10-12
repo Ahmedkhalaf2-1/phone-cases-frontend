@@ -20,7 +20,7 @@ export function PhoneSelector({
   return (
     <section
       aria-label="Find your phone"
-      className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8"
+      className="relative z-10 mx-auto -mt-6 max-w-[1440px] px-4 sm:-mt-10 sm:px-6 lg:px-8"
     >
       <div className="flex flex-col gap-4 rounded-card border border-border bg-surface px-5 py-5 shadow-card sm:flex-row sm:items-center sm:justify-between sm:py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -50,8 +50,8 @@ export function PhoneSelector({
         <a
           href={
             selectedModel
-              ? `/phone-cases?phoneModel=${selectedModel.slug}`
-              : "/phone-cases"
+              ? `/search?phoneModel=${selectedModel.slug}`
+              : "/collections"
           }
           className="inline-flex items-center gap-2 self-start text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:self-auto"
         >

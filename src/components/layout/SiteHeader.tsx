@@ -2,24 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
-import { useRouter } from "next/navigation";
 import { PRIMARY_NAV, SITE } from "@/config/site";
 import { useCart } from "@/lib/cart/CartProvider";
+import { HeaderSearch } from "@/components/search/HeaderSearch";
 
 /**
  * The left sidebar (SiteSidebar, lg+ only) is the primary nav on desktop
  * now, mirroring the DESIGN.md reference's icon rail. This header keeps
- * only brand/search/cart at lg+, and falls back to its own text nav +
+ * only brand + inline search (and cart) at lg+, and falls back to its own text nav +
  * cart icon below lg where the sidebar is hidden.
  */
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const menuId = useId();
   const searchId = useId();
-  const router = useRouter();
   const { itemCount } = useCart();
 
   useEffect(() => {
@@ -34,27 +32,29 @@ export function SiteHeader() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [isMenuOpen, isSearchOpen]);
 
-  function submitSearch(event: React.FormEvent) {
-    event.preventDefault();
-    const q = searchQuery.trim();
-    setIsSearchOpen(false);
-    router.push(q ? `/phone-cases?q=${encodeURIComponent(q)}` : "/phone-cases");
-  }
-
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="flex items-center gap-2 rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          <span aria-hidden className="text-xl text-accent">
-            ✳
-          </span>
-          <span className="font-display text-lg tracking-tight text-ink">
-            {SITE.brandName}
-          </span>
-        </Link>
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/contrast-logo.png"
+              alt={SITE.brandName}
+              width={908}
+              height={120}
+              className="h-5 w-auto shrink-0 sm:h-6"
+            />
+          </Link>
+
+          {/* Inline search next to the brand (sm+). Mobile keeps the toggle. */}
+          <div className="hidden w-full max-w-md sm:block">
+            <HeaderSearch />
+          </div>
+        </div>
 
         <nav
           aria-label="Primary"
@@ -78,7 +78,7 @@ export function SiteHeader() {
             aria-controls={searchId}
             aria-label={isSearchOpen ? "Close search" : "Search"}
             onClick={() => setIsSearchOpen((open) => !open)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="sm:hidden inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <SearchIcon />
           </button>
@@ -113,32 +113,12 @@ export function SiteHeader() {
       </div>
 
       {isSearchOpen && (
-        <div id={searchId} className="border-t border-border bg-background px-4 py-3 sm:px-6 lg:px-8">
-          <form
-            role="search"
-            onSubmit={submitSearch}
-            className="mx-auto flex max-w-[1440px] items-center gap-1 rounded-pill border border-border bg-surface p-1 pl-4 shadow-soft"
-          >
-            <label htmlFor={`${searchId}-input`} className="sr-only">
-              Search phone cases
-            </label>
-            <input
-              id={`${searchId}-input`}
-              type="search"
-              autoFocus
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search phone cases…"
-              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted-foreground"
-            />
-            <button
-              type="submit"
-              aria-label="Search"
-              className="flex size-9 shrink-0 items-center justify-center rounded-pill bg-accent text-white shadow-accent transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              <SearchIcon />
-            </button>
-          </form>
+        <div id={searchId} className="sm:hidden border-t border-border bg-background px-4 py-3 sm:px-6 lg:px-8">
+          <HeaderSearch
+            variant="sheet"
+            autoFocus
+            onNavigate={() => setIsSearchOpen(false)}
+          />
         </div>
       )}
 

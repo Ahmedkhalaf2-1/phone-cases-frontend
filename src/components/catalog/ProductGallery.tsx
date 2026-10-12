@@ -89,7 +89,7 @@ export function ProductGallery({
             {product.collections.map((collection) => (
               <Link
                 key={collection.id}
-                href={`/phone-cases?collection=${collection.slug}`}
+                href={`/collections/${collection.slug}`}
                 className="rounded-pill border border-border px-3 py-1 text-xs font-medium tracking-tight text-ink hover:border-accent hover:text-accent"
               >
                 {collection.name}

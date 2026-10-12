@@ -18,11 +18,8 @@ export interface NavLink {
 
 /** Primary header navigation. */
 export const PRIMARY_NAV: NavLink[] = [
-  { label: "New In", href: "/phone-cases?sort=newest" },
-  { label: "Phone Cases", href: "/phone-cases" },
-  // Absolute path + hash (not a bare "#collections") so this works from
-  // any page, not just when already on the homepage.
-  { label: "Collections", href: "/#collections" },
+  { label: "New In", href: "/search?sort=newest" },
+  { label: "Collections", href: "/collections" },
   { label: "Track Order", href: "/track" },
 ];
 
