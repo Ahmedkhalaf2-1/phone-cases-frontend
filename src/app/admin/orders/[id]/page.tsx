@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
-import { useAdminCatalog } from "@/lib/admin/catalog-store";
 import { primaryImageUrl } from "@/lib/admin/product-display";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
@@ -75,18 +74,10 @@ export default function AdminOrderDetailPage({
   >({});
   const [openReturnFor, setOpenReturnFor] = useState<string | null>(null);
 
-  // Order items carry no image; look the product's current main image up
-  // by variant id in the shared admin catalog (loaded once per session).
-  const catalog = useAdminCatalog();
-  const imageByVariant = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const product of catalog.products ?? []) {
-      const image = primaryImageUrl(product);
-      if (!image) continue;
-      for (const variant of product.variants ?? []) map.set(variant.id, image);
-    }
-    return map;
-  }, [catalog.products]);
+  // Order items carry no image, so look up each product's current main
+  // image: one admin search per distinct product name, then match the
+  // ordered variant by id (or SKU). Keyed by order item id.
+  const [itemImages, setItemImages] = useState<Record<string, string>>({});
 
   const isOwner = staff?.role === "OWNER_ADMIN";
 
@@ -100,6 +91,35 @@ export default function AdminOrderDetailPage({
   }
 
   useEffect(load, [accessToken, authorizedFetch, id]);
+
+  const items = order?.items;
+  useEffect(() => {
+    if (!accessToken || !items?.length) return;
+    let cancelled = false;
+    const names = [...new Set(items.map((item) => item.productNameEn))];
+    Promise.all(
+      names.map((name) =>
+        authorizedFetch((token) => adminClient.listProducts(token, { q: name, pageSize: 20 }))
+          .then((result) => result.items)
+          .catch(() => []),
+      ),
+    ).then((results) => {
+      if (cancelled) return;
+      const candidates = results.flat();
+      const found: Record<string, string> = {};
+      for (const item of items) {
+        const product = candidates.find((p) =>
+          (p.variants ?? []).some((v) => v.id === item.variantId || v.sku === item.variantSku),
+        );
+        const image = product ? primaryImageUrl(product) : null;
+        if (image) found[item.id] = image;
+      }
+      setItemImages(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, authorizedFetch, items]);
 
   async function withBusy(action: () => Promise<void>) {
     setIsBusy(true);
@@ -219,7 +239,7 @@ export default function AdminOrderDetailPage({
               {order.items.map((item) => {
                 const returnedQty = item.returns?.reduce((sum, r) => sum + r.quantity, 0) ?? 0;
                 const rowState = returnState[item.id] ?? { quantity: "", reason: "" };
-                const image = imageByVariant.get(item.variantId) ?? null;
+                const image = itemImages[item.id] ?? null;
                 const canReturn = isOwner && returnedQty < item.quantity;
                 const isReturnOpen = openReturnFor === item.id;
                 return (
