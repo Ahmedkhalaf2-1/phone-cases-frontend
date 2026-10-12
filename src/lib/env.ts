@@ -10,9 +10,24 @@ function readBoolean(value: string | undefined, fallback: boolean): boolean {
   return value.trim().toLowerCase() === "true";
 }
 
-/** Base URL of the backend, already including the `/api/v1` prefix. */
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, "") ?? "";
+/**
+ * Base URL of the backend, already including the `/api/v1` prefix.
+ *
+ * Set either:
+ * - NEXT_PUBLIC_API_BASE_URL — full base, e.g. https://api.contrastco.tech/api/v1
+ * - NEXT_PUBLIC_API_URL — backend origin only, e.g. https://api.contrastco.tech
+ *   (`/api/v1` is appended). Used only when NEXT_PUBLIC_API_BASE_URL is unset.
+ *
+ * NEXT_PUBLIC_* values are baked in at `next build`, so set them before building.
+ */
+function resolveApiBaseUrl(): string {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, "");
+  if (base) return base;
+  const origin = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+  return origin ? `${origin}/api/v1` : "";
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 /**
  * When true, the storefront renders local fixture data instead of calling

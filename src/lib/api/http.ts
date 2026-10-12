@@ -32,7 +32,7 @@ export function buildApiUrl(
 ): string {
   if (!API_BASE_URL) {
     throw new ApiError(
-      "NEXT_PUBLIC_API_BASE_URL is not configured. Set it in .env.local.",
+      "The API URL is not configured. Set NEXT_PUBLIC_API_BASE_URL (or NEXT_PUBLIC_API_URL) before building.",
       undefined,
       "CONFIG_MISSING",
       undefined,

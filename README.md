@@ -21,6 +21,10 @@ npm run dev
 
 Open http://localhost:3000.
 
+## Deployment
+
+See `docs/DEPLOYMENT.md` (VPS + PM2 + Caddy, `deploy-frontend.sh`).
+
 ## Configuration
 
 Set in `.env.local` (never committed — see `.gitignore`):
