@@ -9,7 +9,7 @@ import { useEffect, useRef } from "react";
  * playable and when the tab returns from the background. If the browser
  * still blocks autoplay (e.g. iOS Low Power Mode), the video stays stopped.
  */
-export function HeroVideo({ src }: { src: string }) {
+export function HeroVideo({ src, mobileSrc }: { src: string; mobileSrc?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -46,6 +46,10 @@ export function HeroVideo({ src }: { src: string }) {
       preload="auto"
       className="h-full w-full object-cover"
     >
+      {/* Phones (below Tailwind's `sm`) get the lighter 540p, video-only
+          file. Browsers pick the first <source> whose media matches, so the
+          mobile one must come first; wider screens skip it and never fetch it. */}
+      {mobileSrc && <source src={mobileSrc} type="video/mp4" media="(max-width: 639px)" />}
       <source src={src} type="video/mp4" />
     </video>
   );
