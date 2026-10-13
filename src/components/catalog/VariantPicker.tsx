@@ -100,9 +100,9 @@ export function VariantPicker({
   }, [selectedVariant?.id]);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 max-sm:gap-4">
       {!isAccessory && (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 max-sm:gap-2">
           <label
             htmlFor={modelId}
             className="text-sm font-medium tracking-tight text-ink"
@@ -116,7 +116,7 @@ export function VariantPicker({
               setSelectedModelSlug(event.target.value);
               setSelectedCaseTypeSlug("");
             }}
-            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="">Select phone model</option>
             {models.map((model) =>
@@ -131,7 +131,7 @@ export function VariantPicker({
       )}
 
       {!isAccessory && allCaseTypes.length > 0 && (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 max-sm:gap-2 max-sm:[&:has(select:disabled)_label]:text-muted-foreground">
           <label
             htmlFor={caseTypeId}
             className="text-sm font-medium tracking-tight text-ink"
@@ -143,7 +143,7 @@ export function VariantPicker({
             disabled={!selectedModelSlug}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
-            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:text-base disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="">
               {!selectedModelSlug
@@ -163,13 +163,13 @@ export function VariantPicker({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5 max-sm:gap-2">
         <label
           htmlFor={noteId}
-          className="flex items-center justify-between text-sm font-medium tracking-tight text-ink max-w-xs"
+          className="flex items-center justify-between text-sm font-medium tracking-tight text-ink max-w-xs max-sm:max-w-none max-sm:text-[13px] max-sm:font-normal max-sm:text-muted-foreground"
         >
           <span>Note / Instructions (optional)</span>
-          <span className="text-xs font-normal text-muted-foreground" dir="rtl">
+          <span className="text-xs font-normal text-muted-foreground max-sm:text-[11px]" dir="rtl">
             ملاحظات خاصة (اختياري)
           </span>
         </label>
@@ -181,9 +181,9 @@ export function VariantPicker({
           value={itemNote}
           onChange={(e) => setItemNote(e.target.value)}
           placeholder="e.g. Add name 'Ahmed' on the back / مثال: اكتب اسم أحمد على الجراب"
-          className="w-full max-w-xs rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-ink placeholder:text-muted-foreground/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y"
+          className="w-full max-w-xs rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-ink placeholder:text-muted-foreground/70 max-sm:max-w-none max-sm:resize-none max-sm:py-2 max-sm:text-base max-sm:leading-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y"
         />
-        <div className="flex justify-end max-w-xs">
+        <div className={`flex justify-end max-w-xs max-sm:max-w-none ${itemNote.length === 0 ? "max-sm:hidden" : ""}`}>
           <span className="text-[11px] text-muted-foreground">
             {itemNote.length} / 500
           </span>
@@ -191,7 +191,7 @@ export function VariantPicker({
       </div>
 
       {selectedVariant ? (
-        <div>
+        <div className="max-sm:mt-2 max-sm:flex max-sm:flex-wrap max-sm:items-baseline max-sm:gap-x-3 max-sm:gap-y-0.5">
           <p className="font-display text-3xl text-ink">
             {formatPrice(selectedVariant.price, selectedVariant.currency)}
           </p>
@@ -204,7 +204,7 @@ export function VariantPicker({
             </p>
           )}
           <p
-            className={`mt-1 text-sm font-semibold uppercase ${
+            className={`mt-1 text-sm font-semibold uppercase max-sm:mt-0 max-sm:text-xs max-sm:tracking-wide ${
               selectedVariant.isAvailable ? "text-green-700" : "text-accent"
             }`}
           >
@@ -212,30 +212,31 @@ export function VariantPicker({
           </p>
         </div>
       ) : !isSelectionComplete ? (
-        <div>
+        <div className="max-sm:mt-2">
           <p className="font-display text-3xl text-ink">
-            <span className="text-lg font-normal text-muted-foreground">From </span>
+            <span className="text-lg font-normal text-muted-foreground max-sm:text-sm max-sm:font-medium max-sm:tracking-wider max-sm:uppercase">From </span>
             {formatPrice(minPrice, currency)}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground max-sm:text-[13px] max-sm:leading-5">
             {!selectedModelSlug
               ? "Select your phone model to check availability and options."
               : "Select your case type to continue."}
           </p>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground max-sm:mt-2">
           This combination isn&apos;t available. Try a different phone
           model or case type above.
         </p>
       )}
 
+      <div className="flex flex-col gap-5 max-sm:flex-row max-sm:items-stretch max-sm:gap-3">
       {selectedVariant?.isAvailable && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 max-sm:shrink-0">
           <label htmlFor={`${modelId}-qty`} className="sr-only">
             Quantity
           </label>
-          <div className="flex items-center rounded-pill border border-border">
+          <div className="flex items-center rounded-pill border border-border max-sm:h-12">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -255,7 +256,7 @@ export function VariantPicker({
                   Math.max(1, Math.min(20, Number(event.target.value) || 1)),
                 )
               }
-              className="w-12 border-x border-border bg-background py-2 text-center text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="w-12 border-x border-border bg-background py-2 text-center text-sm max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
             <button
               type="button"
@@ -297,7 +298,7 @@ export function VariantPicker({
             ? "This combination is out of stock"
             : undefined
         }
-        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-[background-color,transform] duration-[var(--sf-dur-fast)] enabled:hover:bg-accent enabled:active:scale-[0.98] motion-reduce:transform-none disabled:cursor-not-allowed disabled:bg-ink/40"
+        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 max-sm:h-12 max-sm:min-h-0 max-sm:max-w-none max-sm:flex-1 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-[background-color,transform] duration-[var(--sf-dur-fast)] enabled:hover:bg-accent enabled:active:scale-[0.98] motion-reduce:transform-none disabled:cursor-not-allowed disabled:bg-ink/40"
       >
         {status === "adding"
           ? "Adding…"
@@ -309,9 +310,10 @@ export function VariantPicker({
           ? "Out of stock"
           : "Add to cart"}
       </button>
+      </div>
 
       {!isSelectionComplete && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground max-sm:sr-only">
           {!selectedModelSlug
             ? "Please select your phone model to continue."
             : "Please select your case type to continue."}

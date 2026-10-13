@@ -32,8 +32,15 @@ export default async function ProductDetailPage({
     <>
       <SiteHeader />
       <main className="flex-1">
-        <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
-          <nav data-motion="fade" aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+        <div className="mx-auto max-w-[1440px] px-4 py-10 max-sm:pt-4 max-sm:pb-8 sm:px-6 lg:px-8">
+          <nav
+            data-motion="fade"
+            aria-label="Breadcrumb"
+            // Mobile: one tight, lighter line (the current page truncates
+            // instead of wrapping); links keep a 36px hit area via padding
+            // that is cancelled by negative margin, so layout is unaffected.
+            className="mb-6 text-sm text-muted-foreground max-sm:mb-3 max-sm:flex max-sm:items-center max-sm:gap-1.5 max-sm:text-[13px] max-sm:[&_a]:-my-2 max-sm:[&_a]:shrink-0 max-sm:[&_a]:py-2"
+          >
             <Link href="/collections" className="hover:text-accent">
               Collections
             </Link>{" "}
@@ -49,7 +56,9 @@ export default async function ProductDetailPage({
                 /{" "}
               </>
             )}
-            <span className="text-ink">{product.name}</span>
+            <span aria-current="page" className="text-ink max-sm:min-w-0 max-sm:truncate max-sm:text-ink/70">
+              {product.name}
+            </span>
           </nav>
 
           <ProductGallery product={product} source={source} />

@@ -31,7 +31,7 @@ export function ProductGallery({
     variantImage ?? sortedMedia[galleryIndex] ?? sortedMedia[0] ?? null;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+    <div className="grid gap-10 max-sm:gap-6 lg:grid-cols-2 lg:gap-16">
       <div data-motion="fade">
         {/* Product-page end of the card -> page image morph (see ProductCard). */}
         <SharedProductImage slug={product.slug}>
@@ -87,16 +87,16 @@ export function ProductGallery({
           {product.name}
         </h1>
         {product.description && (
-          <p className="mt-3 max-w-md text-muted-foreground">{product.description}</p>
+          <p className="mt-3 max-w-md text-muted-foreground max-sm:mt-2">{product.description}</p>
         )}
 
         {product.collections.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 max-sm:mt-3">
             {product.collections.map((collection) => (
               <Link
                 key={collection.id}
                 href={`/collections/${collection.slug}`}
-                className="rounded-pill border border-border px-3 py-1 text-xs font-medium tracking-tight text-ink hover:border-accent hover:text-accent"
+                className="rounded-pill border border-border px-3 py-1 text-xs font-medium tracking-tight text-ink hover:border-accent hover:text-accent max-sm:inline-flex max-sm:min-h-8 max-sm:items-center"
               >
                 {collection.name}
               </Link>
@@ -107,7 +107,7 @@ export function ProductGallery({
         {(product.variants as PublicVariant[]).some((v) => v.isPersonalizable) && (
           <Link
             href={`/customize?product=${product.slug}`}
-            className="mt-6 flex items-center justify-between gap-3 rounded-card border border-accent bg-accent-wash px-4 py-3 text-sm text-ink transition-colors hover:bg-accent hover:text-white"
+            className="mt-6 flex items-center justify-between gap-3 rounded-card border border-accent bg-accent-wash px-4 py-3 text-sm text-ink transition-colors hover:bg-accent hover:text-white max-sm:mt-4"
           >
             <span>
               <span className="block font-semibold">Personalize this case</span>
@@ -117,7 +117,7 @@ export function ProductGallery({
           </Link>
         )}
 
-        <div className="mt-8">
+        <div className="mt-8 max-sm:mt-6">
           <VariantPicker
             variants={product.variants}
             onVariantChange={(variant) => setVariantImage(variant?.thumbnail ?? null)}
