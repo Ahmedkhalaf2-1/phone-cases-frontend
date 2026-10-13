@@ -144,6 +144,27 @@ export function VariantPicker({
 
   const hasBrandPicker = !isAccessory && brands.length > 1;
 
+  // Mobile dock is progressive: each step appears once the previous one is
+  // done, so it stays as short as possible. sm+ always shows everything.
+  const showModelStep =
+    !isAccessory && (!hasBrandPicker || Boolean(selectedBrandSlug));
+  const showCaseStep =
+    !isAccessory && allCaseTypes.length > 0 && Boolean(selectedModelSlug);
+  const showPurchase = isSelectionComplete;
+  const mobileOnlyWhen = (show: boolean) => (show ? "" : "max-sm:hidden");
+  // The step the customer should act on next gets a stronger outline.
+  const activeStep = hasBrandPicker && !selectedBrandSlug
+    ? "brand"
+    : !isAccessory && !selectedModelSlug
+      ? "model"
+      : showCaseStep && !activeCaseTypeSlug
+        ? "case"
+        : null;
+  const activeRing = (step: string) =>
+    activeStep === step ? "max-sm:border-ink" : "";
+  const stepIn =
+    "max-sm:animate-[sf-message-in_var(--sf-dur-normal)_var(--sf-ease)_both]";
+
   return (
     <div className="flex flex-col gap-5">
       {/* Mobile (<640px): one fixed purchase dock. sm+: display: contents, so
@@ -152,7 +173,7 @@ export function VariantPicker({
         ref={dockRef}
         className="flex flex-col gap-2 border-t border-border bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:max-h-[70dvh] max-sm:overflow-y-auto max-sm:rounded-t-3xl sm:contents"
       >
-      <div className={hasBrandPicker ? "grid grid-cols-[2fr_3fr] gap-2 sm:contents" : "contents"}>
+      <div className={hasBrandPicker ? `grid gap-2 sm:contents ${showModelStep ? "grid-cols-[2fr_3fr]" : "grid-cols-1"}` : "contents"}>
       {!isAccessory && brands.length > 1 && (
         <div className="flex flex-col gap-1.5 sm:hidden">
           <label
@@ -178,7 +199,7 @@ export function VariantPicker({
                 setSelectedCaseTypeSlug("");
               }
             }}
-            className="w-full min-h-11 rounded-pill border border-border bg-background px-3 py-2.5 text-base text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className={`w-full min-h-11 rounded-pill border border-border bg-background px-3 py-2.5 text-base text-ink ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
             <option value="">Brand</option>
             {brands.map((brand) => (
@@ -191,7 +212,7 @@ export function VariantPicker({
       )}
 
       {!isAccessory && (
-        <div className="flex flex-col gap-1.5 sm:order-1">
+        <div className={`flex flex-col gap-1.5 sm:order-1 ${mobileOnlyWhen(showModelStep)} ${stepIn}`}>
           <label
             htmlFor={modelId}
             className="text-sm font-medium tracking-tight text-ink max-sm:sr-only"
@@ -205,7 +226,7 @@ export function VariantPicker({
               setSelectedModelSlug(event.target.value);
               setSelectedCaseTypeSlug("");
             }}
-            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className={`w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
             <option value="">Select phone model</option>
             {modelsForBrand.map((model) =>
@@ -223,7 +244,7 @@ export function VariantPicker({
       </div>
 
       {!isAccessory && allCaseTypes.length > 0 && (
-        <div className="flex flex-col gap-1.5 sm:order-2">
+        <div className={`flex flex-col gap-1.5 sm:order-2 ${mobileOnlyWhen(showCaseStep)} ${stepIn}`}>
           <label
             htmlFor={caseTypeId}
             className="text-sm font-medium tracking-tight text-ink max-sm:sr-only"
@@ -235,7 +256,7 @@ export function VariantPicker({
             disabled={!selectedModelSlug}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
-            className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className={`w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
             <option value="">
               {!selectedModelSlug
@@ -256,7 +277,7 @@ export function VariantPicker({
       )}
 
       {selectedVariant ? (
-        <div className="sm:order-4 max-sm:flex max-sm:min-h-8 max-sm:flex-wrap max-sm:items-baseline max-sm:gap-x-3 max-sm:gap-y-0">
+        <div className={`sm:order-4 max-sm:flex max-sm:min-h-8 max-sm:flex-wrap max-sm:items-baseline max-sm:gap-x-3 max-sm:gap-y-0 ${mobileOnlyWhen(showPurchase)} ${stepIn}`}>
           <p className="font-display text-3xl text-ink max-sm:text-2xl">
             {formatPrice(selectedVariant.price, selectedVariant.currency)}
           </p>
@@ -277,7 +298,7 @@ export function VariantPicker({
           </p>
         </div>
       ) : !isSelectionComplete ? (
-        <div className="sm:order-4 max-sm:flex max-sm:min-h-8 max-sm:items-baseline max-sm:gap-x-3">
+        <div className={`sm:order-4 max-sm:flex max-sm:min-h-8 max-sm:items-baseline max-sm:gap-x-3 ${mobileOnlyWhen(showPurchase)} ${stepIn}`}>
           <p className="font-display text-3xl text-ink max-sm:text-2xl">
             <span className="text-lg font-normal text-muted-foreground max-sm:text-sm max-sm:font-medium max-sm:tracking-wider max-sm:uppercase">From </span>
             {formatPrice(minPrice, currency)}
@@ -289,19 +310,19 @@ export function VariantPicker({
           </p>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground sm:order-4">
+        <p className={`text-sm text-muted-foreground sm:order-4 ${mobileOnlyWhen(showPurchase)}`}>
           This combination isn&apos;t available. Try a different phone
           model or case type above.
         </p>
       )}
 
       {bundleNote && (
-        <p className="rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink sm:order-5 max-sm:py-1.5 max-sm:text-xs max-sm:leading-4">
+        <p className={`rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink sm:order-5 max-sm:py-1.5 max-sm:text-xs max-sm:leading-4 ${mobileOnlyWhen(showPurchase)}`}>
           {bundleNote}
         </p>
       )}
 
-      <div className="flex flex-col gap-5 sm:order-6 max-sm:flex-row max-sm:items-stretch max-sm:gap-3">
+      <div className={`flex flex-col gap-5 sm:order-6 max-sm:flex-row max-sm:items-stretch max-sm:gap-3 ${mobileOnlyWhen(showPurchase)} ${stepIn}`}>
       {selectedVariant?.isAvailable && (
         <div className="flex items-center gap-3 max-sm:shrink-0">
           <label htmlFor={`${modelId}-qty`} className="sr-only">
