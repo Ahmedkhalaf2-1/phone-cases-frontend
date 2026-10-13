@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format-price";
 import { useCart } from "@/lib/cart/CartProvider";
 import type { PublicVariant } from "@/lib/api/types";
+import { Spinner } from "@/components/ui/Spinner";
 
 export function VariantPicker({
   variants,
@@ -307,8 +308,10 @@ export function VariantPicker({
             ? "This combination is out of stock"
             : undefined
         }
-        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 max-sm:h-12 max-sm:min-h-0 max-sm:max-w-none max-sm:flex-1 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-[background-color,transform] duration-[var(--sf-dur-fast)] enabled:hover:bg-accent enabled:active:scale-[0.98] motion-reduce:transform-none disabled:cursor-not-allowed disabled:bg-ink/40"
+        aria-busy={status === "adding"}
+        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 max-sm:h-12 max-sm:min-h-0 max-sm:max-w-none max-sm:flex-1 rounded-pill bg-ink px-6 py-3.5 text-sm font-semibold tracking-tight text-white transition-[background-color,transform] duration-[var(--sf-dur-fast)] enabled:hover:bg-ink/85 enabled:active:scale-[0.98] enabled:active:bg-ink/95 motion-reduce:transform-none disabled:cursor-not-allowed disabled:bg-ink/40 aria-busy:disabled:cursor-progress aria-busy:disabled:bg-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
+        {status === "adding" && <Spinner />}
         {status === "adding"
           ? "Adding…"
           : !isAccessory && !selectedModelSlug
