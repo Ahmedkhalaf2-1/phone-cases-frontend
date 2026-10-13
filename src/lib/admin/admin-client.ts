@@ -344,6 +344,12 @@ export const adminClient = {
     });
   },
 
+  getCoupon(accessToken: string, id: string): Promise<AdminCoupon> {
+    return apiRequest<AdminCoupon>(`/admin/coupons/${id}`, {
+      headers: authHeader(accessToken),
+    });
+  },
+
   createCoupon(
     accessToken: string,
     input: CreateCouponInput,

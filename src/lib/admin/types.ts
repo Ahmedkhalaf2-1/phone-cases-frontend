@@ -213,6 +213,9 @@ export interface AdminProductsResult {
 
 export type CouponType = "FIXED" | "PERCENTAGE";
 
+/** Computed by the server (mirrors what the cart would accept); display only. */
+export type CouponStatus = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "EXHAUSTED" | "DISABLED";
+
 export interface AdminCoupon {
   id: string;
   code: string;
@@ -224,6 +227,7 @@ export interface AdminCoupon {
   usageLimit: number | null;
   usageCount: number;
   isActive: boolean;
+  status: CouponStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -255,10 +259,11 @@ export interface CreateCouponInput {
   code: string;
   type: CouponType;
   value: number;
-  minSpend?: number;
-  startsAt?: string;
-  expiresAt?: string;
-  usageLimit?: number;
+  /** On update, `null` clears the value; omitted leaves it unchanged. */
+  minSpend?: number | null;
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  usageLimit?: number | null;
   isActive?: boolean;
 }
 

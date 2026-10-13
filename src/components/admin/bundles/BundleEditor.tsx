@@ -1,19 +1,26 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
 import { MoneyInput } from "@/components/admin/MoneyInput";
 import type { AdminBundle, BundleScope, CreateBundleInput } from "@/lib/admin/types";
+import { inputClass, linkButtonClass } from "@/components/admin/admin-styles";
 import {
-  describeScope,
-  inputClass,
-  linkButtonClass,
-  primaryButtonClass,
-  SCOPE_OPTIONS,
-  secondaryButtonClass,
-} from "./bundle-utils";
+  FormSection,
+  MobileActionBar,
+  SummaryCard,
+  SummaryRow,
+  ToggleField,
+} from "@/components/admin/form-kit";
+import {
+  browserTimeZone,
+  formatDateTime,
+  isoToLocalInput,
+  localInputToIso,
+} from "@/lib/admin/datetime";
+import { describeScope, SCOPE_OPTIONS } from "./bundle-utils";
 import {
   MAX_TARGETS,
   ProductPicker,
@@ -28,104 +35,10 @@ const CURRENCY = "EGP";
 const MAX_BUNDLE_SIZE = 50;
 const MAX_SPECIFIC_VARIANTS = 1000;
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
-/** ISO timestamp -> value for <input type="datetime-local"> in the browser's local time. */
-function isoToLocalInput(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** datetime-local value (browser-local wall time) -> ISO timestamp for the API. */
-function localInputToIso(value: string): string | null {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-function formatLocal(value: string): string {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime())
-    ? ""
-    : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
-
 type TargetScope = Extract<
   BundleScope,
   "PRODUCTS" | "COLLECTIONS" | "CASE_TYPES" | "PHONE_BRANDS" | "PHONE_MODELS"
 >;
-
-function Section({
-  step,
-  title,
-  description,
-  children,
-}: {
-  step: number;
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-3xl border border-border p-5 sm:p-6">
-      <div className="flex items-start gap-3">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold text-white">
-          {step}
-        </span>
-        <div>
-          <h2 className="font-semibold text-ink">{title}</h2>
-          {description && (
-            <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
-          )}
-        </div>
-      </div>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-function Toggle({
-  label,
-  help,
-  checked,
-  onChange,
-}: {
-  label: string;
-  help: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  const id = useId();
-  return (
-    <div className="flex items-start gap-3">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        aria-describedby={`${id}-help`}
-        className="mt-1 size-4 accent-accent"
-      />
-      <label htmlFor={id} className="text-sm">
-        <span className="font-semibold text-ink">{label}</span>
-        <span id={`${id}-help`} className="mt-0.5 block text-muted-foreground">
-          {help}
-        </span>
-      </label>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-border py-2 text-sm last:border-b-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-end font-semibold text-ink">{value}</dd>
-    </div>
-  );
-}
 
 export function BundleEditor({
   bundle,
@@ -283,7 +196,7 @@ export function BundleEditor({
     <form onSubmit={handleSave} className="mt-6 pb-28 lg:pb-0">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-6">
-          <Section step={1} title="Offer details">
+          <FormSection step={1} title="Offer details">
             <label htmlFor="bundle-name" className="text-sm font-semibold text-ink">
               Bundle name
             </label>
@@ -298,9 +211,9 @@ export function BundleEditor({
             <p className="mt-1.5 text-xs text-muted-foreground">
               Internal label. Customers don&apos;t see this name.
             </p>
-          </Section>
+          </FormSection>
 
-          <Section
+          <FormSection
             step={2}
             title="Deal"
             description="What the customer buys, and what they pay for it."
@@ -344,9 +257,9 @@ export function BundleEditor({
                 normal price.
               </span>
             </p>
-          </Section>
+          </FormSection>
 
-          <Section
+          <FormSection
             step={3}
             title="Applies to"
             description="Which products can be counted toward this offer."
@@ -407,9 +320,9 @@ export function BundleEditor({
                 <VariantPicker selected={variants} onChange={setVariants} />
               )}
             </div>
-          </Section>
+          </FormSection>
 
-          <Section
+          <FormSection
             step={4}
             title="Schedule"
             description="Optional. Leave both empty to run the offer immediately with no end date."
@@ -445,18 +358,18 @@ export function BundleEditor({
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
               Times are in your browser&apos;s time zone (
-              {Intl.DateTimeFormat().resolvedOptions().timeZone}). Whether the offer is
+              {browserTimeZone()}). Whether the offer is
               live is always decided by the server.
             </p>
-          </Section>
+          </FormSection>
 
-          <Section
+          <FormSection
             step={5}
             title="Advanced rules"
             description="Sensible defaults for most offers."
           >
             <div className="flex flex-col gap-4">
-              <Toggle
+              <ToggleField
                 label="Repeatable per order"
                 help={`If enabled, a customer with ${
                   sizeValid ? sizeNumber * 2 : 4
@@ -466,37 +379,38 @@ export function BundleEditor({
                 checked={isRepeatable}
                 onChange={setIsRepeatable}
               />
-              <Toggle
+              <ToggleField
                 label="Require different phone models"
                 help="Only bundle items made for different phones, e.g. one case for an iPhone 15 and one for a Galaxy S24. Leave off for “any 2 cases”."
                 checked={requireDifferentPhoneModels}
                 onChange={setRequireDifferentPhoneModels}
               />
-              <Toggle
+              <ToggleField
                 label="Allow stacking with coupons"
                 help="Off: the bundle is skipped when the customer has a coupon applied. On: the bundle applies first, and the coupon discounts only what remains."
                 checked={allowCouponStacking}
                 onChange={setAllowCouponStacking}
               />
-              <Toggle
+              <ToggleField
                 label="Active"
                 help="Customers get the offer as soon as it is saved as active. Leave off to save it as a draft."
                 checked={isEnabled}
                 onChange={setIsEnabled}
               />
             </div>
-          </Section>
+          </FormSection>
         </div>
 
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="rounded-3xl border border-border bg-surface p-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Offer summary
-            </p>
-            <p className="mt-2 font-display text-xl uppercase tracking-tight text-ink">
-              {name.trim() || "Untitled bundle"}
-            </p>
-            <dl className="mt-3">
+        <SummaryCard
+          eyebrow="Offer summary"
+          heading={name.trim() || "Untitled bundle"}
+          error={error}
+          hint={problems[0]}
+          submitLabel={isEditing ? "Save changes" : "Create bundle"}
+          isSaving={isSaving}
+          disabled={problems.length > 0}
+          onCancel={onCancel}
+        >
               <SummaryRow
                 label="Customer buys"
                 value={sizeValid ? `${sizeNumber} items` : "—"}
@@ -515,74 +429,25 @@ export function BundleEditor({
                 label="Coupons"
                 value={allowCouponStacking ? "Combinable" : "Not combinable"}
               />
-              <SummaryRow label="Starts" value={startsAt ? formatLocal(startsAt) : "Immediately"} />
-              <SummaryRow label="Ends" value={expiresAt ? formatLocal(expiresAt) : "No end date"} />
+              <SummaryRow label="Starts" value={startsAt ? formatDateTime(startsAt) : "Immediately"} />
+              <SummaryRow label="Ends" value={expiresAt ? formatDateTime(expiresAt) : "No end date"} />
               <SummaryRow label="Status" value={isEnabled ? "Active" : "Draft"} />
-            </dl>
-
-            {/* Desktop: actions live in the sticky summary. Below lg the
-                sticky bottom bar below owns the primary action instead. */}
-            <div className="hidden lg:block">
-              {error && (
-                <p role="alert" className="mt-3 text-sm text-accent">
-                  {error}
-                </p>
-              )}
-              {!error && problems.length > 0 && (
-                <p className="mt-3 text-xs text-muted-foreground">{problems[0]}</p>
-              )}
-
-              <div className="mt-4 flex flex-col gap-2">
-                <button
-                  type="submit"
-                  disabled={isSaving || problems.length > 0}
-                  className={primaryButtonClass}
-                >
-                  {isSaving ? "Saving…" : isEditing ? "Save changes" : "Create bundle"}
-                </button>
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  disabled={isSaving}
-                  className={secondaryButtonClass}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </aside>
+        </SummaryCard>
       </div>
 
-      {/* Mobile/tablet primary action. Fixed to the viewport bottom, offset
-          past the admin sidebar from sm up, padded for the home-indicator
-          safe area. The form has matching bottom padding so it never hides
-          picker content. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:start-56 lg:hidden">
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <div className="min-w-0 flex-1 text-xs">
-            {error ? (
-              <p role="alert" className="text-accent">
-                {error}
-              </p>
-            ) : problems.length > 0 ? (
-              <p className="text-muted-foreground">{problems[0]}</p>
-            ) : (
-              <p className="truncate font-semibold text-ink">
-                {sizeNumber} for {formatPrice(fixedTotal as number, CURRENCY)}
-                <span className="font-normal text-muted-foreground"> · {scopeSummary}</span>
-              </p>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={isSaving || problems.length > 0}
-            className={`${primaryButtonClass} shrink-0`}
-          >
-            {isSaving ? "Saving…" : isEditing ? "Save changes" : "Create bundle"}
-          </button>
-        </div>
-      </div>
+      <MobileActionBar
+        error={error}
+        hint={problems[0]}
+        idleText={
+          <p className="truncate font-semibold text-ink">
+            {sizeNumber} for {formatPrice(fixedTotal as number, CURRENCY)}
+            <span className="font-normal text-muted-foreground"> · {scopeSummary}</span>
+          </p>
+        }
+        submitLabel={isEditing ? "Save changes" : "Create bundle"}
+        isSaving={isSaving}
+        disabled={problems.length > 0}
+      />
     </form>
   );
 }
