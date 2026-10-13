@@ -447,3 +447,23 @@ body {
     animation-play-state: paused;
   }
 }
+
+/* Purchase reassurance block: rows rise in, staggered, the first time the
+   block scrolls into view. Only hidden while JS has armed it (never for SSR,
+   no-JS or reduced-motion visitors). */
+@media (prefers-reduced-motion: no-preference) {
+  .sf-assure-item {
+    transition:
+      opacity var(--sf-dur-slow) var(--sf-ease),
+      transform var(--sf-dur-slow) var(--sf-ease);
+    transition-delay: calc(var(--i, 0) * 70ms);
+  }
+  .sf-assure[data-state="armed"] .sf-assure-item {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .sf-assure[data-state="in"] .sf-assure-item {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

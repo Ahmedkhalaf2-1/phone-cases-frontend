@@ -5,6 +5,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { formatPrice } from "@/lib/format-price";
 import { useCart } from "@/lib/cart/CartProvider";
 import type { PhoneBrand, PublicVariant } from "@/lib/api/types";
+import { PurchaseAssurance } from "@/components/catalog/PurchaseAssurance";
 import { Spinner } from "@/components/ui/Spinner";
 
 export function VariantPicker({
@@ -428,11 +429,11 @@ export function VariantPicker({
       <div className="flex flex-col gap-1.5 max-sm:gap-1.5 sm:order-3">
         <label
           htmlFor={noteId}
-          className="flex items-center justify-between text-sm font-medium tracking-tight text-ink max-w-xs max-sm:max-w-none max-sm:text-[13px] max-sm:font-normal max-sm:text-muted-foreground"
+          className="flex max-w-xs items-center justify-between gap-3 text-sm font-medium tracking-tight text-ink max-sm:max-w-none"
         >
-          <span>Note / Instructions (optional)</span>
-          <span className="text-xs font-normal text-muted-foreground max-sm:text-[11px]" dir="rtl">
-            ملاحظات خاصة (اختياري)
+          <span>Add a note</span>
+          <span className="rounded-pill bg-surface px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            Optional
           </span>
         </label>
         <textarea
@@ -442,8 +443,8 @@ export function VariantPicker({
           maxLength={500}
           value={itemNote}
           onChange={(e) => setItemNote(e.target.value)}
-          placeholder="e.g. Add name 'Ahmed' on the back / مثال: اكتب اسم أحمد على الجراب"
-          className="w-full max-w-xs rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-ink placeholder:text-muted-foreground/70 max-sm:max-w-none max-sm:py-2 max-sm:text-base max-sm:leading-5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y"
+          placeholder="Add a name, short request, or print note…"
+          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y"
         />
         <div className={`flex justify-end max-w-xs max-sm:max-w-none ${itemNote.length === 0 ? "max-sm:hidden" : ""}`}>
           <span className="text-[11px] text-muted-foreground">
@@ -451,6 +452,8 @@ export function VariantPicker({
           </span>
         </div>
       </div>
+
+      <PurchaseAssurance className="sm:order-8" />
     </div>
   );
 }
