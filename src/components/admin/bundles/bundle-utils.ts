@@ -95,3 +95,32 @@ export function variantLabel(info: Pick<BundleVariantInfo, "product" | "phoneMod
 }
 
 export { useDebounced, useRemote } from "@/lib/admin/hooks";
+
+export const BANNER_TEXT_MAX = 80;
+export const BANNER_CTA_MAX = 24;
+export const BANNER_DEFAULT_CTA = "SHOP NOW";
+
+/** Mirrors the server's generated default, e.g. "2 CASES FOR 450 EGP" (preview only). */
+export function defaultBannerText(
+  bundleSize: number,
+  fixedTotal: number,
+  currency: string,
+): string {
+  const amount = fixedTotal / 100;
+  const price = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+  return `${bundleSize} CASES FOR ${price} ${currency}`.toUpperCase();
+}
+
+/**
+ * The bundle the storefront banner will actually show: among ACTIVE bundles
+ * with the banner on, the one created first (ties broken by id) - the same
+ * order the server uses. Guidance only; the server decides.
+ */
+export function bannerWinner<T extends Pick<AdminBundle, "id" | "status" | "showAnnouncementBanner" | "createdAt">>(
+  bundles: T[],
+): T | null {
+  const candidates = bundles
+    .filter((b) => b.status === "ACTIVE" && b.showAnnouncementBanner)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+  return candidates[0] ?? null;
+}

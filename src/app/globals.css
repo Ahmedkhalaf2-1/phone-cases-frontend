@@ -404,3 +404,46 @@ body {
     animation: none !important;
   }
 }
+
+/* Top announcement bar: static centered message by default (reduced motion),
+   a seamless CSS-only marquee otherwise. The strip is two identical groups;
+   moving by -50% lands exactly on the start of the second one. */
+.sf-announce-track {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+.sf-announce-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+.sf-announce-group[data-dup] {
+  display: none;
+}
+.sf-announce-item:not(:first-child) {
+  display: none;
+}
+@keyframes sf-announce-scroll {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sf-announce-track {
+    width: max-content;
+    justify-content: flex-start;
+    animation: sf-announce-scroll 40s linear infinite;
+    will-change: transform;
+  }
+  .sf-announce-group[data-dup] {
+    display: flex;
+  }
+  .sf-announce-item:not(:first-child) {
+    display: inline-flex;
+  }
+  .sf-announce:hover .sf-announce-track,
+  .sf-announce:focus-visible .sf-announce-track {
+    animation-play-state: paused;
+  }
+}

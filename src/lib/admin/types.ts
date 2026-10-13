@@ -357,6 +357,11 @@ export interface AdminBundle {
   isRepeatable: boolean;
   allowCouponStacking: boolean;
   isEnabled: boolean;
+  /** Optional storefront announcement bar (display only). */
+  showAnnouncementBanner: boolean;
+  bannerText: string | null;
+  bannerCtaLabel: string | null;
+  createdAt: string;
   /** Computed by the server from isEnabled + schedule; display only. */
   status: "DISABLED" | "SCHEDULED" | "ACTIVE" | "EXPIRED";
   startsAt: string | null;
@@ -376,6 +381,10 @@ export interface CreateBundleInput {
   isRepeatable?: boolean;
   allowCouponStacking?: boolean;
   isEnabled?: boolean;
+  showAnnouncementBanner?: boolean;
+  /** Blank/null clears it; the server then generates a default. */
+  bannerText?: string | null;
+  bannerCtaLabel?: string | null;
   /** ISO-8601. On update, `null` clears the date; omitted leaves it unchanged. */
   startsAt?: string | null;
   expiresAt?: string | null;

@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { BundleEditor } from "@/components/admin/bundles/BundleEditor";
 import {
+  bannerWinner,
   bundleScopeLabel,
   linkButtonClass,
   primaryButtonClass,
@@ -101,6 +102,7 @@ export default function AdminBundlesPage() {
         <BundleEditor
           key={view.bundle?.id ?? "new"}
           bundle={view.bundle}
+          otherBundles={bundles.filter((b) => b.id !== view.bundle?.id)}
           onCancel={() => setView({ mode: "list" })}
           onSaved={() => {
             setView({ mode: "list" });
@@ -132,6 +134,24 @@ export default function AdminBundlesPage() {
           + Create bundle
         </button>
       </div>
+
+      {(() => {
+        const live = bannerWinner(bundles);
+        const competing = bundles.filter(
+          (b) => b.status === "ACTIVE" && b.showAnnouncementBanner,
+        );
+        if (!live || competing.length < 2) return null;
+        return (
+          <p role="status" className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <span className="font-semibold">
+              {competing.length} active bundles have the announcement banner on.
+            </span>{" "}
+            Only one banner can show at a time. The oldest-created active bundle wins, so the
+            storefront is showing “{live.name}”. Turn the banner off on the others to remove this
+            warning.
+          </p>
+        );
+      })()}
 
       {isLoading && <LoadingRow label="Loading bundles…" />}
       {error && (
@@ -175,6 +195,15 @@ export default function AdminBundlesPage() {
                     >
                       {status.label}
                     </span>
+                    {bundle.showAnnouncementBanner && (
+                      <span className="rounded-full bg-ink px-2 py-0.5 text-xs font-semibold uppercase text-white">
+                        {bundle.status === "ACTIVE"
+                          ? bannerWinner(bundles)?.id === bundle.id
+                            ? "Banner live"
+                            : "Banner hidden"
+                          : "Banner on"}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-ink">
                     {bundle.bundleSize} items →{" "}

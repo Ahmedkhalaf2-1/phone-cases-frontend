@@ -1,4 +1,4 @@
-import type { BundleOffer } from "@/lib/api/types";
+import type { AnnouncementBanner, BundleOffer } from "@/lib/api/types";
 import type { BundleProgress } from "@/lib/cart/types";
 
 /**
@@ -24,6 +24,20 @@ export function pickPrimaryOffer(offers: BundleOffer[]): BundleOffer | null {
   return [...offers].sort(
     (a, b) => perUnit(a) - perUnit(b) || b.minSavings - a.minSavings,
   )[0];
+}
+
+/**
+ * The banner for the top announcement bar. The backend already resolves
+ * which single offer may show one; this only reads it.
+ */
+export function pickAnnouncementBanner(offers: BundleOffer[]): AnnouncementBanner | null {
+  for (const offer of offers) {
+    const banner = offer.announcementBanner;
+    if (banner?.enabled && banner.text.trim() && banner.target?.href.startsWith("/")) {
+      return banner;
+    }
+  }
+  return null;
 }
 
 /** Offers that apply to this product (server-resolved slugs), best first. */

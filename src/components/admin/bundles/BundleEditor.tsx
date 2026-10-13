@@ -20,7 +20,15 @@ import {
   isoToLocalInput,
   localInputToIso,
 } from "@/lib/admin/datetime";
-import { describeScope, SCOPE_OPTIONS } from "./bundle-utils";
+import {
+  BANNER_CTA_MAX,
+  BANNER_DEFAULT_CTA,
+  BANNER_TEXT_MAX,
+  bannerWinner,
+  defaultBannerText,
+  describeScope,
+  SCOPE_OPTIONS,
+} from "./bundle-utils";
 import {
   MAX_TARGETS,
   ProductPicker,
@@ -42,10 +50,13 @@ type TargetScope = Extract<
 
 export function BundleEditor({
   bundle,
+  otherBundles = [],
   onSaved,
   onCancel,
 }: {
   bundle: AdminBundle | null;
+  /** Every other bundle, used only to warn about competing announcement banners. */
+  otherBundles?: AdminBundle[];
   onSaved: () => void;
   onCancel: () => void;
 }) {
@@ -81,6 +92,9 @@ export function BundleEditor({
     bundle?.allowCouponStacking ?? false,
   );
   const [isEnabled, setIsEnabled] = useState(bundle?.isEnabled ?? false);
+  const [showBanner, setShowBanner] = useState(bundle?.showAnnouncementBanner ?? false);
+  const [bannerText, setBannerText] = useState(bundle?.bannerText ?? "");
+  const [bannerCta, setBannerCta] = useState(bundle?.bannerCtaLabel ?? "");
   // Schedule is held as datetime-local strings ("" = not set). The initial
   // values are remembered so only a field the admin actually changed is sent;
   // an untouched date is never re-written (and never loses its seconds).
@@ -154,6 +168,11 @@ export function BundleEditor({
       isRepeatable,
       allowCouponStacking,
       isEnabled,
+      showAnnouncementBanner: showBanner,
+      // Blank is sent as null so a cleared field really clears; the server
+      // then falls back to its generated default.
+      bannerText: bannerText.trim() || null,
+      bannerCtaLabel: bannerCta.trim() || null,
     };
     // Schedule: on edit, an emptied field is sent as null (explicit clear);
     // an unchanged field is omitted so the server keeps the stored value.
@@ -191,6 +210,23 @@ export function BundleEditor({
     Object.values(targets),
   );
   const dealReady = sizeValid && totalValid;
+
+  // Announcement banner: one bar at a time. Preview what it will say, and
+  // work out whether another active bundle would win the slot.
+  const previewText =
+    bannerText.trim() ||
+    (sizeValid && totalValid
+      ? defaultBannerText(sizeNumber, fixedTotal as number, bundle?.currency ?? CURRENCY)
+      : "YOUR OFFER TEXT");
+  const previewCta = bannerCta.trim() || BANNER_DEFAULT_CTA;
+  const competing = showBanner
+    ? bannerWinner(otherBundles)
+    : null;
+  // Order used by the server: oldest created bundle first. A bundle that
+  // is not saved yet is the newest, so any existing banner wins over it.
+  const thisBundleLosesSlot =
+    competing !== null &&
+    (bundle === null || competing.createdAt.localeCompare(bundle.createdAt) < 0);
 
   return (
     <form onSubmit={handleSave} className="mt-6 pb-28 lg:pb-0">
@@ -399,6 +435,86 @@ export function BundleEditor({
               />
             </div>
           </FormSection>
+
+          <FormSection
+            step={6}
+            title="Announcement banner"
+            description="Optional. A slim bar at the top of the storefront while this offer is active."
+          >
+            <div className="flex flex-col gap-4">
+              <ToggleField
+                label="Show announcement banner"
+                help="Off by default. The banner only appears while this bundle is active and inside its schedule; the offer itself works the same either way."
+                checked={showBanner}
+                onChange={setShowBanner}
+              />
+
+              {showBanner && (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="bundle-banner-text" className="text-sm font-semibold text-ink">
+                        Banner text
+                      </label>
+                      <input
+                        id="bundle-banner-text"
+                        value={bannerText}
+                        maxLength={BANNER_TEXT_MAX}
+                        onChange={(e) => setBannerText(e.target.value)}
+                        placeholder={previewText}
+                        className={`${inputClass} w-full`}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Leave empty to use the generated text shown above.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="bundle-banner-cta" className="text-sm font-semibold text-ink">
+                        Button label
+                      </label>
+                      <input
+                        id="bundle-banner-cta"
+                        value={bannerCta}
+                        maxLength={BANNER_CTA_MAX}
+                        onChange={(e) => setBannerCta(e.target.value)}
+                        placeholder={BANNER_DEFAULT_CTA}
+                        className={`${inputClass} w-full`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Preview
+                    </p>
+                    <div className="mt-1.5 overflow-hidden rounded-xl bg-ink px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-[0.08em] text-white">
+                      {previewText} <span className="opacity-60">—</span>{" "}
+                      <span className="underline underline-offset-4">{previewCta}</span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      On the storefront this scrolls across the top of every page. Clicking it
+                      opens the matching collection or product when the offer targets exactly one,
+                      otherwise the collections page.
+                    </p>
+                  </div>
+
+                  {competing && (
+                    <p
+                      role="status"
+                      className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                    >
+                      <span className="font-semibold">Only one banner can show at a time.</span>{" "}
+                      Another active bundle, “{competing.name}”, also has its banner on. The
+                      oldest-created active bundle wins, so{" "}
+                      {thisBundleLosesSlot
+                        ? `“${competing.name}” will be shown and this one will not.`
+                        : "this banner will be shown and the other will not."}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </FormSection>
         </div>
 
         <SummaryCard
@@ -432,6 +548,7 @@ export function BundleEditor({
               <SummaryRow label="Starts" value={startsAt ? formatDateTime(startsAt) : "Immediately"} />
               <SummaryRow label="Ends" value={expiresAt ? formatDateTime(expiresAt) : "No end date"} />
               <SummaryRow label="Status" value={isEnabled ? "Active" : "Draft"} />
+              <SummaryRow label="Announcement banner" value={showBanner ? "On" : "Off"} />
         </SummaryCard>
       </div>
 

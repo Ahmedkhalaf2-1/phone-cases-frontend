@@ -38,9 +38,18 @@ import { StorefrontMotion } from "@/components/motion/StorefrontMotion";
  * factored into one shared JS constant; keep both occurrences equal if
  * either changes.
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  announcement = null,
+}: {
+  children: ReactNode;
+  /** Optional top announcement bar; renders nothing (and no gap) when null. */
+  announcement?: ReactNode;
+}) {
   const pathname = usePathname();
   if (pathname.startsWith("/admin")) return <>{children}</>;
+  // Keep the checkout flow free of promotions.
+  const showAnnouncement = !pathname.startsWith("/checkout");
 
   return (
     <div className="storefront-shell relative min-h-full bg-background">
@@ -55,6 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <SiteSidebar />
       <div className="lg:pt-[12px] lg:pr-[18px] lg:pb-[18px] lg:pl-[calc(68px+12px)]">
         <div className="min-h-full lg:flex lg:min-h-[calc(100vh-30px)] lg:flex-col lg:overflow-hidden lg:rounded-[32px] lg:bg-surface lg:shadow-[0_2px_10px_rgba(0,0,0,0.025),0_12px_36px_rgba(0,0,0,0.04)]">
+          {showAnnouncement && announcement}
           {children}
         </div>
       </div>

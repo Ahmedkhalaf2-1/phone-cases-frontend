@@ -155,4 +155,14 @@ export interface BundleOffer {
   /** Guaranteed minimum saving of any complete group; 0 when it cannot be proven. */
   minSavings: number;
   appliesTo: { type: "ALL" } | { type: "SELECTED"; productSlugs: string[] };
+  /** Present on at most one offer: the one chosen for the top announcement bar. */
+  announcementBanner?: AnnouncementBanner | null;
+}
+
+/** Server-resolved copy and destination for the storefront announcement bar. */
+export interface AnnouncementBanner {
+  enabled: boolean;
+  text: string;
+  ctaLabel: string;
+  target: { type: "CATALOG" | "COLLECTION" | "PRODUCT"; href: string };
 }

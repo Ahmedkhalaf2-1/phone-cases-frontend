@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { CartProvider } from "@/lib/cart/CartProvider";
 import { AppShell } from "@/components/layout/AppShell";
+import { AnnouncementBar } from "@/components/bundles/AnnouncementBar";
+import { getActiveBundleOffers } from "@/lib/data/bundles";
+import { pickAnnouncementBanner } from "@/lib/bundles";
 import { SITE } from "@/config/site";
 import { SITE_URL } from "@/lib/env";
 import "./globals.css";
@@ -45,7 +48,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Server-resolved; null (and nothing rendered) unless an admin has turned
+  // the announcement banner on for a currently active bundle.
+  const banner = pickAnnouncementBanner(await getActiveBundleOffers());
+
   return (
     <html
       lang="en"
@@ -53,7 +60,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full overflow-x-hidden bg-background text-foreground antialiased">
         <CartProvider>
-          <AppShell>{children}</AppShell>
+          <AppShell announcement={banner ? <AnnouncementBar banner={banner} /> : null}>
+            {children}
+          </AppShell>
         </CartProvider>
       </body>
     </html>
