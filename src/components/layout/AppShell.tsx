@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (pathname.startsWith("/admin")) return <>{children}</>;
 
   return (
-    <div className="relative min-h-full bg-background">
+    <div className="storefront-shell relative min-h-full bg-background">
       {/* Page-entrance motion for client-side navigations. Rendered only in
           this (storefront) branch - Admin returned above and never mounts it. */}
       <StorefrontMotion />

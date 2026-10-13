@@ -193,6 +193,33 @@ body {
   display: none;
 }
 
+/* Storefront page scrollbar: thin, transparent track, soft rounded thumb.
+   Fine-pointer devices only, so touch devices keep native scrolling.
+   Scoped to the storefront shell (AppShell); admin keeps the default. */
+@media (hover: hover) and (pointer: fine) {
+  html:has(.storefront-shell)::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  html:has(.storefront-shell)::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  html:has(.storefront-shell)::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background-color: rgb(0 0 0 / 0.28);
+  }
+  html:has(.storefront-shell)::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(0 0 0 / 0.5);
+  }
+  /* Firefox (WebKit/Blink use the pseudo-elements above for exact sizing). */
+  @supports not selector(::-webkit-scrollbar) {
+    html:has(.storefront-shell) {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(0 0 0 / 0.28) transparent;
+    }
+  }
+}
+
 /* Header search panel: quick pop-in, and a soft fade for swapped content. */
 @keyframes search-pop {
   from {
