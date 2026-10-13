@@ -3,8 +3,6 @@ import { formatPrice } from "@/lib/format-price";
 import { getCompatibilityLabel } from "@/lib/compatibility";
 import { LinkPending } from "@/components/motion/LinkPending";
 import { SharedProductImage } from "@/components/motion/SharedProductImage";
-import { getActiveBundleOffers } from "@/lib/data/bundles";
-import { cardBadge, offerForProduct } from "@/lib/bundles";
 import type { PublicProductSummary, PublicVariant } from "@/lib/api/types";
 import type { DemoProduct } from "@/lib/demo/products.demo";
 
@@ -14,7 +12,7 @@ function hasVariants(
   return "variants" in product;
 }
 
-export async function ProductCard({
+export function ProductCard({
   product,
   source,
   imageLoading = "lazy",
@@ -31,8 +29,6 @@ export async function ProductCard({
    */
   sharedImage?: boolean;
 }) {
-  // Offers are fetched once per request (cached); no offer -> no badge.
-  const bundleOffer = offerForProduct(await getActiveBundleOffers(), product.slug);
   return (
     <Link
       href={`/products/${product.slug}`}
@@ -74,13 +70,6 @@ export async function ProductCard({
           {source === "live" && product.effectivePriceFrom !== null && (
             <p className="mt-1 text-sm font-medium text-ink">
               {formatPrice(product.effectivePriceFrom, product.currency)}
-            </p>
-          )}
-          {bundleOffer && (
-            <p className="mt-1.5">
-              <span className="inline-block rounded-pill bg-accent-wash px-2 py-0.5 text-[11px] font-semibold tracking-tight text-ink">
-                {cardBadge(bundleOffer)}
-              </span>
             </p>
           )}
         </div>

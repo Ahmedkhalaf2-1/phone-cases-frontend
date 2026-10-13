@@ -66,11 +66,6 @@ export function offerBody(o: BundleOffer): string {
     : `${pick} and get the bundle price automatically.`;
 }
 
-/** "2 for 450 EGP" */
-export function cardBadge(o: BundleOffer): string {
-  return `${o.bundleSize} for ${formatOfferPrice(o.fixedTotal, o.currency)}`;
-}
-
 export function productNote(o: BundleOffer): string {
   const price = formatOfferPrice(o.fixedTotal, o.currency);
   if (o.bundleSize === 2) {
