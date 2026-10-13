@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 /** Earliest / latest arrival, in calendar days from the customer's today. */
 const MIN_DAYS = 1;
@@ -40,8 +40,8 @@ const ITEMS = [
   },
   {
     icon: ICON.print,
-    title: "Printed to stand out",
-    text: "Premium print on a crystal-clear-sided case.",
+    title: "Premium print",
+    text: "Crisp colour on a clear-sided case.",
   },
   {
     icon: ICON.shield,
@@ -51,17 +51,16 @@ const ITEMS = [
 ];
 
 /**
- * Compact reassurance block under the purchase controls. Static copy plus an
- * estimated-delivery range computed from the visitor's own clock (so it is
- * filled in after mount, never during SSR, to avoid hydration mismatches).
+ * Compact reassurance block under the product title. Static copy plus an
+ * estimated-delivery range computed from the visitor's own clock (filled in
+ * after mount, never during SSR, so there is no hydration mismatch).
  *
- * Motion: when the block is below the fold it is armed and its rows rise in,
- * staggered, the first time it scrolls into view (CSS transitions, see
- * .sf-assure in globals.css). Reduced motion, or a block already on screen,
- * is never hidden at all.
+ * Motion is pure CSS (see .sf-assure in globals.css): the four lines are
+ * always in the DOM, so the card's height is final from the first paint and
+ * the reveal only changes opacity/transform - nothing reflows. Reduced
+ * motion shows every line immediately.
  */
 export function PurchaseAssurance({ className = "" }: { className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
   // null on the server and during hydration, the real range afterwards.
   const range = useSyncExternalStore(
     subscribeNever,
@@ -69,30 +68,8 @@ export function PurchaseAssurance({ className = "" }: { className?: string }) {
     () => null,
   );
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight && rect.bottom > 0) return; // already visible
-
-    el.dataset.state = "armed";
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          el.dataset.state = "in";
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <section
-      ref={ref}
       aria-label="Delivery and quality"
       className={`sf-assure rounded-card border border-border bg-surface/70 p-4 max-sm:p-3.5 ${className}`}
     >
@@ -127,8 +104,8 @@ export function PurchaseAssurance({ className = "" }: { className?: string }) {
               <path d={item.icon} />
             </svg>
             <p className="text-sm leading-5">
-              <span className="font-semibold text-ink">{item.title}</span>{" "}
-              <span className="text-muted-foreground">{item.text}</span>
+              <span className="block font-semibold text-ink">{item.title}</span>
+              <span className="block text-muted-foreground">{item.text}</span>
             </p>
           </li>
         ))}

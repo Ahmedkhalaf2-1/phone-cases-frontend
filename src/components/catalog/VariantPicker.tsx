@@ -5,7 +5,6 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { formatPrice } from "@/lib/format-price";
 import { useCart } from "@/lib/cart/CartProvider";
 import type { PhoneBrand, PublicVariant } from "@/lib/api/types";
-import { PurchaseAssurance } from "@/components/catalog/PurchaseAssurance";
 import { Spinner } from "@/components/ui/Spinner";
 
 export function VariantPicker({
@@ -452,8 +451,6 @@ export function VariantPicker({
           </span>
         </div>
       </div>
-
-      <PurchaseAssurance className="sm:order-8" />
     </div>
   );
 }

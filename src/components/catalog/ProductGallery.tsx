@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { PurchaseAssurance } from "@/components/catalog/PurchaseAssurance";
 import { VariantPicker } from "@/components/catalog/VariantPicker";
 import { SharedProductImage } from "@/components/motion/SharedProductImage";
 import type { PublicProductDetail, PublicVariant } from "@/lib/api/types";
@@ -93,19 +94,16 @@ export function ProductGallery({
           <p className="mt-3 max-w-md text-muted-foreground max-sm:mt-2">{product.description}</p>
         )}
 
-        {product.collections.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2 max-sm:mt-3">
-            {product.collections.map((collection) => (
-              <Link
-                key={collection.id}
-                href={`/collections/${collection.slug}`}
-                className="rounded-pill border border-border px-3 py-1 text-xs font-medium tracking-tight text-ink hover:border-accent hover:text-accent max-sm:inline-flex max-sm:min-h-8 max-sm:items-center"
-              >
-                {collection.name}
-              </Link>
-            ))}
-          </div>
-        )}
+        {/* Delivery / quality reassurance sits right under the title. */}
+        <PurchaseAssurance className="mt-4 max-sm:mt-3" />
+
+        <div className="mt-6 max-sm:mt-4">
+          <VariantPicker
+            variants={product.variants}
+            bundleNote={bundleNote}
+            onVariantChange={(variant) => setVariantImage(variant?.thumbnail ?? null)}
+          />
+        </div>
 
         {(product.variants as PublicVariant[]).some((v) => v.isPersonalizable) && (
           <Link
@@ -119,14 +117,6 @@ export function ProductGallery({
             <span aria-hidden>→</span>
           </Link>
         )}
-
-        <div className="mt-8 max-sm:mt-6">
-          <VariantPicker
-            variants={product.variants}
-            bundleNote={bundleNote}
-            onVariantChange={(variant) => setVariantImage(variant?.thumbnail ?? null)}
-          />
-        </div>
 
         {source === "demo" && (
           <p className="mt-6 text-xs text-muted-foreground">

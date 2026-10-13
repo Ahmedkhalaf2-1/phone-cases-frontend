@@ -448,22 +448,22 @@ body {
   }
 }
 
-/* Purchase reassurance block: rows rise in, staggered, the first time the
-   block scrolls into view. Only hidden while JS has armed it (never for SSR,
-   no-JS or reduced-motion visitors). */
-@media (prefers-reduced-motion: no-preference) {
-  .sf-assure-item {
-    transition:
-      opacity var(--sf-dur-slow) var(--sf-ease),
-      transform var(--sf-dur-slow) var(--sf-ease);
-    transition-delay: calc(var(--i, 0) * 70ms);
-  }
-  .sf-assure[data-state="armed"] .sf-assure-item {
+/* Purchase reassurance block: lines settle in one after another (0 / 190 /
+   380 / 570ms). Pure CSS on opacity + transform only, with `both` fill, so
+   the card keeps its final height throughout. Skipped for reduced motion. */
+@keyframes sf-assure-in {
+  from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
-  .sf-assure[data-state="in"] .sf-assure-item {
+  to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sf-assure-item {
+    animation: sf-assure-in 460ms var(--sf-ease) both;
+    animation-delay: calc(var(--i, 0) * 190ms);
   }
 }
