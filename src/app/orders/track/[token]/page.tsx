@@ -82,7 +82,7 @@ export default function OrderTrackingPage({
       {/* Contains a secret tracking token — must never be indexed. */}
       <meta name="robots" content="noindex, nofollow" />
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
           {isLoading && <LoadingRow label="Loading order…" />}
 

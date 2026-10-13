@@ -25,7 +25,7 @@ export default async function StaticPage({
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
           {page ? (
             <>

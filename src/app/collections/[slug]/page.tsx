@@ -53,7 +53,7 @@ export default async function CollectionPage({
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
           <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
             <Link href="/collections" className="hover:text-accent">

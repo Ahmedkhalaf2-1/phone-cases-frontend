@@ -34,7 +34,7 @@ export default async function CustomizePage({
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
           <header className="mb-6">
             <h1 className="font-display text-4xl tracking-tighter text-ink sm:text-5xl">Design your case</h1>

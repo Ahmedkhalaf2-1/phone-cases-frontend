@@ -1,5 +1,6 @@
 "use client";
 
+import { CartCountBadge } from "@/components/motion/CartCountBadge";
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { PRIMARY_NAV, SITE } from "@/config/site";
@@ -89,14 +90,7 @@ export function SiteHeader() {
             className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:hidden"
           >
             <BagIcon />
-            {itemCount > 0 && (
-              <span
-                aria-hidden
-                className="absolute end-0.5 top-0.5 flex size-4 items-center justify-center rounded-pill bg-accent text-[10px] font-medium text-white shadow-accent"
-              >
-                {itemCount > 9 ? "9+" : itemCount}
-              </span>
-            )}
+            <CartCountBadge className="absolute end-0.5 top-0.5 flex size-4 items-center justify-center rounded-pill bg-accent text-[10px] font-medium text-white shadow-accent" />
           </Link>
 
           <button

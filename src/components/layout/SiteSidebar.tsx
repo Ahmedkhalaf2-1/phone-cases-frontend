@@ -1,5 +1,6 @@
 "use client";
 
+import { CartCountBadge } from "@/components/motion/CartCountBadge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/lib/cart/CartProvider";
@@ -75,14 +76,7 @@ export function SiteSidebar() {
         }`}
       >
         <BagIcon />
-        {itemCount > 0 && (
-          <span
-            aria-hidden
-            className="absolute end-1 top-1 flex size-4 items-center justify-center rounded-pill bg-accent text-[10px] font-medium text-white shadow-accent"
-          >
-            {itemCount > 9 ? "9+" : itemCount}
-          </span>
-        )}
+        <CartCountBadge className="absolute end-1 top-1 flex size-4 items-center justify-center rounded-pill bg-accent text-[10px] font-medium text-white shadow-accent" />
       </Link>
     </aside>
   );

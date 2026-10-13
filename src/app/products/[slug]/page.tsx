@@ -33,7 +33,7 @@ export default async function ProductDetailPage({
       <SiteHeader />
       <main className="flex-1">
         <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
-          <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+          <nav data-motion="fade" aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
             <Link href="/collections" className="hover:text-accent">
               Collections
             </Link>{" "}

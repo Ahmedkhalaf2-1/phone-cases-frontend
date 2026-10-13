@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { VariantPicker } from "@/components/catalog/VariantPicker";
+import { SharedProductImage } from "@/components/motion/SharedProductImage";
 import type { PublicProductDetail, PublicVariant } from "@/lib/api/types";
 import type { DemoProduct } from "@/lib/demo/products.demo";
 
@@ -31,7 +32,9 @@ export function ProductGallery({
 
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-      <div>
+      <div data-motion="fade">
+        {/* Product-page end of the card -> page image morph (see ProductCard). */}
+        <SharedProductImage slug={product.slug}>
         <div className="aspect-square overflow-hidden rounded-card bg-surface shadow-card">
           {activeImage ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -46,6 +49,7 @@ export function ProductGallery({
             </div>
           )}
         </div>
+        </SharedProductImage>
 
         {sortedMedia.length > 1 && (
           <div className="mt-3 flex gap-2">
@@ -78,7 +82,7 @@ export function ProductGallery({
         )}
       </div>
 
-      <div>
+      <div data-motion="rise">
         <h1 className="font-display text-4xl tracking-tighter text-ink sm:text-5xl">
           {product.name}
         </h1>

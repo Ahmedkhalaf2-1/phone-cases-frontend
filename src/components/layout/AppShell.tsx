@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SiteSidebar } from "@/components/layout/SiteSidebar";
+import { StorefrontMotion } from "@/components/motion/StorefrontMotion";
 
 /**
  * Desktop-only "floating app shell": a fixed icon sidebar plus one large
@@ -42,6 +43,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative min-h-full bg-background">
+      {/* Page-entrance motion for client-side navigations. Rendered only in
+          this (storefront) branch - Admin returned above and never mounts it. */}
+      <StorefrontMotion />
       {/* Technically redundant with the outer wrapper's own bg-background
           (same color, same area) — kept explicit so this rail's fill
           doesn't silently depend on the wrapper never changing. */}

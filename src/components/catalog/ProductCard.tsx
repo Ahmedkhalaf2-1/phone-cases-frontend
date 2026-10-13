@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { formatPrice } from "@/lib/format-price";
 import { getCompatibilityLabel } from "@/lib/compatibility";
+import { LinkPending } from "@/components/motion/LinkPending";
+import { SharedProductImage } from "@/components/motion/SharedProductImage";
 import type { PublicProductSummary, PublicVariant } from "@/lib/api/types";
 import type { DemoProduct } from "@/lib/demo/products.demo";
 
@@ -14,33 +16,43 @@ export function ProductCard({
   product,
   source,
   imageLoading = "lazy",
+  sharedImage = true,
 }: {
   product: PublicProductSummary | DemoProduct;
   source: "demo" | "live";
   /** "eager" only for cards visible on first paint (first row of a grid/rail). */
   imageLoading?: "lazy" | "eager";
+  /**
+   * Whether this card's image is the product-page morph source. Pass false
+   * when the same product also appears elsewhere on the page: the
+   * view-transition name must be unique per document.
+   */
+  sharedImage?: boolean;
 }) {
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="group flex h-full flex-col rounded-card bg-surface shadow-card transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="sf-nav-target group flex h-full flex-col rounded-card bg-surface shadow-card transition-transform duration-[var(--sf-dur-normal)] ease-[var(--sf-ease)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985] motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-card-inner m-2 bg-surface">
-        {product.primaryImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.primaryImage.url}
-            alt={product.primaryImage.altText ?? product.name}
-            loading={imageLoading}
-            decoding="async"
-            className="h-full w-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-            No image
-          </div>
-        )}
-      </div>
+      <LinkPending />
+      <SharedProductImage slug={product.slug} enabled={sharedImage}>
+        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-card-inner m-2 bg-surface">
+          {product.primaryImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.primaryImage.url}
+              alt={product.primaryImage.altText ?? product.name}
+              loading={imageLoading}
+              decoding="async"
+              className="h-full w-full object-contain transition-transform duration-[var(--sf-dur-slow)] ease-[var(--sf-ease)] group-hover:scale-[1.03] motion-reduce:transform-none"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+              No image
+            </div>
+          )}
+        </div>
+      </SharedProductImage>
 
       <div className="flex flex-1 items-start justify-between gap-2 p-3 sm:p-4">
         <div className="min-w-0">

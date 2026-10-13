@@ -36,7 +36,7 @@ export default function TrackOrderPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-md px-4 py-24 sm:px-6">
           <h1 className="mb-2 font-display text-4xl tracking-tighter text-ink">
             Track order

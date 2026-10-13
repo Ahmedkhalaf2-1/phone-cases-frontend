@@ -13,6 +13,7 @@ export function CollectionProductsSection({
   totalItems,
   source,
   eagerImageCount = 0,
+  sharedImageSlugs,
 }: {
   name: string;
   slug: string;
@@ -22,6 +23,8 @@ export function CollectionProductsSection({
   source: "demo" | "live";
   /** How many leading cards load eagerly (only the first rail is on screen at first paint). */
   eagerImageCount?: number;
+  /** Products whose image is the card -> page morph source on this page (unique per document). */
+  sharedImageSlugs?: ReadonlySet<string>;
 }) {
   if (products.length === 0) return null;
 
@@ -75,6 +78,7 @@ export function CollectionProductsSection({
               product={product}
               source={source}
               imageLoading={index < eagerImageCount ? "eager" : "lazy"}
+              sharedImage={sharedImageSlugs ? sharedImageSlugs.has(product.slug) : true}
             />
           </div>
         ))}

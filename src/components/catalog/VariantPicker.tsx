@@ -297,7 +297,7 @@ export function VariantPicker({
             ? "This combination is out of stock"
             : undefined
         }
-        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
+        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-[background-color,transform] duration-[var(--sf-dur-fast)] enabled:hover:bg-accent enabled:active:scale-[0.98] motion-reduce:transform-none disabled:cursor-not-allowed disabled:bg-ink/40"
       >
         {status === "adding"
           ? "Adding…"
@@ -319,7 +319,7 @@ export function VariantPicker({
       )}
 
       {status === "added" && !cartError && (
-        <p className="text-sm text-ink">
+        <p className="sf-message-in text-sm text-ink">
           Added to cart.{" "}
           <Link href="/cart" className="font-semibold underline underline-offset-4">
             View cart →

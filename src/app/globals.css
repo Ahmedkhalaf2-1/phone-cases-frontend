@@ -224,3 +224,141 @@ body {
 .animate-search-fade {
   animation: search-fade 0.35s ease-out both;
 }
+
+/* ==========================================================================
+   Storefront motion system
+   --------------------------------------------------------------------------
+   Storefront-only. Nothing here targets admin markup: every rule hangs off
+   a storefront-only class/attribute (data-motion, .sf-*) or the View
+   Transitions pseudo-elements, which only exist while a transition runs.
+   Page-level entrance is played from StorefrontMotion.tsx (Web Animations
+   API) using the same tokens as below - keep the two in sync.
+   ========================================================================== */
+:root {
+  --sf-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --sf-dur-fast: 140ms;
+  --sf-dur-normal: 240ms;
+  --sf-dur-slow: 340ms;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Cart count badge: a small pop when the count goes up. */
+  @keyframes sf-pop {
+    0% {
+      transform: scale(0.6);
+    }
+    60% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .sf-pop {
+    animation: sf-pop var(--sf-dur-slow) var(--sf-ease) both;
+  }
+
+  /* A value that just changed (cart quantity / line price). */
+  @keyframes sf-tick {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .sf-tick {
+    display: inline-block;
+    animation: sf-tick var(--sf-dur-fast) var(--sf-ease) both;
+  }
+
+  /* Content that appears after client-side loading (cart, checkout). */
+  @keyframes sf-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .sf-fade-in {
+    animation: sf-fade-in var(--sf-dur-fast) ease-out both;
+  }
+
+  /* Small confirmation messages. */
+  @keyframes sf-message-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .sf-message-in {
+    animation: sf-message-in var(--sf-dur-normal) var(--sf-ease) both;
+  }
+
+  /* Cart row removal: collapse on the grid-rows track + fade. The server
+     request is already in flight; this only softens the disappearance. */
+  .sf-collapsible {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows var(--sf-dur-normal) var(--sf-ease),
+      opacity var(--sf-dur-fast) ease-out,
+      margin-bottom var(--sf-dur-normal) var(--sf-ease);
+  }
+  .sf-collapsible[data-leaving="true"] {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    margin-bottom: -1rem; /* cancels the list's gap-4 so the list closes up */
+  }
+}
+
+/* Clicked card/tile while navigation is pending: dim slightly, but only if
+   it takes more than a moment so fast navigations never flicker. */
+.sf-nav-target:has([data-link-pending="true"]) {
+  opacity: 0.82;
+  transition: opacity var(--sf-dur-fast) ease-out 90ms;
+}
+.sf-nav-target {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- View Transitions (progressive enhancement) --------------------------
+   Used for the product card -> product page image morph. Only named
+   <ViewTransition> boundaries animate; the page itself must NOT crossfade
+   (the incoming page already plays its own entrance), so the implicit root
+   transition is neutralised. Unsupported browsers never reach any of this. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-old(root) {
+  display: none;
+  animation: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(.sf-morph) {
+  animation-duration: var(--sf-dur-slow);
+  animation-timing-function: var(--sf-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-collapsible[data-leaving="true"] {
+    display: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

@@ -23,6 +23,19 @@ export default async function Home() {
     })),
   );
 
+  // A product can appear in several rails (and in "Caught our eye"). Its
+  // shared-image view-transition name must exist once per page, so the
+  // first card on the page claims it and later ones opt out.
+  const claimed = new Set<string>();
+  const claim = (products: { slug: string }[]) =>
+    new Set(
+      products
+        .filter((product) => !claimed.has(product.slug) && (claimed.add(product.slug), true))
+        .map((product) => product.slug),
+    );
+  const rowSharedSlugs = collectionRows.map(({ products }) => claim(products.items));
+  const featuredSharedSlugs = claim(featuredProducts.products);
+
   const promoStrips = homepageSections.filter((s) => s.type === "PROMO_STRIP");
   const banners = homepageSections.filter((s) => s.type === "BANNER");
 
@@ -30,7 +43,7 @@ export default async function Home() {
     <>
       <CmsHomepageSections sections={promoStrips} />
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <Hero />
         {collectionRows.map(({ collection, products }, index) => (
           <CollectionProductsSection
@@ -42,12 +55,14 @@ export default async function Home() {
             totalItems={products.meta.totalItems}
             source={products.source}
             eagerImageCount={index === 0 ? 5 : 0}
+            sharedImageSlugs={rowSharedSlugs[index]}
           />
         ))}
         <CmsHomepageSections sections={banners} />
         <FeaturedProducts
           products={featuredProducts.products}
           source={featuredProducts.source}
+          sharedImageSlugs={featuredSharedSlugs}
         />
       </main>
       <SiteFooter />

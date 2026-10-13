@@ -341,7 +341,7 @@ export default function CheckoutPage() {
       {/* Transactional/private page — never indexed. */}
       <meta name="robots" content="noindex, nofollow" />
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="quiet" className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="mb-2 font-display text-4xl tracking-tighter text-ink sm:text-5xl">
             Checkout

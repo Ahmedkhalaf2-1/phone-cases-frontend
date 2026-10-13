@@ -1,3 +1,4 @@
+import { LinkPending } from "@/components/motion/LinkPending";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -34,7 +35,7 @@ export default async function CollectionsPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
           <header className="mb-8">
             <p className="mb-1 text-xs font-medium tracking-tight text-muted-foreground">
@@ -53,7 +54,7 @@ export default async function CollectionsPage() {
               No collections yet.
             </p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div data-motion-stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tiles.map(({ collection, previews, total }, tileIndex) => {
                 const imageLoading = tileIndex < 3 ? "eager" : "lazy";
                 const cover = getCollectionCover(collection.slug, collection.coverImage);
@@ -61,8 +62,9 @@ export default async function CollectionsPage() {
                   <Link
                     key={collection.id}
                     href={`/collections/${collection.slug}`}
-                    className="group flex flex-col rounded-card bg-surface p-2 shadow-card transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="sf-nav-target group flex flex-col rounded-card bg-surface p-2 shadow-card transition-transform duration-[var(--sf-dur-normal)] ease-[var(--sf-ease)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985] motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
+                    <LinkPending />
                     {cover ? (
                       <div className="aspect-[16/10] overflow-hidden rounded-card-inner bg-surface">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,7 +73,7 @@ export default async function CollectionsPage() {
                           alt=""
                           loading={imageLoading}
                           decoding="async"
-                          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                          className="h-full w-full object-cover transition-transform duration-[var(--sf-dur-slow)] ease-[var(--sf-ease)] group-hover:scale-[1.03] motion-reduce:transform-none"
                         />
                       </div>
                     ) : (
@@ -90,7 +92,7 @@ export default async function CollectionsPage() {
                                   alt=""
                                   loading={imageLoading}
                                   decoding="async"
-                                  className="h-full w-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
+                                  className="h-full w-full object-contain transition-transform duration-[var(--sf-dur-slow)] ease-[var(--sf-ease)] group-hover:scale-[1.03] motion-reduce:transform-none"
                                 />
                               )}
                             </div>

@@ -8,8 +8,20 @@ import { CartLineThumbnail } from "@/components/catalog/CartLineThumbnail";
 import { useCart } from "@/lib/cart/CartProvider";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
+import { TickValue } from "@/components/motion/TickValue";
 import { getProductBySlug } from "@/lib/data/products";
 import type { PublicVariant } from "@/lib/api/types";
+
+/** Matches --sf-dur-normal (240ms) plus a small margin. */
+const ROW_EXIT_MS = 260;
+
+type CartLine = NonNullable<ReturnType<typeof useCart>["cart"]>["items"][number];
+
+interface ExitingRow {
+  item: CartLine;
+  index: number;
+  startedAt: number;
+}
 
 export default function CartPage() {
   const {
@@ -28,12 +40,57 @@ export default function CartPage() {
   const [couponBusy, setCouponBusy] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
+  // Rows being removed. The removal request is sent immediately (the server
+  // stays authoritative); this only keeps the row on screen long enough to
+  // collapse smoothly instead of vanishing the moment the response lands.
+  const [exiting, setExiting] = useState<Record<string, ExitingRow>>({});
+
+  useEffect(() => {
+    if (!cart) return;
+    const timers = Object.entries(exiting)
+      .filter(([id]) => !cart.items.some((item) => item.id === id))
+      .map(([id, row]) =>
+        setTimeout(
+          () =>
+            setExiting((prev) => {
+              const rest = { ...prev };
+              delete rest[id];
+              return rest;
+            }),
+          Math.max(0, ROW_EXIT_MS - (Date.now() - row.startedAt)),
+        ),
+      );
+    return () => timers.forEach(clearTimeout);
+  }, [cart, exiting]);
+
+  function handleRemove(item: CartLine, index: number) {
+    setExiting((prev) => ({ ...prev, [item.id]: { item, index, startedAt: Date.now() } }));
+    removeItem(item.id).catch(() => {
+      // Failed: bring the row back (the cart context already carries the error).
+      setExiting((prev) => {
+        const rest = { ...prev };
+        delete rest[item.id];
+        return rest;
+      });
+    });
+  }
+
+  const rows: { item: CartLine; leaving: boolean }[] = (cart?.items ?? []).map((item) => ({
+    item,
+    leaving: item.id in exiting,
+  }));
+  for (const [id, row] of Object.entries(exiting)) {
+    if (!rows.some((r) => r.item.id === id)) {
+      rows.splice(Math.min(row.index, rows.length), 0, { item: row.item, leaving: true });
+    }
+  }
+
   return (
     <>
       {/* Transactional/private page — never indexed. */}
       <meta name="robots" content="noindex, nofollow" />
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="mb-6 font-display text-4xl tracking-tighter text-ink sm:text-5xl">
             Your bag
@@ -76,115 +133,123 @@ export default function CartPage() {
           )}
 
           {!isLoading && cart && cart.items.length > 0 && (
-            <div className="grid gap-10 lg:grid-cols-3 lg:gap-12">
+            <div className="sf-fade-in grid gap-10 lg:grid-cols-3 lg:gap-12">
               <ul className="flex flex-col gap-4 lg:col-span-2">
-                {cart.items.map((item) => (
+                {rows.map(({ item, leaving }, rowIndex) => (
                   <li
                     key={item.id}
-                    className="flex gap-4 border-b border-border pb-4"
+                    data-leaving={leaving}
+                    inert={leaving}
+                    className="sf-collapsible"
                   >
-                    <CartLineThumbnail
-                      productSlug={item.productSlug}
-                      thumbnail={item.thumbnail}
-                    />
-                    <div className="flex flex-1 flex-col gap-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <Link
-                            href={`/products/${item.productSlug}`}
-                            className="font-semibold text-ink hover:text-accent"
-                          >
-                            {item.productName}
-                          </Link>
-                          <p className="text-sm text-muted-foreground">
-                            {[item.phoneModel?.name, item.caseType?.name]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </p>
-                          {(item.isPersonalized || item.customDesignId) && (
-                            <p className="mt-1 inline-block rounded-full bg-accent-wash px-2 py-0.5 text-xs font-semibold text-ink">
-                              Your own design
-                              {item.customizationPrice
-                                ? ` · includes ${formatPrice(item.customizationPrice, cart.currency)}`
-                                : ""}
-                            </p>
-                          )}
-                          {item.note && (
-                            <p className="mt-1 text-xs text-ink/80 italic whitespace-pre-wrap" dir="auto">
-                              Note: {item.note}
-                            </p>
-                          )}
-                          {!item.isAvailable && (
-                            <p className="mt-1 text-xs font-semibold text-accent uppercase">
-                              {item.unavailableReason ?? "Unavailable"} —
-                              excluded from your total
-                            </p>
-                          )}
-                        </div>
-                        <p className="font-semibold whitespace-nowrap text-ink">
-                          {formatPrice(item.lineSubtotal, cart.currency)}
-                        </p>
-                      </div>
-
-                      <div className="mt-2 flex items-center gap-4">
-                        <div className="flex items-center rounded-pill border border-border">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateItemQuantity(item.id, item.quantity - 1).catch(() => {})
-                            }
-                            disabled={item.quantity <= 1}
-                            aria-label="Decrease quantity"
-                            className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                          >
-                            −
-                          </button>
-                          <span className="w-8 text-center text-sm" aria-label="Quantity">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateItemQuantity(item.id, item.quantity + 1).catch(() => {})
-                            }
-                            disabled={item.quantity >= 20}
-                            aria-label="Increase quantity"
-                            className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                          >
-                            +
-                          </button>
-                        </div>
-                        {(item.phoneModel || item.caseType) && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditingItemId((id) => (id === item.id ? null : item.id))
-                            }
-                            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                          >
-                            {editingItemId === item.id ? "Cancel" : "Change"}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id).catch(() => {})}
-                          className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                        >
-                          Remove
-                        </button>
-                      </div>
-
-                      {editingItemId === item.id && (
-                        <CartItemVariantEditor
+                    <div className={`min-h-0 ${leaving ? "overflow-hidden" : ""}`}>
+                      <div className="flex gap-4 border-b border-border pb-4">
+                        <CartLineThumbnail
                           productSlug={item.productSlug}
-                          currentVariantId={item.variantId}
-                          onSelect={(variantId) => {
-                            replaceVariant(item.id, variantId)
-                              .then(() => setEditingItemId(null))
-                              .catch(() => {});
-                          }}
+                          thumbnail={item.thumbnail}
                         />
-                      )}
+                        <div className="flex flex-1 flex-col gap-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <Link
+                                href={`/products/${item.productSlug}`}
+                                className="font-semibold text-ink hover:text-accent"
+                              >
+                                {item.productName}
+                              </Link>
+                              <p className="text-sm text-muted-foreground">
+                                {[item.phoneModel?.name, item.caseType?.name]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                              {(item.isPersonalized || item.customDesignId) && (
+                                <p className="mt-1 inline-block rounded-full bg-accent-wash px-2 py-0.5 text-xs font-semibold text-ink">
+                                  Your own design
+                                  {item.customizationPrice
+                                    ? ` · includes ${formatPrice(item.customizationPrice, cart.currency)}`
+                                    : ""}
+                                </p>
+                              )}
+                              {item.note && (
+                                <p className="mt-1 text-xs text-ink/80 italic whitespace-pre-wrap" dir="auto">
+                                  Note: {item.note}
+                                </p>
+                              )}
+                              {!item.isAvailable && (
+                                <p className="mt-1 text-xs font-semibold text-accent uppercase">
+                                  {item.unavailableReason ?? "Unavailable"} —
+                                  excluded from your total
+                                </p>
+                              )}
+                            </div>
+                            <p className="font-semibold whitespace-nowrap text-ink">
+                              <TickValue value={item.lineSubtotal}>
+                                {formatPrice(item.lineSubtotal, cart.currency)}
+                              </TickValue>
+                            </p>
+                          </div>
+
+                          <div className="mt-2 flex items-center gap-4">
+                            <div className="flex items-center rounded-pill border border-border">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateItemQuantity(item.id, item.quantity - 1).catch(() => {})
+                                }
+                                disabled={item.quantity <= 1}
+                                aria-label="Decrease quantity"
+                                className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                              >
+                                −
+                              </button>
+                              <span className="w-8 text-center text-sm" aria-label="Quantity">
+                                <TickValue value={item.quantity}>{item.quantity}</TickValue>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateItemQuantity(item.id, item.quantity + 1).catch(() => {})
+                                }
+                                disabled={item.quantity >= 20}
+                                aria-label="Increase quantity"
+                                className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                              >
+                                +
+                              </button>
+                            </div>
+                            {(item.phoneModel || item.caseType) && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditingItemId((id) => (id === item.id ? null : item.id))
+                                }
+                                className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                              >
+                                {editingItemId === item.id ? "Cancel" : "Change"}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemove(item, rowIndex)}
+                              className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          {editingItemId === item.id && (
+                            <CartItemVariantEditor
+                              productSlug={item.productSlug}
+                              currentVariantId={item.variantId}
+                              onSelect={(variantId) => {
+                                replaceVariant(item.id, variantId)
+                                  .then(() => setEditingItemId(null))
+                                  .catch(() => {});
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </li>
                 ))}

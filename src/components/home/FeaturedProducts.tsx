@@ -5,9 +5,12 @@ import type { DemoProduct } from "@/lib/demo/products.demo";
 export function FeaturedProducts({
   products,
   source,
+  sharedImageSlugs,
 }: {
   products: (PublicProductSummary | DemoProduct)[];
   source: "demo" | "live";
+  /** Products whose image is the card -> page morph source on this page (unique per document). */
+  sharedImageSlugs?: ReadonlySet<string>;
 }) {
   return (
     <section
@@ -21,9 +24,14 @@ export function FeaturedProducts({
         Caught our eye
       </h2>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div data-motion-stagger className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} source={source} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            source={source}
+            sharedImage={sharedImageSlugs ? sharedImageSlugs.has(product.slug) : true}
+          />
         ))}
       </div>
 

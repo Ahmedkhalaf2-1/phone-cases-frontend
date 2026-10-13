@@ -53,7 +53,7 @@ export default async function SearchPage({
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="mb-6 font-display text-4xl tracking-tighter text-ink sm:text-5xl">
             {heading}

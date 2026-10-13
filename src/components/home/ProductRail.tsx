@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SharedElementScope } from "@/components/motion/SharedProductImage";
 
 /** Auto-slide speed in px/second. */
 const AUTO_SPEED = 32;
@@ -193,8 +194,10 @@ export function ProductRail({
         {children}
         {loops && (
           // Second copy for the seamless wrap — hidden from AT and tab order.
+          // Its product images must not carry view-transition names (they
+          // would duplicate the first copy's and cancel the morph).
           <div aria-hidden inert className="contents">
-            {children}
+            <SharedElementScope value={false}>{children}</SharedElementScope>
           </div>
         )}
       </div>

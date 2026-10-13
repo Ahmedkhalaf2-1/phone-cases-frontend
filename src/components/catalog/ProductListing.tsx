@@ -23,7 +23,7 @@ export function ProductListing({
       {items.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">{emptyMessage}</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div data-motion-stagger className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {items.map((product, index) => (
             <ProductCard
               key={product.id}
