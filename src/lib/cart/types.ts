@@ -59,6 +59,30 @@ export interface CustomDesign {
   createdAt: string;
 }
 
+/**
+ * Server-computed state of the bundle offer the cart is closest to. The
+ * storefront only renders it: eligibility and grouping are decided by the
+ * backend's pricing code, never re-derived here.
+ */
+export interface BundleProgress {
+  bundleSize: number;
+  /** Price of one complete group, minor units. */
+  fixedTotal: number;
+  currency: string;
+  requireDifferentPhoneModels: boolean;
+  isRepeatable: boolean;
+  allowCouponStacking: boolean;
+  eligibleUnits: number;
+  /** Groups currently discounted. */
+  groupsApplied: number;
+  /** Eligible units still needed for the next group; null when none is possible. */
+  unitsNeeded: number | null;
+  /** A coupon is applied and this offer may not be combined with it. */
+  blockedByCoupon: boolean;
+  /** Proven minimum saving for completing the next group; null when not provable. */
+  savingsIfCompleted: number | null;
+}
+
 export interface CartView {
   id: string;
   currency: string;
@@ -66,6 +90,8 @@ export interface CartView {
   subtotal: number;
   discountTotal: number;
   bundleDiscountTotal: number;
+  /** Additive: absent from older backends and from demo carts. */
+  bundleProgress?: BundleProgress | null;
   total: number;
   coupon: CartCoupon | null;
   couponWarning?: string;

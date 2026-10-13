@@ -138,3 +138,21 @@ export interface ProductQueryParams {
   page?: number;
   pageSize?: number;
 }
+
+/**
+ * An active bundle offer as described by `GET /bundles/active`. It carries
+ * no ids or internal names; pricing never depends on it.
+ */
+export interface BundleOffer {
+  bundleSize: number;
+  /** Price of one complete group, minor units. */
+  fixedTotal: number;
+  currency: string;
+  scope: string;
+  requireDifferentPhoneModels: boolean;
+  isRepeatable: boolean;
+  allowCouponStacking: boolean;
+  /** Guaranteed minimum saving of any complete group; 0 when it cannot be proven. */
+  minSavings: number;
+  appliesTo: { type: "ALL" } | { type: "SELECTED"; productSlugs: string[] };
+}

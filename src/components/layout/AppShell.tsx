@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SiteSidebar } from "@/components/layout/SiteSidebar";
+import { BundlePromoSheet } from "@/components/bundles/BundlePromoSheet";
 import { StorefrontMotion } from "@/components/motion/StorefrontMotion";
 
 /**
@@ -46,6 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Page-entrance motion for client-side navigations. Rendered only in
           this (storefront) branch - Admin returned above and never mounts it. */}
       <StorefrontMotion />
+      <BundlePromoSheet />
       {/* Technically redundant with the outer wrapper's own bg-background
           (same color, same area) — kept explicit so this rail's fill
           doesn't silently depend on the wrapper never changing. */}

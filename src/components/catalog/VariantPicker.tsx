@@ -8,9 +8,12 @@ import type { PublicVariant } from "@/lib/api/types";
 
 export function VariantPicker({
   variants,
+  bundleNote,
   onVariantChange,
 }: {
   variants: PublicVariant[];
+  /** Compact sentence about an active bundle this product is eligible for. */
+  bundleNote?: string;
   /** Lets the parent page sync a gallery/thumbnail to the selected variant. */
   onVariantChange?: (variant: PublicVariant | undefined) => void;
 }) {
@@ -227,6 +230,12 @@ export function VariantPicker({
         <p className="text-sm text-muted-foreground max-sm:mt-2">
           This combination isn&apos;t available. Try a different phone
           model or case type above.
+        </p>
+      )}
+
+      {bundleNote && (
+        <p className="rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink max-sm:-mt-1">
+          {bundleNote}
         </p>
       )}
 

@@ -592,7 +592,7 @@ export default function CheckoutPage() {
                 )}
                 {cart.bundleDiscountTotal > 0 && (
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Bundle savings</dt>
+                    <dt className="text-muted-foreground">Bundle discount</dt>
                     <dd>−{formatPrice(cart.bundleDiscountTotal, cart.currency)}</dd>
                   </div>
                 )}

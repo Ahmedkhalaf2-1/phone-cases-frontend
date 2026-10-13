@@ -5,6 +5,8 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ProductGallery } from "@/components/catalog/ProductGallery";
 import { getProductBySlug } from "@/lib/data/products";
+import { getActiveBundleOffers } from "@/lib/data/bundles";
+import { offerForProduct, productNote } from "@/lib/bundles";
 
 export async function generateMetadata({
   params,
@@ -27,6 +29,7 @@ export default async function ProductDetailPage({
   if (!result) notFound();
 
   const { product, source } = result;
+  const bundleOffer = offerForProduct(await getActiveBundleOffers(), product.slug);
 
   return (
     <>
@@ -61,7 +64,11 @@ export default async function ProductDetailPage({
             </span>
           </nav>
 
-          <ProductGallery product={product} source={source} />
+          <ProductGallery
+            product={product}
+            source={source}
+            bundleNote={bundleOffer ? productNote(bundleOffer) : undefined}
+          />
         </div>
       </main>
       <SiteFooter />

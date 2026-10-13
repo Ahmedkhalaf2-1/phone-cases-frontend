@@ -254,7 +254,7 @@ export default function OrderTrackingPage({
                     )}
                     {order.bundleDiscountTotal > 0 && (
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Bundle savings</dt>
+                        <dt className="text-muted-foreground">Bundle discount</dt>
                         <dd>−{formatPrice(order.bundleDiscountTotal, order.currency)}</dd>
                       </div>
                     )}

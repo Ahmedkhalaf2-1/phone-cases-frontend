@@ -287,6 +287,21 @@ body {
     animation: sf-fade-in var(--sf-dur-fast) ease-out both;
   }
 
+  /* Bundle promo card: settles up from its edge. */
+  @keyframes sf-sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .sf-sheet-in {
+    animation: sf-sheet-in var(--sf-dur-slow) var(--sf-ease) both;
+  }
+
   /* Small confirmation messages. */
   @keyframes sf-message-in {
     from {

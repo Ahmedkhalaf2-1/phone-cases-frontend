@@ -9,6 +9,7 @@ import { useCart } from "@/lib/cart/CartProvider";
 import { formatPrice } from "@/lib/format-price";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { TickValue } from "@/components/motion/TickValue";
+import { BundleProgressNotice } from "@/components/bundles/BundleProgressNotice";
 import { getProductBySlug } from "@/lib/data/products";
 import type { PublicVariant } from "@/lib/api/types";
 
@@ -130,6 +131,15 @@ export default function CartPage() {
                 Browse phone cases
               </Link>
             </div>
+          )}
+
+          {!isLoading && cart && cart.items.length > 0 && (
+            <BundleProgressNotice
+              progress={cart.bundleProgress}
+              bundleDiscountTotal={cart.bundleDiscountTotal}
+              currency={cart.currency}
+              onRemoveCoupon={() => removeCoupon().catch(() => {})}
+            />
           )}
 
           {!isLoading && cart && cart.items.length > 0 && (
@@ -331,7 +341,7 @@ export default function CartPage() {
                   )}
                   {cart.bundleDiscountTotal > 0 && (
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Bundle savings</dt>
+                      <dt className="text-muted-foreground">Bundle discount</dt>
                       <dd>
                         −{formatPrice(cart.bundleDiscountTotal, cart.currency)}
                       </dd>

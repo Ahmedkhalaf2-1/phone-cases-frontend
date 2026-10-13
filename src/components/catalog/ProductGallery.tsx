@@ -17,9 +17,12 @@ import type { DemoProduct } from "@/lib/demo/products.demo";
 export function ProductGallery({
   product,
   source,
+  bundleNote,
 }: {
   product: PublicProductDetail | DemoProduct;
   source: "demo" | "live";
+  /** Server-built sentence about an active bundle this product is eligible for. */
+  bundleNote?: string;
 }) {
   const sortedMedia = [...product.media].sort((a, b) => a.displayOrder - b.displayOrder);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -120,6 +123,7 @@ export function ProductGallery({
         <div className="mt-8 max-sm:mt-6">
           <VariantPicker
             variants={product.variants}
+            bundleNote={bundleNote}
             onVariantChange={(variant) => setVariantImage(variant?.thumbnail ?? null)}
           />
         </div>
