@@ -2,6 +2,7 @@
 
 import { CartCountBadge } from "@/components/motion/CartCountBadge";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { PRIMARY_NAV, SITE } from "@/config/site";
 import { useCart } from "@/lib/cart/CartProvider";
@@ -20,6 +21,23 @@ export function SiteHeader() {
   const menuId = useId();
   const searchId = useId();
   const { itemCount } = useCart();
+  const pathname = usePathname();
+
+  /**
+   * Brand link: from any other page it just navigates home (normal Link
+   * behavior). When already on the home page there is nowhere to go, so it
+   * scrolls back to the top instead. Modified clicks (new tab/window) keep
+   * their default behavior.
+   */
+  function handleBrandClick(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (pathname !== "/") return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  }
 
   useEffect(() => {
     if (!isMenuOpen && !isSearchOpen) return;
@@ -39,6 +57,7 @@ export function SiteHeader() {
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <Link
             href="/"
+            onClick={handleBrandClick}
             className="flex items-center gap-2 rounded-pill focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

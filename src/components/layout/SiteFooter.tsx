@@ -55,8 +55,7 @@ export function SiteFooter() {
         </div>
 
         <p className="pt-6 text-xs text-white/40">
-          © {new Date().getFullYear()} {SITE.brandName}. Development preview —
-          not a live store.
+          © {new Date().getFullYear()} {SITE.brandName}. All rights reserved.
         </p>
       </div>
     </footer>
