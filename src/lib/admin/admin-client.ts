@@ -16,6 +16,10 @@ import type {
   AdminProductsResult,
   AdminRefundInput,
   AdminVariant,
+  BundleVariantInfo,
+  BundleVariantOptionIds,
+  BundleVariantOptionsParams,
+  BundleVariantOptionsResult,
   AuthSession,
   CreateBundleInput,
   CreateCaseTypeInput,
@@ -524,6 +528,39 @@ export const adminClient = {
     });
   },
 
+  /** Paginated, filterable variant lookup for the bundle picker (never the whole catalog). */
+  bundleVariantOptions(
+    accessToken: string,
+    params: BundleVariantOptionsParams = {},
+  ): Promise<BundleVariantOptionsResult> {
+    return apiRequest<BundleVariantOptionsResult>(
+      `/admin/bundles/variant-options?${bundleOptionsQuery(params)}`,
+      { headers: authHeader(accessToken) },
+    );
+  },
+
+  /** Readable details for up to 100 specific variant ids (labels for a selection). */
+  bundleVariantsByIds(accessToken: string, ids: string[]): Promise<BundleVariantInfo[]> {
+    return apiRequest<BundleVariantInfo[]>(
+      `/admin/bundles/variant-options/by-ids?ids=${ids.join(",")}`,
+      { headers: authHeader(accessToken) },
+    );
+  },
+
+  /**
+   * Ids of every variant matching the same filters. All-or-nothing: the
+   * server refuses (400) when more than the select-all limit match.
+   */
+  bundleVariantOptionIds(
+    accessToken: string,
+    params: BundleVariantOptionsParams = {},
+  ): Promise<BundleVariantOptionIds> {
+    return apiRequest<BundleVariantOptionIds>(
+      `/admin/bundles/variant-options/ids?${bundleOptionsQuery(params)}`,
+      { headers: authHeader(accessToken) },
+    );
+  },
+
   deleteBundle(accessToken: string, id: string): Promise<void> {
     return apiRequest<void>(`/admin/bundles/${id}`, {
       method: "DELETE",
@@ -780,3 +817,11 @@ export const adminClient = {
 };
 
 export { ApiError };
+
+function bundleOptionsQuery(params: BundleVariantOptionsParams): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
+  return query.toString();
+}

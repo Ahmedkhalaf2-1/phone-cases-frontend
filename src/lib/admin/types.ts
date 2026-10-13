@@ -304,35 +304,99 @@ export interface CreateShippingRateInput {
   isActive?: boolean;
 }
 
+export type BundleScope =
+  | "ALL_PRODUCTS"
+  | "PRODUCTS"
+  | "COLLECTIONS"
+  | "CASE_TYPES"
+  | "PHONE_BRANDS"
+  | "PHONE_MODELS"
+  | "SPECIFIC_VARIANTS";
+
+interface NamedRef {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+}
+
+/** Human-readable catalog context for one variant (picker rows + bundle detail). */
+export interface BundleVariantInfo {
+  id: string;
+  sku: string;
+  price: number;
+  currency: string;
+  isActive: boolean;
+  product: NamedRef;
+  phoneModel: (NamedRef & { brand: NamedRef }) | null;
+  caseType: NamedRef | null;
+}
+
 export interface BundleEligibleVariant {
   id: string;
   variantId: string;
   surchargeAmount: number;
+  variant?: Omit<BundleVariantInfo, "price" | "currency" | "isActive"> &
+    Partial<Pick<BundleVariantInfo, "price" | "currency" | "isActive">>;
 }
 
 export interface AdminBundle {
   id: string;
   name: string;
-  fixedTotal: number;
-  currency: string;
+  fixedTotal: number | null;
+  currency: string | null;
+  bundleSize: number;
+  scope: BundleScope;
   requireDifferentPhoneModels: boolean;
   isRepeatable: boolean;
   allowCouponStacking: boolean;
   isEnabled: boolean;
+  /** Computed by the server from isEnabled + schedule; display only. */
+  status: "DISABLED" | "SCHEDULED" | "ACTIVE" | "EXPIRED";
   startsAt: string | null;
   expiresAt: string | null;
   eligibleVariants: BundleEligibleVariant[];
+  /** Selected products/collections/case types/brands/models for target scopes. */
+  targets: NamedRef[];
 }
 
 export interface CreateBundleInput {
   name: string;
   fixedTotal: number;
   currency: string;
+  bundleSize?: number;
+  scope?: BundleScope;
   requireDifferentPhoneModels?: boolean;
   isRepeatable?: boolean;
   allowCouponStacking?: boolean;
   isEnabled?: boolean;
-  eligibleVariants: { variantId: string; surchargeAmount?: number }[];
+  /** ISO-8601. On update, `null` clears the date; omitted leaves it unchanged. */
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  /** SPECIFIC_VARIANTS scope only. */
+  eligibleVariants?: { variantId: string; surchargeAmount?: number }[];
+  /** PRODUCTS / COLLECTIONS / CASE_TYPES / PHONE_BRANDS / PHONE_MODELS scopes only. */
+  targetIds?: string[];
+}
+
+export interface BundleVariantOptionsParams {
+  q?: string;
+  productId?: string;
+  collectionId?: string;
+  caseTypeId?: string;
+  phoneBrandId?: string;
+  phoneModelId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface BundleVariantOptionsResult {
+  items: BundleVariantInfo[];
+  meta: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
+export interface BundleVariantOptionIds {
+  ids: string[];
+  total: number;
 }
 
 export interface StaffMember {
