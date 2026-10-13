@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
 import { formatPrice } from "@/lib/format-price";
 import { useCart } from "@/lib/cart/CartProvider";
-import type { PublicVariant } from "@/lib/api/types";
+import type { PhoneBrand, PublicVariant } from "@/lib/api/types";
 import { Spinner } from "@/components/ui/Spinner";
 
 export function VariantPicker({
@@ -19,6 +19,7 @@ export function VariantPicker({
   onVariantChange?: (variant: PublicVariant | undefined) => void;
 }) {
   const modelId = useId();
+  const brandId = useId();
   const caseTypeId = useId();
   const noteId = useId();
   const { addItem, error: cartError } = useCart();
@@ -39,6 +40,20 @@ export function VariantPicker({
   // every phone". Skip the model/case-type pickers entirely for these
   // rather than rendering empty selects that can never match a variant.
   const isAccessory = models.length === 0;
+
+  // Brands come from the same variant data (phoneModel.brand); no extra
+  // request. The brand picker is a mobile-only filter for the model list.
+  const brands = useMemo(() => {
+    const seen = new Map<string, PhoneBrand>();
+    for (const model of models) {
+      if (model) seen.set(model.brand.slug, model.brand);
+    }
+    return Array.from(seen.values());
+  }, [models]);
+  const [selectedBrandSlug, setSelectedBrandSlug] = useState("");
+  const modelsForBrand = selectedBrandSlug
+    ? models.filter((model) => model?.brand.slug === selectedBrandSlug)
+    : models;
 
   const allCaseTypes = useMemo(() => {
     const seen = new Map<string, PublicVariant["caseType"]>();
@@ -104,12 +119,49 @@ export function VariantPicker({
   }, [selectedVariant?.id]);
 
   return (
-    <div className="flex flex-col gap-5 max-sm:gap-4">
+    <div className="flex flex-col gap-5 max-sm:gap-3">
+      {!isAccessory && brands.length > 1 && (
+        <div className="flex flex-col gap-1.5 max-sm:order-1 max-sm:gap-1 sm:hidden">
+          <label
+            htmlFor={brandId}
+            className="text-sm font-medium tracking-tight text-ink max-sm:text-[13px]"
+          >
+            Phone brand
+          </label>
+          <select
+            id={brandId}
+            value={selectedBrandSlug}
+            onChange={(event) => {
+              const brandSlug = event.target.value;
+              setSelectedBrandSlug(brandSlug);
+              // Drop a model/case type that no longer belongs to this brand.
+              const stillValid = models.some(
+                (model) =>
+                  model?.slug === selectedModelSlug &&
+                  (!brandSlug || model.brand.slug === brandSlug),
+              );
+              if (!stillValid) {
+                setSelectedModelSlug("");
+                setSelectedCaseTypeSlug("");
+              }
+            }}
+            className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-base text-ink min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <option value="">Select phone brand</option>
+            {brands.map((brand) => (
+              <option key={brand.slug} value={brand.slug}>
+                {brand.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {!isAccessory && (
-        <div className="flex flex-col gap-1.5 max-sm:gap-2">
+        <div className="flex flex-col gap-1.5 max-sm:order-2 max-sm:gap-1">
           <label
             htmlFor={modelId}
-            className="text-sm font-medium tracking-tight text-ink"
+            className="text-sm font-medium tracking-tight text-ink max-sm:text-[13px]"
           >
             Phone model
           </label>
@@ -123,7 +175,7 @@ export function VariantPicker({
             className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <option value="">Select phone model</option>
-            {models.map((model) =>
+            {modelsForBrand.map((model) =>
               model ? (
                 <option key={model.slug} value={model.slug}>
                   {model.brand.name} {model.name}
@@ -135,10 +187,10 @@ export function VariantPicker({
       )}
 
       {!isAccessory && allCaseTypes.length > 0 && (
-        <div className="flex flex-col gap-1.5 max-sm:gap-2 max-sm:[&:has(select:disabled)_label]:text-muted-foreground">
+        <div className="flex flex-col gap-1.5 max-sm:order-3 max-sm:gap-1 max-sm:[&:has(select:disabled)_label]:text-muted-foreground">
           <label
             htmlFor={caseTypeId}
-            className="text-sm font-medium tracking-tight text-ink"
+            className="text-sm font-medium tracking-tight text-ink max-sm:text-[13px]"
           >
             Case type
           </label>
@@ -167,7 +219,7 @@ export function VariantPicker({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5 max-sm:gap-2">
+      <div className="flex flex-col gap-1.5 max-sm:order-8 max-sm:gap-1.5">
         <label
           htmlFor={noteId}
           className="flex items-center justify-between text-sm font-medium tracking-tight text-ink max-w-xs max-sm:max-w-none max-sm:text-[13px] max-sm:font-normal max-sm:text-muted-foreground"
@@ -195,7 +247,7 @@ export function VariantPicker({
       </div>
 
       {selectedVariant ? (
-        <div className="max-sm:mt-2 max-sm:flex max-sm:flex-wrap max-sm:items-baseline max-sm:gap-x-3 max-sm:gap-y-0.5">
+        <div className="max-sm:order-4 max-sm:flex max-sm:flex-wrap max-sm:items-baseline max-sm:gap-x-3 max-sm:gap-y-0.5">
           <p className="font-display text-3xl text-ink">
             {formatPrice(selectedVariant.price, selectedVariant.currency)}
           </p>
@@ -216,7 +268,7 @@ export function VariantPicker({
           </p>
         </div>
       ) : !isSelectionComplete ? (
-        <div className="max-sm:mt-2">
+        <div className="max-sm:order-4">
           <p className="font-display text-3xl text-ink">
             <span className="text-lg font-normal text-muted-foreground max-sm:text-sm max-sm:font-medium max-sm:tracking-wider max-sm:uppercase">From </span>
             {formatPrice(minPrice, currency)}
@@ -228,19 +280,19 @@ export function VariantPicker({
           </p>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground max-sm:mt-2">
+        <p className="text-sm text-muted-foreground max-sm:order-4">
           This combination isn&apos;t available. Try a different phone
           model or case type above.
         </p>
       )}
 
       {bundleNote && (
-        <p className="rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink max-sm:-mt-1">
+        <p className="rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink max-sm:order-5">
           {bundleNote}
         </p>
       )}
 
-      <div className="flex flex-col gap-5 max-sm:flex-row max-sm:items-stretch max-sm:gap-3">
+      <div className="flex flex-col gap-5 max-sm:order-6 max-sm:flex-row max-sm:items-stretch max-sm:gap-3">
       {selectedVariant?.isAvailable && (
         <div className="flex items-center gap-3 max-sm:shrink-0">
           <label htmlFor={`${modelId}-qty`} className="sr-only">
@@ -325,7 +377,7 @@ export function VariantPicker({
       </div>
 
       {!isSelectionComplete && (
-        <p className="text-xs text-muted-foreground max-sm:sr-only">
+        <p className="text-xs text-muted-foreground max-sm:sr-only max-sm:order-7">
           {!selectedModelSlug
             ? "Please select your phone model to continue."
             : "Please select your case type to continue."}
@@ -333,14 +385,14 @@ export function VariantPicker({
       )}
 
       {status === "added" && !cartError && (
-        <p className="sf-message-in text-sm text-ink">
+        <p className="sf-message-in text-sm text-ink max-sm:order-7">
           Added to cart.{" "}
           <Link href="/cart" className="font-semibold underline underline-offset-4">
             View cart →
           </Link>
         </p>
       )}
-      {cartError && <p className="text-sm text-accent">{cartError}</p>}
+      {cartError && <p className="text-sm text-accent max-sm:order-7">{cartError}</p>}
     </div>
   );
 }
