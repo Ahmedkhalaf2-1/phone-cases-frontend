@@ -1,20 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { CartProvider } from "@/lib/cart/CartProvider";
 import { AppShell } from "@/components/layout/AppShell";
 import { SITE } from "@/config/site";
 import { SITE_URL } from "@/lib/env";
 import "./globals.css";
 
-const displayFont = Inter({
+// Inter (latin, variable) is self-hosted so builds never depend on reaching
+// Google Fonts. The same file backs both the display and body variables.
+const displayFont = localFont({
+  src: "./fonts/Inter-latin-variable.woff2",
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: "500 600",
+  display: "swap",
 });
 
-const bodyFont = Inter({
+const bodyFont = localFont({
+  src: "./fonts/Inter-latin-variable.woff2",
   variable: "--font-body",
-  subsets: ["latin"],
+  weight: "100 900",
+  display: "swap",
 });
 
 const description = "A design you choose. A style you own.";
