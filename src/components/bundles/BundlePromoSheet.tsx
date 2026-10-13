@@ -113,7 +113,7 @@ export function BundlePromoSheet() {
       role="dialog"
       aria-modal="false"
       aria-labelledby="bundle-promo-title"
-      className="sf-sheet-in fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-ink px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-white shadow-lifted sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[22rem] sm:rounded-3xl sm:pb-5"
+      className="sf-sheet-in fixed inset-x-0 bottom-[var(--pdp-dock-h,0px)] z-50 rounded-t-3xl bg-ink px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-white shadow-lifted sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[22rem] sm:rounded-3xl sm:pb-5"
     >
       <button
         type="button"
