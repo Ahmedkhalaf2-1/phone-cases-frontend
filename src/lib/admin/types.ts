@@ -303,9 +303,11 @@ export interface CreateShippingRateInput {
   nameEn: string;
   nameAr: string;
   price: number;
-  freeShippingThreshold?: number;
-  estimatedDaysMin?: number;
-  estimatedDaysMax?: number;
+  /** On update, `null` clears the value; omitted leaves it unchanged. */
+  freeShippingThreshold?: number | null;
+  estimatedDaysMin?: number | null;
+  estimatedDaysMax?: number | null;
+  displayOrder?: number;
   isActive?: boolean;
 }
 

@@ -456,6 +456,12 @@ export const adminClient = {
     });
   },
 
+  getShippingZone(accessToken: string, zoneId: string): Promise<ShippingZone> {
+    return apiRequest<ShippingZone>(`/admin/shipping-zones/${zoneId}`, {
+      headers: authHeader(accessToken),
+    });
+  },
+
   createShippingZone(
     accessToken: string,
     input: CreateShippingZoneInput,

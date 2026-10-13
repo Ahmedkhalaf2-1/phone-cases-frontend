@@ -1,3 +1,4 @@
+import { formatEgp } from "./money";
 import type { AdminCoupon, CouponStatus, CouponType } from "./types";
 
 /** Backend limits, mirrored so the editor can explain problems before a round trip. */
@@ -7,18 +8,12 @@ export const COUPON_LIMITS = {
   maxUsageLimit: 1_000_000,
 } as const;
 
-/** Whole EGP, trimmed: 5000 -> "50", 12550 -> "125.5". */
-function egp(minorUnits: number): string {
-  const amount = minorUnits / 100;
-  return `EGP ${Number.isInteger(amount) ? amount : amount.toFixed(2).replace(/0+$/, "")}`;
-}
-
 export function formatDiscount(type: CouponType, value: number): string {
-  return type === "PERCENTAGE" ? `${value}% OFF` : `${egp(value)} OFF`;
+  return type === "PERCENTAGE" ? `${value}% OFF` : `${formatEgp(value)} OFF`;
 }
 
 export function formatMinSpend(minSpend: number | null): string {
-  return minSpend ? egp(minSpend) : "No minimum";
+  return minSpend ? formatEgp(minSpend) : "No minimum";
 }
 
 export function formatUsage(usageCount: number, usageLimit: number | null): string {
