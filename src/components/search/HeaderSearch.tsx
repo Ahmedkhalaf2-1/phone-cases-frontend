@@ -230,12 +230,12 @@ export function HeaderSearch({
         onSubmit={submit}
         className={`group/search relative flex w-full items-center gap-2 rounded-pill border p-1 pl-4 transition-all duration-300 ${
           isOpen
-            ? "border-accent/40 bg-white shadow-[0_0_0_4px_rgb(84_51_235_/_0.12),0_8px_30px_-8px_rgb(84_51_235_/_0.35)]"
+            ? "border-ink/25 bg-white shadow-[0_0_0_4px_rgb(0_0_0_/_0.05),0_8px_30px_-8px_rgb(0_0_0_/_0.18)]"
             : "border-border bg-background hover:border-cool-stone hover:bg-white"
         }`}
       >
         <SearchGlyph
-          className={`shrink-0 transition-colors ${isOpen ? "text-accent" : "text-muted-foreground"}`}
+          className={`shrink-0 transition-colors ${isOpen ? "text-ink" : "text-muted-foreground"}`}
         />
         <label htmlFor={inputId} className="sr-only">
           Search phone cases and collections
@@ -281,7 +281,7 @@ export function HeaderSearch({
         <button
           type="submit"
           aria-label="Search"
-          className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-accent text-white shadow-accent transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-ink text-white transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
