@@ -38,7 +38,10 @@ export default function AdminCollectionDetailPage({
   const { accessToken, authorizedFetch } = useAdminAuth();
 
   const [collection, setCollection] = useState<AdminCollection | null>(null);
-  const catalog = useAdminCatalog();
+  const [isAdding, setIsAdding] = useState(false);
+  // The full catalog is only needed for the "Add existing products" picker,
+  // so don't let it queue ahead of this collection's own products.
+  const catalog = useAdminCatalog(isAdding);
   // This collection's products (every status) via the admin list's
   // collectionId filter — fast, independent of the full catalog, which is
   // only needed for the "Add existing products" picker.
@@ -59,7 +62,6 @@ export default function AdminCollectionDetailPage({
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [isAdding, setIsAdding] = useState(false);
   const [addQuery, setAddQuery] = useState("");
 
   const loadCollection = useCallback(async () => {

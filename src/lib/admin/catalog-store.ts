@@ -267,11 +267,11 @@ export function patchCatalogProduct(id: string, patch: (product: AdminProduct) =
 
 const serverSnapshot: CatalogState = { products: null, isComplete: false, error: null };
 
-export function useAdminCatalog(): CatalogState & { reload: () => void } {
+export function useAdminCatalog(enabled = true): CatalogState & { reload: () => void } {
   const { accessToken, authorizedFetch } = useAdminAuth();
   const snapshot = useSyncExternalStore(subscribe, () => state, () => serverSnapshot);
   useEffect(() => {
-    if (accessToken) ensureLoaded(authorizedFetch);
-  }, [accessToken, authorizedFetch]);
+    if (accessToken && enabled) ensureLoaded(authorizedFetch);
+  }, [accessToken, authorizedFetch, enabled]);
   return { ...snapshot, reload: () => ensureLoaded(authorizedFetch, true) };
 }
