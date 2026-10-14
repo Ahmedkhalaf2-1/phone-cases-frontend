@@ -161,7 +161,9 @@ export function VariantPicker({
         ? "case"
         : null;
   const activeRing = (step: string) =>
-    activeStep === step ? "max-sm:border-accent" : "";
+    activeStep === step
+      ? "max-sm:border-accent max-sm:bg-accent max-sm:font-semibold max-sm:text-accent-foreground [&_option]:bg-background [&_option]:font-normal [&_option]:text-ink"
+      : "";
   const stepIn =
     "max-sm:animate-[sf-message-in_var(--sf-dur-normal)_var(--sf-ease)_both]";
 
