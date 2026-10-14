@@ -443,6 +443,12 @@ html[data-scope="store"] .font-display {
   to {
     transform: translate3d(-50%, 0, 0);
   }
+}/* RTL: the strip starts at the right edge and overflows to the left, so the
+   loop distance is +50% (moving the other way would reveal empty space). */
+@keyframes sf-announce-scroll-rtl {
+  to {
+    transform: translate3d(50%, 0, 0);
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .sf-announce-track {
@@ -456,6 +462,9 @@ html[data-scope="store"] .font-display {
   }
   .sf-announce-item:not(:first-child) {
     display: inline-flex;
+  }
+  html[dir="rtl"] .sf-announce-track {
+    animation-name: sf-announce-scroll-rtl;
   }
   .sf-announce:hover .sf-announce-track,
   .sf-announce:focus-visible .sf-announce-track {
