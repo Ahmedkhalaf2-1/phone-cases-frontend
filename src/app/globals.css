@@ -159,47 +159,19 @@ body {
   font-weight: 600;
 }
 
-/* Storefront numerals use Thmanyah in every language. This family is the same
-   licensed files limited to the digits 0-9, listed first so digits come from
-   Thmanyah while all other characters keep the normal font. If the files are
-   not on the server the browser simply falls through to the next font. */
-@font-face {
-  font-family: "Thmanyah Digits";
-  font-style: normal;
-  font-weight: 300;
-  font-display: swap;
-  unicode-range: U+0030-0039;
-  src: url("/fonts/thmanyah/thmanyahsans-Light.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Thmanyah Digits";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  unicode-range: U+0030-0039;
-  src: url("/fonts/thmanyah/thmanyahsans-Regular.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Thmanyah Digits";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  unicode-range: U+0030-0039;
-  src: url("/fonts/thmanyah/thmanyahsans-Medium.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Thmanyah Digits";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  unicode-range: U+0030-0039;
-  src: url("/fonts/thmanyah/thmanyahsans-Bold.woff2") format("woff2");
-}
+/* Storefront typography is Thmanyah in every language (admin keeps Inter):
+   Sans for text/numbers, Serif Display for headings and prices (.font-display).
+   The @font-face rules are in the "Arabic typography" section below. If the
+   files are missing on a server the browser falls through to Inter/system. */
 html[data-scope="store"] body {
-  font-family: "Thmanyah Digits", var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-family:
+    "Thmanyah", var(--font-body), ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro",
+    sans-serif;
 }
 html[data-scope="store"] .font-display {
-  font-family: "Thmanyah Digits", var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-family:
+    "Thmanyah Serif Display", "Thmanyah", var(--font-display), ui-sans-serif, system-ui,
+    "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -571,18 +543,7 @@ html[data-scope="store"] .font-display {
   src: url("/fonts/thmanyah/thmanyahsans-Bold.woff2") format("woff2");
 }
 
-/* Thmanyah first; Inter stays for Latin glyphs (product/model names,
-   prices), then the platform Arabic UI fonts as the fallback if the font
-   files are not present on the server. */
-html[lang="ar"] body,
-html[lang="ar"] .font-display {
-  font-family:
-    "Thmanyah", var(--font-body), ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro",
-    sans-serif;
-}
-
-/* Arabic headings and prices (.font-display) use Thmanyah Serif Display;
-   body text stays Thmanyah Sans. English typography is unchanged. */
+/* Thmanyah Serif Display (headings/prices) faces. */
 @font-face {
   font-family: "Thmanyah Serif Display";
   font-style: normal;
@@ -618,12 +579,6 @@ html[lang="ar"] .font-display {
   font-display: swap;
   src: url("/fonts/thmanyah/thmanyahserifdisplay-Black.woff2") format("woff2");
 }
-html[lang="ar"] .font-display {
-  font-family:
-    "Thmanyah Serif Display", "Thmanyah", var(--font-display), ui-sans-serif, system-ui,
-    "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
-}
-
 /* Letter-spacing disconnects Arabic letters; tracking utilities are
    tuned for Latin, so neutralize them in Arabic. */
 html[lang="ar"] body,
