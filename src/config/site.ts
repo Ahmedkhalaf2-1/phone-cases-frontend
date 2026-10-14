@@ -13,6 +13,8 @@ export const NOT_AVAILABLE_ROUTE = "/coming-soon";
 
 export interface NavLink {
   label: string;
+  /** i18n key under `nav.*`; `label` stays as the English fallback/identity. */
+  key: "newIn" | "collections" | "designYourCase" | "trackOrder" | "aboutUs" | "help" | "privacy" | "terms";
   href: string;
 }
 
@@ -27,10 +29,10 @@ export const CUSTOM_CASE_PRODUCT_SLUG =
 
 /** Primary header navigation. */
 export const PRIMARY_NAV: NavLink[] = [
-  { label: "New In", href: "/search?sort=newest" },
-  { label: "Collections", href: "/collections" },
-  { label: "Design Your Case", href: "/customize" },
-  { label: "Track Order", href: "/track" },
+  { label: "New In", key: "newIn", href: "/search?sort=newest" },
+  { label: "Collections", key: "collections", href: "/collections" },
+  { label: "Design Your Case", key: "designYourCase", href: "/customize" },
+  { label: "Track Order", key: "trackOrder", href: "/track" },
 ];
 
 /**
@@ -42,10 +44,10 @@ export const PRIMARY_NAV: NavLink[] = [
  * whatever slugs they choose in the admin Pages CMS.
  */
 export const FOOTER_LINKS: NavLink[] = [
-  { label: "About Us", href: "/pages/about" },
-  { label: "Help", href: "/pages/help" },
-  { label: "Privacy Policy", href: "/pages/privacy-policy" },
-  { label: "Terms & Conditions", href: "/pages/terms-and-conditions" },
+  { label: "About Us", key: "aboutUs", href: "/pages/about" },
+  { label: "Help", key: "help", href: "/pages/help" },
+  { label: "Privacy Policy", key: "privacy", href: "/pages/privacy-policy" },
+  { label: "Terms & Conditions", key: "terms", href: "/pages/terms-and-conditions" },
 ];
 
 /**

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/i18n/I18nProvider";
 import { cartBundleMessage } from "@/lib/bundles";
 import type { BundleProgress } from "@/lib/cart/types";
 
@@ -20,7 +21,8 @@ export function BundleProgressNotice({
   currency: string;
   onRemoveCoupon: () => void;
 }) {
-  const message = cartBundleMessage(progress, bundleDiscountTotal, currency);
+  const i18n = useI18n();
+  const message = cartBundleMessage(progress, bundleDiscountTotal, currency, i18n);
   if (!message) return null;
 
   const applied = message.kind === "applied";
@@ -49,7 +51,7 @@ export function BundleProgressNotice({
             onClick={onRemoveCoupon}
             className="mt-1 text-[13px] font-semibold underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            Remove coupon
+            {i18n.t("bundles.removeCoupon")}
           </button>
         )}
       </div>

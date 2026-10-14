@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ProductFilters } from "@/components/catalog/ProductFilters";
 import { ProductListing } from "@/components/catalog/ProductListing";
 import { getProducts } from "@/lib/data/products";
+import { getI18n } from "@/i18n/server";
 import { getMoodCollections } from "@/lib/data/collections";
 import { getPhoneModels } from "@/lib/data/phone-catalog";
 import { getCaseTypes } from "@/lib/data/case-types";
@@ -27,7 +28,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const collection = await findCollection((await params).slug);
-  return { title: collection?.name ?? "Collection" };
+  const { t } = await getI18n();
+  return { title: collection?.name ?? t("catalog.collectionFallback") };
 }
 
 export default async function CollectionPage({
@@ -40,6 +42,7 @@ export default async function CollectionPage({
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const collection = await findCollection(slug);
   if (!collection) notFound();
+  const { t } = await getI18n();
 
   const basePath = `/collections/${collection.slug}`;
   const cover = getCollectionCover(collection.slug, collection.coverImage);
@@ -55,9 +58,9 @@ export default async function CollectionPage({
       <SiteHeader />
       <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
-          <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+          <nav aria-label={t("product.breadcrumb")} className="mb-6 text-sm text-muted-foreground">
             <Link href="/collections" className="hover:text-accent">
-              Collections
+              {t("catalog.collectionsTitle")}
             </Link>{" "}
             / <span className="text-ink">{collection.name}</span>
           </nav>
@@ -110,7 +113,7 @@ export default async function CollectionPage({
           <ProductListing
             productList={productList}
             buildHref={pageHrefBuilder(basePath, query)}
-            emptyMessage={`No ${collection.name} cases match these filters yet.`}
+            emptyMessage={t("catalog.noMatchCollection", { name: collection.name })}
           />
         </div>
       </main>

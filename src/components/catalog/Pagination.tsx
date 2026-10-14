@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { getI18n } from "@/i18n/server";
 
-export function Pagination({
+export async function Pagination({
   page,
   totalPages,
   buildHref,
@@ -10,28 +11,29 @@ export function Pagination({
   buildHref: (page: number) => string;
 }) {
   if (totalPages <= 1) return null;
+  const { t } = await getI18n();
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={t("catalog.pagination")}
       className="mt-8 flex items-center justify-center gap-2"
     >
       <PageLink
         href={buildHref(page - 1)}
         disabled={page <= 1}
-        label="Previous page"
+        label={t("catalog.previousPage")}
       >
-        ← Prev
+        {t("catalog.prev")}
       </PageLink>
       <span className="px-2 text-sm text-muted-foreground">
-        Page {page} of {totalPages}
+        {t("catalog.pageOf", { page, total: totalPages })}
       </span>
       <PageLink
         href={buildHref(page + 1)}
         disabled={page >= totalPages}
-        label="Next page"
+        label={t("catalog.nextPage")}
       >
-        Next →
+        {t("catalog.next")}
       </PageLink>
     </nav>
   );

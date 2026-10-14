@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/i18n/I18nProvider";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
 import type { Collection, PhoneModel, CaseType } from "@/lib/api/types";
@@ -17,6 +18,7 @@ export function ProductFilters({
   phoneModels: PhoneModel[];
   caseTypes: CaseType[];
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
@@ -46,35 +48,35 @@ export function ProductFilters({
         className="flex gap-2"
       >
         <label htmlFor={`${formId}-q`} className="sr-only">
-          Search products
+          {t("catalog.searchProducts")}
         </label>
         <input
           id={`${formId}-q`}
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search cases…"
+          placeholder={t("catalog.searchCases")}
           className="w-full max-w-sm rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         />
         <button
           type="submit"
           className="rounded-pill border border-border px-4 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          Search
+          {t("catalog.search")}
         </button>
       </form>
 
       <div className="flex flex-wrap gap-3">
         {collections && (
           <FilterSelect
-            label="Collection"
+            label={t("catalog.collection")}
             value={searchParams.get("collection") ?? ""}
             onChange={(value) => updateParam("collection", value)}
             options={collections.map((c) => ({ value: c.slug, label: c.name }))}
           />
         )}
         <FilterSelect
-          label="Phone model"
+          label={t("catalog.phoneModel")}
           value={searchParams.get("phoneModel") ?? ""}
           onChange={(value) => updateParam("phoneModel", value)}
           options={phoneModels.map((m) => ({
@@ -83,19 +85,19 @@ export function ProductFilters({
           }))}
         />
         <FilterSelect
-          label="Case type"
+          label={t("catalog.caseType")}
           value={searchParams.get("caseType") ?? ""}
           onChange={(value) => updateParam("caseType", value)}
           options={caseTypes.map((c) => ({ value: c.slug, label: c.name }))}
         />
         <FilterSelect
-          label="Sort"
+          label={t("catalog.sort")}
           value={searchParams.get("sort") ?? "newest"}
           onChange={(value) => updateParam("sort", value)}
           options={[
-            { value: "newest", label: "Newest" },
-            { value: "price_asc", label: "Price: low to high" },
-            { value: "price_desc", label: "Price: high to low" },
+            { value: "newest", label: t("catalog.newest") },
+            { value: "price_asc", label: t("catalog.priceAsc") },
+            { value: "price_desc", label: t("catalog.priceDesc") },
           ]}
           allowEmpty={false}
         />
@@ -108,7 +110,7 @@ export function ProductFilters({
             }
             className="size-4 rounded-sm border-border accent-accent"
           />
-          In stock only
+          {t("catalog.inStockOnly")}
         </label>
       </div>
     </div>

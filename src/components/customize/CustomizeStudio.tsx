@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/http";
-import { formatPrice } from "@/lib/format-price";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useFormatPrice } from "@/i18n/useFormatPrice";
+import type { Translator } from "@/i18n/translate";
 import { useCart } from "@/lib/cart/CartProvider";
 import { liveCartClient } from "@/lib/cart/live-cart-client";
 import type { PublicVariant } from "@/lib/api/types";
@@ -45,27 +47,27 @@ function writeStored(productSlug: string, value: StoredDesign | null) {
   }
 }
 
-function uploadErrorMessage(err: unknown): string {
-  if (!(err instanceof ApiError)) return "Something went wrong. Please try again.";
-  if (err.kind === "network") return "We couldn't reach the server. Check your connection and try again.";
+function uploadErrorMessage(err: unknown, i18n: Pick<Translator, "t" | "locale">): string {
+  const { t, locale } = i18n;
+  if (!(err instanceof ApiError)) return t("customize.errors.generic");
+  if (err.kind === "network") return t("customize.errors.network");
   const text = `${err.code ?? ""} ${err.message}`.toLowerCase();
-  if (err.status === 429) return "You've uploaded several images in a short time. Please wait a minute and try again.";
-  if (text.includes("limit")) {
-    return "You've reached the maximum number of custom designs for one bag. Remove some items or check out first.";
-  }
+  if (err.status === 429) return t("customize.errors.rateLimit");
+  if (text.includes("limit")) return t("customize.errors.limit");
   if (err.status === 409 || text.includes("personaliz")) {
-    return "This phone model / case can't be personalized. Please choose another one.";
+    return t("customize.errors.notPersonalizable");
   }
+  // Backend validation text is English; only English shows it verbatim.
   if (err.status === 400) {
-    return err.message || "That file couldn't be used. Use a JPG, PNG or WebP image under 10 MB.";
+    return (locale === "en" && err.message) || t("customize.errors.badFile");
   }
-  return err.message || "Upload failed. Please try again.";
+  return (locale === "en" && err.message) || t("customize.errors.uploadFailed");
 }
 
-function validateFile(file: File): string | null {
-  if (!ACCEPTED_TYPES.includes(file.type)) return "Please choose a JPG, PNG or WebP image.";
+function validateFile(file: File, t: Translator["t"]): string | null {
+  if (!ACCEPTED_TYPES.includes(file.type)) return t("customize.errors.wrongType");
   if (file.size > MAX_BYTES) {
-    return `That image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`;
+    return t("customize.errors.tooBig", { size: (file.size / 1024 / 1024).toFixed(1) });
   }
   return null;
 }
@@ -89,6 +91,13 @@ export function CustomizeStudio({
   productName: string;
   variants: PublicVariant[];
 }) {
+  const i18n = useI18n();
+  const { t } = i18n;
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
+  const formatPrice = useFormatPrice();
   const { token, addItem, source } = useCart();
 
   const ids = { brand: useId(), model: useId(), file: useId(), note: useId() };
@@ -179,7 +188,7 @@ export function CustomizeStudio({
       })
       .catch(() => {
         if (cancelled) return;
-        setError("Your image was uploaded, but the preview couldn't be created. Try uploading it again.");
+        setError(tRef.current("customize.errors.previewFailed"));
         setPhase("idle");
       });
     return () => {
@@ -201,7 +210,7 @@ export function CustomizeStudio({
 
   async function upload(file: File, target: PublicVariant) {
     if (!token) {
-      setError("Your bag is still loading. Try again in a moment.");
+      setError(t("customize.errors.bagLoading"));
       return;
     }
     setError(null);
@@ -216,7 +225,7 @@ export function CustomizeStudio({
       writeStored(productSlug, { designId: created.id, variantId: target.id });
       setPhase("previewing");
     } catch (err) {
-      setError(uploadErrorMessage(err));
+      setError(uploadErrorMessage(err, i18n));
       setPhase(design ? "ready" : "idle");
     }
   }
@@ -224,27 +233,27 @@ export function CustomizeStudio({
   async function chooseFile(picked: File | undefined) {
     if (!picked) return;
     if (!variant) {
-      setError("Choose your phone model first.");
+      setError(t("customize.errors.chooseModel"));
       return;
     }
     let file: File;
     try {
       setError(null);
-      setNotice("Preparing your photo…");
+      setNotice(t("customize.notices.preparing"));
       file = await normalizeImageFile(picked);
       setNotice(null);
     } catch {
       setNotice(null);
-      setError("We couldn't read this photo. Please choose a JPG or PNG, or take a screenshot of it and upload that.");
+      setError(t("customize.errors.unreadable"));
       return;
     }
-    const problem = validateFile(file);
+    const problem = validateFile(file, t);
     if (problem) {
       setError(problem);
       return;
     }
     if (!variant) {
-      setError("Choose your phone model first.");
+      setError(t("customize.errors.chooseModel"));
       return;
     }
     setLastFile(file);
@@ -255,14 +264,14 @@ export function CustomizeStudio({
   function onVariantChanged(next: PublicVariant | undefined) {
     if (!design || !next || next.id === design.variantId) return;
     if (lastFile) {
-      setNotice(`Placing your image on the ${next.phoneModel?.name ?? "new"} case…`);
+      setNotice(t("customize.notices.placingOn", { model: next.phoneModel?.name ?? t("customize.notices.newModel") }));
       void upload(lastFile, next);
     } else {
       setDesign(null);
       setPreviewUrl(null);
       writeStored(productSlug, null);
       setPhase("idle");
-      setNotice("You changed the phone model. Please upload your image again.");
+      setNotice(t("customize.notices.modelChanged"));
     }
   }
 
@@ -280,7 +289,7 @@ export function CustomizeStudio({
       writeStored(productSlug, null);
       setPhase("added");
     } catch (err) {
-      setError(err instanceof ApiError ? uploadErrorMessage(err) : "Could not add to your bag.");
+      setError(err instanceof ApiError ? uploadErrorMessage(err, i18n) : t("customize.errors.addFailed"));
       setPhase("ready");
     }
   }
@@ -299,7 +308,7 @@ export function CustomizeStudio({
   if (source === "demo") {
     return (
       <p className="rounded-card bg-surface p-6 text-sm text-muted-foreground shadow-card">
-        Designing your own case needs the live shop. It isn&apos;t available in demo mode.
+        {t("customize.demoMode")}
       </p>
     );
   }
@@ -328,7 +337,7 @@ export function CustomizeStudio({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start">
       {/* Preview */}
       <section
-        aria-label="Preview"
+        aria-label={t("customize.preview")}
         className="order-2 rounded-card bg-surface p-3 shadow-card lg:sticky lg:top-6 lg:order-1"
       >
         <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-card-inner bg-background">
@@ -336,14 +345,14 @@ export function CustomizeStudio({
             // The real case photo, with the customer's image shown the
             // moment they pick it — no waiting for the upload.
             <div className="h-full w-full p-4">
-              <CaseMockup mockup={mockup} file={lastFile} alt={`Your design on the ${productName}`} />
+              <CaseMockup mockup={mockup} file={lastFile} alt={t("customize.designAlt", { name: productName })} />
             </div>
           ) : previewUrl && phase !== "uploading" ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt={`Your design on the ${productName}`} className="h-full w-full object-contain" />
+            <img src={previewUrl} alt={t("customize.designAlt", { name: productName })} className="h-full w-full object-contain" />
           ) : phase === "uploading" ? (
             <div className="flex w-2/3 flex-col items-center gap-3 text-center">
-              <p className="text-sm font-semibold text-ink">Uploading… {Math.round(progress * 100)}%</p>
+              <p className="text-sm font-semibold text-ink">{t("customize.uploadingPct", { pct: Math.round(progress * 100) })}</p>
               <div className="h-2 w-full overflow-hidden rounded-pill bg-surface">
                 <div className="h-full bg-accent transition-[width]" style={{ width: `${progress * 100}%` }} />
               </div>
@@ -351,31 +360,30 @@ export function CustomizeStudio({
           ) : phase === "previewing" ? (
             <div className="flex flex-col items-center gap-3 text-sm font-semibold text-ink">
               <span className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" aria-hidden />
-              Placing your image on the case…
+              {t("customize.placing")}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
               <PhoneIcon className="size-16 text-border" />
-              {isMockupLoading ? "" : "Your case preview will appear here."}
+              {isMockupLoading ? "" : t("customize.previewHere")}
             </div>
           )}
           {mockup && lastFile && (phase === "uploading" || phase === "previewing") && (
             <p className="absolute inset-x-4 bottom-4 rounded-pill bg-background/90 px-4 py-2 text-center text-xs font-semibold text-ink shadow-card">
-              {phase === "uploading" ? `Uploading… ${Math.round(progress * 100)}%` : "Preparing your print…"}
+              {phase === "uploading" ? t("customize.uploadingPct", { pct: Math.round(progress * 100) }) : t("customize.preparingPrint")}
             </p>
           )}
         </div>
         {mockup ? (
           <p className="mt-2 px-1 text-xs text-muted-foreground">
             {design && !lastFile
-              ? "Your design is saved. Choose the photo again to see it on the case."
-              : `The center of your image is printed. Your ${variant?.phoneModel?.name ?? "phone"} case will have the right camera cut-out.`}
+              ? t("customize.savedHint")
+              : t("customize.centerPrinted", { model: variant?.phoneModel?.name ?? t("customize.phoneFallback") })}
           </p>
         ) : (
           previewUrl && (
             <p className="mt-2 px-1 text-xs text-muted-foreground">
-              Preview on a standard case. Your {variant?.phoneModel?.name ?? "phone"} case will have the right camera
-              cut-out.
+              {t("customize.standardPreview", { model: variant?.phoneModel?.name ?? t("customize.phoneFallback") })}
             </p>
           )
         )}
@@ -383,11 +391,11 @@ export function CustomizeStudio({
 
       {/* Steps */}
       <div className="order-1 flex flex-col gap-4 lg:order-2">
-        <Step number={1} title="Choose your phone">
+        <Step number={1} title={t("customize.step1")}>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label htmlFor={ids.brand} className="text-sm font-medium text-ink">
-                Brand
+                {t("customize.brand")}
               </label>
               <select
                 id={ids.brand}
@@ -400,7 +408,7 @@ export function CustomizeStudio({
                 }}
                 className={selectClass}
               >
-                <option value="">Select brand</option>
+                <option value="">{t("customize.selectBrand")}</option>
                 {brands.map((b) => (
                   <option key={b.slug} value={b.slug}>
                     {b.name}
@@ -410,7 +418,7 @@ export function CustomizeStudio({
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor={ids.model} className="text-sm font-medium text-ink">
-                Model
+                {t("customize.model")}
               </label>
               <select
                 id={ids.model}
@@ -423,7 +431,7 @@ export function CustomizeStudio({
                 }}
                 className={selectClass}
               >
-                <option value="">Select model</option>
+                <option value="">{t("customize.selectModel")}</option>
                 {models.map((m) => (
                   <option key={m.slug} value={m.slug}>
                     {m.name}
@@ -434,7 +442,7 @@ export function CustomizeStudio({
           </div>
           {caseOptions.length > 1 && (
             <fieldset className="mt-4">
-              <legend className="text-sm font-medium text-ink">Case type</legend>
+              <legend className="text-sm font-medium text-ink">{t("customize.caseType")}</legend>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {caseOptions.map((option) => {
                   const slug = option.caseType?.slug ?? "";
@@ -453,7 +461,7 @@ export function CustomizeStudio({
                         selected ? "border-ink bg-ink text-white" : "border-border bg-background text-ink hover:border-ink"
                       }`}
                     >
-                      {option.caseType?.name ?? "Standard"} ·{" "}
+                      {option.caseType?.name ?? t("customize.standard")} ·{" "}
                       {formatPrice(option.price + (option.customizationPrice ?? 0), option.currency)}
                     </button>
                   );
@@ -466,15 +474,15 @@ export function CustomizeStudio({
               <span className="font-display text-2xl">{formatPrice(variant.price + surcharge, currency)}</span>
               {surcharge > 0 && (
                 <span className="ms-2 text-muted-foreground">
-                  ({formatPrice(variant.price, currency)} case + {formatPrice(surcharge, currency)} for your design)
+                  ({t("customize.casePlus", { case: formatPrice(variant.price, currency), design: formatPrice(surcharge, currency) })})
                 </span>
               )}
-              {!variant.isAvailable && <span className="ms-2 font-semibold text-accent">Out of stock</span>}
+              {!variant.isAvailable && <span className="ms-2 font-semibold text-accent">{t("customize.outOfStock")}</span>}
             </p>
           )}
         </Step>
 
-        <Step number={2} title="Upload your image" disabled={!variant}>
+        <Step number={2} title={t("customize.step2")} disabled={!variant}>
           <label
             htmlFor={ids.file}
             onDragOver={(e) => {
@@ -493,10 +501,10 @@ export function CustomizeStudio({
           >
             <UploadIcon className="size-8 text-accent" />
             <span className="text-sm font-semibold text-ink">
-              {design ? "Replace image" : "Choose a photo"}
-              <span className="hidden font-normal text-muted-foreground sm:inline"> or drag it here</span>
+              {design ? t("customize.replaceImage") : t("customize.choosePhoto")}
+              <span className="hidden font-normal text-muted-foreground sm:inline">{t("customize.dragHere")}</span>
             </span>
-            <span className="text-xs text-muted-foreground">JPG, PNG, WebP or iPhone photo · up to 10 MB</span>
+            <span className="text-xs text-muted-foreground">{t("customize.fileHint")}</span>
           </label>
           <input
             ref={fileInputRef}
@@ -511,8 +519,7 @@ export function CustomizeStudio({
             }}
           />
           <p className="mt-3 text-xs text-muted-foreground">
-            We fit your image to the case automatically and print the <strong className="text-ink">center</strong> of
-            it. Keep faces and text away from the edges.
+            {t("customize.fitNote")}
           </p>
         </Step>
 
@@ -526,7 +533,7 @@ export function CustomizeStudio({
         )}
 
         {design && (
-          <Step number={3} title="Check your design">
+          <Step number={3} title={t("customize.step3")}>
             {lastFile && crop && (
               <figure>
                 <div
@@ -542,42 +549,42 @@ export function CustomizeStudio({
                   />
                 </div>
                 <figcaption className="mt-2 text-xs text-muted-foreground">
-                  The bright area is what gets printed. The dark edges are trimmed.
+                  {t("customize.cropCaption")}
                 </figcaption>
               </figure>
             )}
             <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-2xl bg-background p-2">
-                <dt className="text-muted-foreground">Your image</dt>
+                <dt className="text-muted-foreground">{t("customize.yourImage")}</dt>
                 <dd className="font-semibold text-ink">
-                  {design.original.width} × {design.original.height} px
+                  <bdi dir="ltr">{t("customize.px", { w: design.original.width ?? 0, h: design.original.height ?? 0 })}</bdi>
                 </dd>
               </div>
               <div className="rounded-2xl bg-background p-2">
-                <dt className="text-muted-foreground">Print size</dt>
+                <dt className="text-muted-foreground">{t("customize.printSize")}</dt>
                 <dd className="font-semibold text-ink">
-                  {design.print.widthPx} × {design.print.heightPx} px
+                  <bdi dir="ltr">{t("customize.px", { w: design.print.widthPx ?? 0, h: design.print.heightPx ?? 0 })}</bdi>
                 </dd>
               </div>
             </dl>
             {ratio < 0.5 ? (
               <p className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800">
-                This image is quite small for a case, so it will probably look blurry. Try a larger or original photo.
+                {t("customize.qualityLow")}
               </p>
             ) : ratio < 0.8 ? (
               <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
-                This image is a little small. It should print fine, but a larger photo will look sharper.
+                {t("customize.qualityMid")}
               </p>
             ) : (
-              <p className="mt-3 text-sm font-semibold text-green-700">✓ Good quality for printing.</p>
+              <p className="mt-3 text-sm font-semibold text-green-700">{t("customize.qualityGood")}</p>
             )}
           </Step>
         )}
 
         {design && phase !== "added" && (
-          <Step number={4} title="Add to your bag">
+          <Step number={4} title={t("customize.step4")}>
             <label htmlFor={ids.note} className="text-sm font-medium text-ink">
-              Note for us <span className="font-normal text-muted-foreground">(optional)</span>
+              {t("customize.noteLabel")} <span className="font-normal text-muted-foreground">({t("common.optional")})</span>
             </label>
             <textarea
               id={ids.note}
@@ -586,7 +593,7 @@ export function CustomizeStudio({
               maxLength={500}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g. Please keep the background black"
+              placeholder={t("customize.notePlaceholder")}
               className="mt-1.5 w-full resize-y rounded-2xl border border-border bg-background px-4 py-2.5 text-sm"
             />
             <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -594,7 +601,7 @@ export function CustomizeStudio({
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  aria-label="Decrease quantity"
+                  aria-label={t("common.decreaseQuantity")}
                   className="min-h-11 min-w-11 px-3 text-ink"
                 >
                   −
@@ -605,7 +612,7 @@ export function CustomizeStudio({
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.min(20, q + 1))}
-                  aria-label="Increase quantity"
+                  aria-label={t("common.increaseQuantity")}
                   className="min-h-11 min-w-11 px-3 text-ink"
                 >
                   +
@@ -617,7 +624,7 @@ export function CustomizeStudio({
                 disabled={busy}
                 className="min-h-11 rounded-pill border border-border px-5 text-sm font-medium text-ink hover:border-ink disabled:opacity-50"
               >
-                Replace image
+                {t("customize.replaceImage")}
               </button>
             </div>
             <button
@@ -627,28 +634,28 @@ export function CustomizeStudio({
               className="mt-4 inline-flex min-h-13 w-full items-center justify-center rounded-pill bg-ink px-6 py-3.5 text-sm font-medium text-white transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
             >
               {phase === "adding"
-                ? "Adding…"
-                : `Add to bag · ${formatPrice((variant ? variant.price + surcharge : 0) * quantity, currency)}`}
+                ? t("customize.adding")
+                : t("customize.addToBag", { price: formatPrice((variant ? variant.price + surcharge : 0) * quantity, currency) })}
             </button>
           </Step>
         )}
 
         {phase === "added" && (
           <div className="rounded-card bg-surface p-5 shadow-card">
-            <p className="font-semibold text-ink">✓ Your custom case is in your bag.</p>
+            <p className="font-semibold text-ink">{t("customize.added")}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 href="/cart"
                 className="rounded-pill bg-ink px-5 py-2.5 text-sm font-medium text-white hover:bg-accent"
               >
-                View bag
+                {t("customize.viewBag")}
               </Link>
               <button
                 type="button"
                 onClick={startOver}
                 className="rounded-pill border border-border px-5 py-2.5 text-sm font-medium text-ink hover:border-ink"
               >
-                Design another
+                {t("customize.designAnother")}
               </button>
             </div>
           </div>

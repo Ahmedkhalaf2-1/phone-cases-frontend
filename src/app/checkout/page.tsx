@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { useCart } from "@/lib/cart/CartProvider";
 import { cartClient } from "@/lib/cart/cart-client";
 import { ApiError } from "@/lib/api/http";
-import { formatPrice } from "@/lib/format-price";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useFormatPrice } from "@/i18n/useFormatPrice";
+import { apiErrorMessage } from "@/i18n/api-errors";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { saveOrderCartCredential } from "@/lib/cart/order-credentials";
 import { INSTAPAY_RECIPIENT } from "@/config/site";
@@ -84,6 +86,14 @@ function clearIdempotency(cartToken: string) {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { t, locale } = useI18n();
+  // Latest translator for async error text, without re-running effects when
+  // the language changes (which must never reset the shipping choice).
+  const i18nRef = useRef({ t, locale });
+  useEffect(() => {
+    i18nRef.current = { t, locale };
+  }, [t, locale]);
+  const formatPrice = useFormatPrice();
   const { cart, isLoading, source, token, completeCheckout } = useCart();
   const formId = useId();
 
@@ -132,7 +142,7 @@ export default function CheckoutPage() {
       })
       .catch((err) =>
         setQuoteError(
-          err instanceof ApiError ? err.message : "Could not load shipping options.",
+          apiErrorMessage(err, i18nRef.current, "checkout.errors.shippingLoad"),
         ),
       )
       .finally(() => setIsShippingLoading(false));
@@ -169,7 +179,7 @@ export default function CheckoutPage() {
         if (cancelled) return;
         setQuote(null);
         setQuoteError(
-          err instanceof ApiError ? err.message : "Could not calculate totals.",
+          apiErrorMessage(err, { t, locale }, "checkout.errors.totals"),
         );
       })
       .finally(() => {
@@ -192,7 +202,7 @@ export default function CheckoutPage() {
     } catch (err) {
       setReceiptStatus("error");
       setSubmitError(
-        err instanceof ApiError ? err.message : "Could not upload the receipt.",
+        apiErrorMessage(err, { t, locale }, "checkout.errors.receiptUpload"),
       );
     }
   }
@@ -219,7 +229,7 @@ export default function CheckoutPage() {
   async function submitOrder(expectedTotal: number) {
     if (!token) return;
     if (customerNote.trim().length > 1000) {
-      setCustomerNoteError("customerNote must not exceed 1000 characters");
+      setCustomerNoteError(t("checkout.errors.noteTooLong"));
       return;
     }
     const payload = buildOrderPayload(expectedTotal);
@@ -250,7 +260,7 @@ export default function CheckoutPage() {
         err.status === 400 &&
         err.message.includes("customerNote")
       ) {
-        setCustomerNoteError(err.message);
+        setCustomerNoteError(t("checkout.errors.noteTooLong"));
       } else if (err instanceof ApiError && err.code === "PRICE_CHANGED") {
         const details = err.details as
           | { subtotal: number; discountTotal: number; shippingTotal: number; total: number; currency: string }
@@ -258,21 +268,13 @@ export default function CheckoutPage() {
         if (details && quote) {
           setPriceChange({ ...quote, ...details, issues: quote.issues });
         }
-        setSubmitError(
-          "Prices changed since you loaded this page. Review the new total below and confirm to continue.",
-        );
+        setSubmitError(t("checkout.errors.priceChanged"));
       } else if (err instanceof ApiError && err.kind === "network") {
-        setSubmitError(
-          "Could not reach the server to confirm your order. If you already tried once, please wait a moment and press Place order again before assuming it failed — retrying is safe and won't create a duplicate order.",
-        );
+        setSubmitError(t("checkout.errors.network"));
       } else if (err instanceof ApiError && err.code === "ITEMS_UNAVAILABLE") {
-        setSubmitError(
-          "Some items became unavailable. Go back to your bag to remove them, then return to checkout.",
-        );
+        setSubmitError(t("checkout.errors.itemsUnavailable"));
       } else {
-        setSubmitError(
-          err instanceof ApiError ? err.message : "Could not place the order. Please try again.",
-        );
+        setSubmitError(apiErrorMessage(err, { t, locale }, "checkout.errors.placeOrder"));
       }
     } finally {
       setIsSubmitting(false);
@@ -284,11 +286,11 @@ export default function CheckoutPage() {
     if (!token || !shippingRateId || !quote || isQuoteLoading) return;
     if (paymentMethod === "INSTAPAY_MANUAL") {
       if (receiptStatus === "uploading") {
-        setSubmitError("Wait for the receipt upload to finish before placing the order.");
+        setSubmitError(t("checkout.errors.waitUpload"));
         return;
       }
       if (!receiptId) {
-        setSubmitError("Upload your InstaPay receipt before placing the order.");
+        setSubmitError(t("checkout.errors.needReceipt"));
         return;
       }
     }
@@ -307,7 +309,7 @@ export default function CheckoutPage() {
       <>
         <SiteHeader />
         <main className="flex flex-1 items-center justify-center px-4 py-24">
-          <LoadingRow label="Loading…" />
+          <LoadingRow label={t("common.loading")} />
         </main>
         <SiteFooter />
       </>
@@ -319,12 +321,12 @@ export default function CheckoutPage() {
       <>
         <SiteHeader />
         <main className="flex-1 px-4 py-24 text-center">
-          <p className="text-muted-foreground">Your bag is empty.</p>
+          <p className="text-muted-foreground">{t("cart.empty")}</p>
           <Link
             href="/collections"
             className="mt-4 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent"
           >
-            Browse phone cases
+            {t("cart.browse")}
           </Link>
         </main>
         <SiteFooter />
@@ -344,38 +346,35 @@ export default function CheckoutPage() {
       <main data-motion="quiet" className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="mb-2 font-display text-4xl tracking-tighter text-ink sm:text-5xl">
-            Checkout
+            {t("checkout.title")}
           </h1>
           <p className="mb-6 text-sm text-muted-foreground">
-            Shipping within Egypt only for now.
+            {t("checkout.egyptOnly")}
           </p>
 
           {source === "demo" && (
             <p className="mb-6 rounded-pill bg-surface px-4 py-3 text-sm text-muted-foreground shadow-soft">
-              Demo mode — placing this order does not contact a real
-              backend. It will produce a demo order you can track locally,
-              not a real purchase.
+              {t("checkout.demoNotice")}
             </p>
           )}
 
           {quoteIssues.length > 0 && (
             <p className="mb-6 rounded-pill bg-accent/5 px-4 py-3 text-sm text-accent">
-              Some items in your bag are unavailable ({quoteIssues.join(", ")}
-              ). Go back to your{" "}
+              {t("checkout.unavailableBefore", { issues: quoteIssues.join(", ") })}{" "}
               <Link href="/cart" className="underline">
-                bag
+                {t("checkout.bag")}
               </Link>{" "}
-              to remove them before checking out.
+              {t("checkout.unavailableAfter")}
             </p>
           )}
 
           {priceChange && (
             <div className="mb-6 rounded-2xl bg-accent/5 px-4 py-3 text-sm shadow-soft">
               <p className="font-semibold text-accent">
-                The price changed since you loaded this page.
+                {t("checkout.priceChanged")}
               </p>
               <p className="mt-1 text-ink">
-                New total: {formatPrice(priceChange.total, priceChange.currency)}
+                {t("checkout.newTotal", { price: formatPrice(priceChange.total, priceChange.currency) })}
               </p>
               <button
                 type="button"
@@ -383,7 +382,7 @@ export default function CheckoutPage() {
                 disabled={isSubmitting}
                 className="mt-2 rounded-pill bg-ink px-4 py-2 text-xs font-medium tracking-tight text-white enabled:hover:bg-accent disabled:opacity-50"
               >
-                Confirm new total &amp; place order
+                {t("checkout.confirmNewTotal")}
               </button>
             </div>
           )}
@@ -392,9 +391,9 @@ export default function CheckoutPage() {
             <div className="flex flex-col gap-6 lg:col-span-2">
               <fieldset className="flex flex-col gap-4">
                 <legend className="font-display text-xl tracking-tight text-ink">
-                  Contact & shipping
+                  {t("checkout.contactShipping")}
                 </legend>
-                <Field label="Full name" htmlFor={`${formId}-name`}>
+                <Field label={t("checkout.fullName")} htmlFor={`${formId}-name`}>
                   <input
                     id={`${formId}-name`}
                     required
@@ -403,26 +402,29 @@ export default function CheckoutPage() {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Email (optional)" htmlFor={`${formId}-email`}>
+                <Field label={t("checkout.emailOptional")} htmlFor={`${formId}-email`}>
                   <input
                     id={`${formId}-email`}
                     type="email"
+                    dir="ltr"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Phone" htmlFor={`${formId}-phone`}>
+                <Field label={t("checkout.phone")} htmlFor={`${formId}-phone`}>
                   <input
                     id={`${formId}-phone`}
                     required
-                    placeholder="01xxxxxxxxx"
+                    placeholder={t("checkout.phonePlaceholder")}
+                    type="tel"
+                    dir="ltr"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className={inputClass}
                   />
                 </Field>
-                <Field label="City" htmlFor={`${formId}-city`}>
+                <Field label={t("checkout.city")} htmlFor={`${formId}-city`}>
                   <input
                     id={`${formId}-city`}
                     required
@@ -431,7 +433,7 @@ export default function CheckoutPage() {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Address line 1" htmlFor={`${formId}-addr1`}>
+                <Field label={t("checkout.addressLine1")} htmlFor={`${formId}-addr1`}>
                   <input
                     id={`${formId}-addr1`}
                     required
@@ -440,7 +442,7 @@ export default function CheckoutPage() {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Address line 2 (optional)" htmlFor={`${formId}-addr2`}>
+                <Field label={t("checkout.addressLine2")} htmlFor={`${formId}-addr2`}>
                   <input
                     id={`${formId}-addr2`}
                     value={addressLine2}
@@ -448,7 +450,7 @@ export default function CheckoutPage() {
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Postal code (optional)" htmlFor={`${formId}-postal`}>
+                <Field label={t("checkout.postalCode")} htmlFor={`${formId}-postal`}>
                   <input
                     id={`${formId}-postal`}
                     value={postalCode}
@@ -457,14 +459,7 @@ export default function CheckoutPage() {
                   />
                 </Field>
                 <Field
-                  label={
-                    <span className="flex items-center justify-between">
-                      <span>Order notes (optional)</span>
-                      <span className="text-xs font-normal text-muted-foreground" dir="rtl">
-                        ملاحظات على الطلب (اختياري)
-                      </span>
-                    </span>
-                  }
+                  label={t("checkout.orderNotes")}
                   htmlFor={`${formId}-note`}
                 >
                   <textarea
@@ -472,7 +467,7 @@ export default function CheckoutPage() {
                     dir="auto"
                     rows={3}
                     maxLength={1000}
-                    placeholder="e.g. Call me before delivery / مثال: اتصل بي قبل التوصيل"
+                    placeholder={t("checkout.orderNotesPlaceholder")}
                     value={customerNote}
                     onChange={(e) => {
                       setCustomerNote(e.target.value);
@@ -497,13 +492,11 @@ export default function CheckoutPage() {
 
               <fieldset className="flex flex-col gap-3">
                 <legend className="font-display text-xl tracking-tight text-ink">
-                  Shipping method
+                  {t("checkout.shippingMethod")}
                 </legend>
                 {shippingOptions.length === 0 && !isShippingLoading && (
                   <p className="text-sm text-accent">
-                    No shipping options are available right now, so an order
-                    can&apos;t be placed yet. Please contact us, or try again
-                    later.
+                    {t("checkout.noShipping")}
                   </p>
                 )}
                 {shippingOptions.map((option) => (
@@ -526,7 +519,7 @@ export default function CheckoutPage() {
                         </span>
                         {option.estimatedDaysMin !== null && (
                           <span className="block text-xs text-muted-foreground">
-                            {option.estimatedDaysMin}–{option.estimatedDaysMax} days
+                            {t("checkout.days", { min: option.estimatedDaysMin, max: option.estimatedDaysMax ?? option.estimatedDaysMin })}
                           </span>
                         )}
                       </span>
@@ -540,7 +533,7 @@ export default function CheckoutPage() {
 
               <fieldset className="flex flex-col gap-3">
                 <legend className="font-display text-xl tracking-tight text-ink">
-                  Payment
+                  {t("checkout.payment")}
                 </legend>
                 <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border p-3 has-[:checked]:border-accent">
                   <input
@@ -550,7 +543,7 @@ export default function CheckoutPage() {
                     onChange={() => handlePaymentMethodChange("CASH_ON_DELIVERY")}
                     className="accent-accent"
                   />
-                  Cash on delivery
+                  {t("checkout.cod")}
                 </label>
                 <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border p-3 has-[:checked]:border-accent">
                   <input
@@ -560,7 +553,7 @@ export default function CheckoutPage() {
                     onChange={() => handlePaymentMethodChange("INSTAPAY_MANUAL")}
                     className="accent-accent"
                   />
-                  InstaPay (manual transfer)
+                  {t("checkout.instapay")}
                 </label>
 
                 {paymentMethod === "INSTAPAY_MANUAL" && (
@@ -577,27 +570,27 @@ export default function CheckoutPage() {
 
             <div className="flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card lg:sticky lg:top-24 lg:self-start">
               <h2 className="font-display text-xl tracking-tight text-ink">
-                Order total
+                {t("checkout.orderTotal")}
               </h2>
               <dl className="flex flex-col gap-1.5 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Subtotal</dt>
+                  <dt className="text-muted-foreground">{t("common.subtotal")}</dt>
                   <dd>{formatPrice(cart.subtotal, cart.currency)}</dd>
                 </div>
                 {cart.discountTotal > 0 && (
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Coupon discount</dt>
+                    <dt className="text-muted-foreground">{t("common.couponDiscount")}</dt>
                     <dd>−{formatPrice(cart.discountTotal, cart.currency)}</dd>
                   </div>
                 )}
                 {cart.bundleDiscountTotal > 0 && (
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Bundle discount</dt>
+                    <dt className="text-muted-foreground">{t("common.bundleDiscount")}</dt>
                     <dd>−{formatPrice(cart.bundleDiscountTotal, cart.currency)}</dd>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Shipping</dt>
+                  <dt className="text-muted-foreground">{t("common.shipping")}</dt>
                   <dd>
                     {isQuoteLoading
                       ? "…"
@@ -607,10 +600,10 @@ export default function CheckoutPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between border-t border-border pt-1.5 font-semibold text-ink">
-                  <dt>Total</dt>
+                  <dt>{t("common.total")}</dt>
                   <dd>
                     {isQuoteLoading
-                      ? "Recalculating…"
+                      ? t("checkout.recalculating")
                       : quote
                         ? formatPrice(quote.total, cart.currency)
                         : "—"}
@@ -626,7 +619,7 @@ export default function CheckoutPage() {
                 disabled={!canSubmit}
                 className="inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-colors enabled:hover:bg-accent disabled:cursor-not-allowed disabled:bg-ink/40"
               >
-                {isSubmitting ? "Placing order…" : isQuoteLoading ? "Calculating total…" : "Place order"}
+                {isSubmitting ? t("checkout.placingOrder") : isQuoteLoading ? t("checkout.calculating") : t("checkout.placeOrder")}
               </button>
             </div>
           </form>
@@ -675,6 +668,8 @@ function InstaPayInstructions({
   onFileChange: (file: File | null) => void;
   formId: string;
 }) {
+  const { t } = useI18n();
+  const formatPrice = useFormatPrice();
   const [copied, setCopied] = useState<"recipient" | "amount" | null>(null);
 
   async function copy(text: string, which: "recipient" | "amount") {
@@ -691,56 +686,54 @@ function InstaPayInstructions({
   if (!recipient) {
     return (
       <div className="rounded-2xl bg-accent/5 p-3 text-sm text-accent">
-        InstaPay transfer details aren&apos;t configured yet. Please choose
-        Cash on delivery, or contact us to arrange payment.
+        {t("checkout.instapayMissing")}
       </div>
     );
   }
 
   return (
     <div className="rounded-2xl bg-surface p-3 shadow-soft">
-      <p className="text-sm font-semibold text-ink">Transfer instructions</p>
+      <p className="text-sm font-semibold text-ink">{t("checkout.transferInstructions")}</p>
       <div className="mt-2 flex items-center justify-between text-sm">
         <span>
-          Send to: <strong>{recipient.name}</strong> ({recipient.identifier})
+          {t("checkout.sendTo")} <strong>{recipient.name}</strong> (<bdi dir="ltr">{recipient.identifier}</bdi>)
         </span>
         <button
           type="button"
           onClick={() => copy(recipient.identifier, "recipient")}
           className="text-xs font-semibold text-accent underline underline-offset-4"
         >
-          {copied === "recipient" ? "Copied" : "Copy"}
+          {copied === "recipient" ? t("common.copied") : t("checkout.copy")}
         </button>
       </div>
       <div className="mt-1 flex items-center justify-between text-sm">
         <span>
-          Amount: <strong>{formatPrice(amount, currency)}</strong>
+          {t("checkout.amount")} <strong>{formatPrice(amount, currency)}</strong>
         </span>
         <button
           type="button"
           onClick={() => copy((amount / 100).toFixed(2), "amount")}
           className="text-xs font-semibold text-accent underline underline-offset-4"
         >
-          {copied === "amount" ? "Copied" : "Copy"}
+          {copied === "amount" ? t("common.copied") : t("checkout.copy")}
         </button>
       </div>
 
       <p className="mt-3 rounded-pill bg-accent/5 px-3 py-2 text-xs text-ink">
-        After transferring, send a screenshot of the payment to our WhatsApp
-        at{" "}
+        {t("checkout.whatsappBefore")}{" "}
         <a
           href={`https://wa.me/2${recipient.whatsappNumber}`}
           target="_blank"
           rel="noopener noreferrer"
           className="font-semibold text-accent underline underline-offset-4"
         >
-          {recipient.whatsappNumber}
+          <bdi dir="ltr">{recipient.whatsappNumber}</bdi>
         </a>{" "}
-        so we can confirm it faster.
+        {t("checkout.whatsappAfter")}
       </p>
 
       <label htmlFor={`${formId}-receipt`} className="mt-3 block text-sm font-semibold text-ink">
-        Upload payment receipt
+        {t("checkout.uploadReceipt")}
       </label>
       <input
         id={`${formId}-receipt`}
@@ -750,19 +743,18 @@ function InstaPayInstructions({
         className="mt-2 block w-full text-sm"
       />
       <p className="mt-1 text-xs text-muted-foreground">
-        JPEG, PNG, or WebP, up to 5MB.
+        {t("checkout.receiptHint")}
       </p>
       {receiptStatus === "uploading" && (
-        <p className="mt-1 text-xs text-muted-foreground">Uploading…</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("checkout.uploading")}</p>
       )}
       {receiptStatus === "uploaded" && (
         <p className="mt-1 text-xs text-green-700">
-          Receipt uploaded — it will be reviewed by our team after you place
-          the order.
+          {t("checkout.receiptUploaded")}
         </p>
       )}
       {receiptStatus === "error" && (
-        <p className="mt-1 text-xs text-accent">Upload failed — try again.</p>
+        <p className="mt-1 text-xs text-accent">{t("checkout.uploadFailed")}</p>
       )}
     </div>
   );

@@ -1,3 +1,7 @@
+"use client";
+
+import { useI18n } from "@/i18n/I18nProvider";
+
 const COLORS: Record<string, string> = {
   // Fulfillment
   PENDING: "bg-amber-100 text-amber-800",
@@ -28,13 +32,16 @@ const COLORS: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: { status: string }) {
+  const { tDynamic } = useI18n();
+  // Enum values are never changed; only their display label is localized.
+  const label = tDynamic(`orders.status.${status}`, status.replace(/_/g, " "));
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${
         COLORS[status] ?? "bg-surface text-muted-foreground"
       }`}
     >
-      {status.replace(/_/g, " ")}
+      {label}
     </span>
   );
 }

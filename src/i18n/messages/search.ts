@@ -1,0 +1,38 @@
+import { section } from "../section";
+
+export const search = section(
+  {
+    placeholderNamed: "Search “{name}”…",
+    placeholderDefault: "What are you shopping for today?",
+    label: "Search phone cases and collections",
+    clear: "Clear search",
+    submit: "Search",
+    searchingFor: "Searching for {name}?",
+    hereAreBest: "Here are some of our best",
+    viewAll: "View all",
+    spotlight: "Spotlight collection",
+    browseCollections: "Browse collections",
+    collections: "Collections",
+    cases: "Cases",
+    noMatches: "No matches for “{query}”",
+    tryCollections: "Try one of our collections instead",
+    seeAll: "See all results for “{query}”",
+  },
+  {
+    placeholderNamed: "ابحث عن «{name}»…",
+    placeholderDefault: "بتدوّر على إيه النهارده؟",
+    label: "ابحث في أغطية الهاتف والمجموعات",
+    clear: "مسح البحث",
+    submit: "بحث",
+    searchingFor: "بتدوّر على {name}؟",
+    hereAreBest: "دي مجموعة من أفضل تصاميمنا",
+    viewAll: "عرض الكل",
+    spotlight: "المجموعة المميزة",
+    browseCollections: "تصفّح المجموعات",
+    collections: "المجموعات",
+    cases: "الأغطية",
+    noMatches: "لا توجد نتائج لـ «{query}»",
+    tryCollections: "جرّب إحدى مجموعاتنا بدلًا من ذلك",
+    seeAll: "عرض كل النتائج لـ «{query}»",
+  },
+);

@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { useI18n } from "@/i18n/I18nProvider";
 
 export default function TrackOrderPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [trackingToken, setTrackingToken] = useState("");
   const inputId = useId();
 
@@ -39,28 +41,29 @@ export default function TrackOrderPage() {
       <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-md px-4 py-24 sm:px-6">
           <h1 className="mb-2 font-display text-4xl tracking-tighter text-ink">
-            Track order
+            {t("orders.trackTitle")}
           </h1>
           <p className="mb-6 text-sm text-muted-foreground">
-            Enter the tracking link/code you received after checkout.
+            {t("orders.trackIntro")}
           </p>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <label htmlFor={inputId} className="sr-only">
-              Tracking token
+              {t("orders.trackingToken")}
             </label>
             <input
               id={inputId}
               required
               value={trackingToken}
               onChange={(e) => setTrackingToken(e.target.value)}
-              placeholder="Tracking token"
+              placeholder={t("orders.trackingToken")}
+              dir="ltr"
               className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
             <button
               type="submit"
               className="inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              Track
+              {t("orders.track")}
             </button>
           </form>
         </div>

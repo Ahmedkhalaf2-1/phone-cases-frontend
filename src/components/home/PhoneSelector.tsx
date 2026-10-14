@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/i18n/I18nProvider";
 import { useId, useMemo, useState } from "react";
 import type { PhoneModel } from "@/lib/api/types";
 
@@ -10,6 +11,7 @@ export function PhoneSelector({
   models: PhoneModel[];
   source: "demo" | "live";
 }) {
+  const { t } = useI18n();
   const [selectedId, setSelectedId] = useState(models[0]?.id ?? "");
   const selectId = useId();
   const selectedModel = useMemo(
@@ -19,7 +21,7 @@ export function PhoneSelector({
 
   return (
     <section
-      aria-label="Find your phone"
+      aria-label={t("home.findPhone")}
       className="relative z-10 mx-auto -mt-6 max-w-[1440px] px-4 sm:-mt-10 sm:px-6 lg:px-8"
     >
       <div className="flex flex-col gap-4 rounded-card border border-border bg-surface px-5 py-5 shadow-card sm:flex-row sm:items-center sm:justify-between sm:py-4">
@@ -28,7 +30,7 @@ export function PhoneSelector({
             htmlFor={selectId}
             className="text-sm font-medium tracking-tight text-ink"
           >
-            Find your phone
+            {t("home.findPhone")}
           </label>
           <div className="relative w-full sm:w-64">
             <select
@@ -55,13 +57,12 @@ export function PhoneSelector({
           }
           className="inline-flex items-center gap-2 self-start text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:self-auto"
         >
-          Change model <span aria-hidden>→</span>
+          {t("home.changeModel")} <span aria-hidden className="rtl:-scale-x-100">→</span>
         </a>
       </div>
       {source === "demo" && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Demo model list — connect the backend for the real supported-device
-          catalog.
+          {t("home.demoModels")}
         </p>
       )}
     </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/i18n/I18nProvider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SharedElementScope } from "@/components/motion/SharedProductImage";
 
@@ -42,8 +43,11 @@ export function ProductRail({
   const update = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
-    setCanPrev(el.scrollLeft > 4);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    // In RTL scrollLeft runs 0 -> negative; its magnitude is the distance
+    // scrolled from the start edge either way.
+    const scrolled = Math.abs(el.scrollLeft);
+    setCanPrev(scrolled > 4);
+    setCanNext(scrolled + el.clientWidth < el.scrollWidth - 4);
   }, []);
 
   useEffect(() => {
@@ -135,14 +139,15 @@ export function ProductRail({
 
     // Fractional accumulator: browsers round scrollLeft, so tiny per-frame
     // steps would otherwise never move the rail.
-    let position = el.scrollLeft;
+    const sign = styles.direction === "rtl" ? -1 : 1;
+    let position = Math.abs(el.scrollLeft);
     let last = performance.now();
     let frame = requestAnimationFrame(function step(now) {
       const width = loopWidth();
       position += (AUTO_SPEED * (now - last)) / 1000;
       last = now;
       if (width > 0 && position >= width) position -= width;
-      el.scrollLeft = position;
+      el.scrollLeft = sign * position;
       frame = requestAnimationFrame(step);
     });
 
@@ -153,7 +158,8 @@ export function ProductRail({
     const el = trackRef.current;
     if (!el) return;
     pauseForInteraction();
-    el.scrollBy({ left: direction * el.clientWidth * 0.9, behavior: "smooth" });
+    const sign = getComputedStyle(el).direction === "rtl" ? -1 : 1;
+    el.scrollBy({ left: sign * direction * el.clientWidth * 0.9, behavior: "smooth" });
   }
 
   return (
@@ -217,10 +223,11 @@ function RailButton({
   visible: boolean;
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
-      aria-label={direction === 1 ? "Scroll right" : "Scroll left"}
+      aria-label={direction === 1 ? t("home.railNext") : t("home.railPrevious")}
       tabIndex={visible ? 0 : -1}
       onClick={onClick}
       className={`absolute top-[38%] z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-pill border border-border bg-surface text-ink shadow-lifted transition-all hover:border-accent hover:bg-accent hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:flex ${
@@ -233,7 +240,7 @@ function RailButton({
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden
-        className={direction === -1 ? "rotate-180" : undefined}
+        className={direction === -1 ? "rotate-180 rtl:rotate-0" : "rtl:rotate-180"}
       >
         <path
           d="M5 12h13M13 6l6 6-6 6"

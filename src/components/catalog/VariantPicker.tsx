@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { formatPrice } from "@/lib/format-price";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useFormatPrice } from "@/i18n/useFormatPrice";
 import { useCart } from "@/lib/cart/CartProvider";
 import type { PhoneBrand, PublicVariant } from "@/lib/api/types";
 import { Spinner } from "@/components/ui/Spinner";
@@ -18,6 +19,8 @@ export function VariantPicker({
   /** Lets the parent page sync a gallery/thumbnail to the selected variant. */
   onVariantChange?: (variant: PublicVariant | undefined) => void;
 }) {
+  const { t } = useI18n();
+  const formatPrice = useFormatPrice();
   const modelId = useId();
   const brandId = useId();
   const dockRef = useRef<HTMLDivElement>(null);
@@ -182,7 +185,7 @@ export function VariantPicker({
             htmlFor={brandId}
             className="text-sm font-medium tracking-tight text-ink max-sm:sr-only"
           >
-            Phone brand
+            {t("product.phoneBrand")}
           </label>
           <select
             id={brandId}
@@ -204,7 +207,7 @@ export function VariantPicker({
             }}
             className={`sf-select w-full min-h-11 rounded-pill border border-border bg-background px-3 py-2.5 text-base text-ink ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
-            <option value="">Brand</option>
+            <option value="">{t("product.brandPlaceholder")}</option>
             {brands.map((brand) => (
               <option key={brand.slug} value={brand.slug}>
                 {brand.name}
@@ -220,7 +223,7 @@ export function VariantPicker({
             htmlFor={modelId}
             className="text-sm font-medium tracking-tight text-ink max-sm:sr-only"
           >
-            Phone model
+            {t("product.phoneModel")}
           </label>
           <select
             id={modelId}
@@ -232,7 +235,7 @@ export function VariantPicker({
             }}
             className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
-            <option value="">Select phone model</option>
+            <option value="">{t("product.selectModel")}</option>
             {modelsForBrand.map((model) =>
               model ? (
                 <option key={model.slug} value={model.slug}>
@@ -253,7 +256,7 @@ export function VariantPicker({
             htmlFor={caseTypeId}
             className="text-sm font-medium tracking-tight text-ink max-sm:sr-only"
           >
-            Case type
+            {t("product.caseType")}
           </label>
           <select
             id={caseTypeId}
@@ -265,10 +268,10 @@ export function VariantPicker({
           >
             <option value="">
               {!selectedModelSlug
-                ? "Select phone model first"
+                ? t("product.selectModelFirst")
                 : caseTypesForModel.length === 0
-                ? "No case types available"
-                : "Select case type"}
+                ? t("product.noCaseTypes")
+                : t("product.selectCaseType")}
             </option>
             {caseTypesForModel.map((caseType) =>
               caseType ? (
@@ -299,25 +302,24 @@ export function VariantPicker({
               selectedVariant.isAvailable ? "text-green-700" : "text-accent"
             }`}
           >
-            {selectedVariant.isAvailable ? "In stock" : "Out of stock"}
+            {selectedVariant.isAvailable ? t("common.inStock") : t("common.outOfStock")}
           </p>
         </div>
       ) : !isSelectionComplete ? (
         <div className={`sm:order-4 max-sm:flex max-sm:min-h-8 max-sm:items-baseline max-sm:gap-x-3 ${mobileOnlyWhen(showPurchase)} ${stepIn}`}>
           <p className="font-display text-3xl text-ink max-sm:text-2xl">
-            <span className="text-lg font-normal text-muted-foreground max-sm:text-sm max-sm:font-medium max-sm:tracking-wider max-sm:uppercase">From </span>
+            <span className="text-lg font-normal text-muted-foreground max-sm:text-sm max-sm:font-medium max-sm:tracking-wider max-sm:uppercase">{t("common.from")} </span>
             {formatPrice(minPrice, currency)}
           </p>
           <p className="mt-1 text-sm text-muted-foreground max-sm:sr-only">
             {!selectedModelSlug
-              ? "Select your phone model to check availability and options."
-              : "Select your case type to continue."}
+              ? t("product.selectModelHint")
+              : t("product.selectCaseHint")}
           </p>
         </div>
       ) : (
         <p className={`text-sm text-muted-foreground sm:order-4 ${mobileOnlyWhen(showPurchase)}`}>
-          This combination isn&apos;t available. Try a different phone
-          model or case type above.
+          {t("product.comboUnavailable")}
         </p>
       )}
 
@@ -331,13 +333,13 @@ export function VariantPicker({
       {selectedVariant?.isAvailable && (
         <div className="flex items-center gap-3 max-sm:shrink-0">
           <label htmlFor={`${modelId}-qty`} className="sr-only">
-            Quantity
+            {t("common.quantity")}
           </label>
           <div className="flex items-center rounded-pill border border-border max-sm:h-12">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              aria-label="Decrease quantity"
+              aria-label={t("common.decreaseQuantity")}
               className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               −
@@ -358,7 +360,7 @@ export function VariantPicker({
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.min(20, q + 1))}
-              aria-label="Increase quantity"
+              aria-label={t("common.increaseQuantity")}
               className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               +
@@ -388,11 +390,11 @@ export function VariantPicker({
         }}
         title={
           !isAccessory && !selectedModelSlug
-            ? "Please select a phone model first"
+            ? t("product.needModelFirst")
             : !isAccessory && !activeCaseTypeSlug && caseTypesForModel.length > 0
-            ? "Please select a case type first"
+            ? t("product.needCaseFirst")
             : selectedVariant && !selectedVariant.isAvailable
-            ? "This combination is out of stock"
+            ? t("product.comboOutOfStock")
             : undefined
         }
         aria-busy={status === "adding"}
@@ -400,30 +402,30 @@ export function VariantPicker({
       >
         {status === "adding" && <Spinner />}
         {status === "adding"
-          ? "Adding…"
+          ? t("product.adding")
           : !isAccessory && !selectedModelSlug
-          ? "Select phone model"
+          ? t("product.selectModel")
           : !isAccessory && !activeCaseTypeSlug && caseTypesForModel.length > 0
-          ? "Select case type"
+          ? t("product.selectCaseType")
           : selectedVariant && !selectedVariant.isAvailable
-          ? "Out of stock"
-          : "Add to cart"}
+          ? t("common.outOfStock")
+          : t("product.addToCart")}
       </button>
       </div>
 
       {!isSelectionComplete && (
         <p className="text-xs text-muted-foreground max-sm:sr-only sm:order-7">
           {!selectedModelSlug
-            ? "Please select your phone model to continue."
-            : "Please select your case type to continue."}
+            ? t("product.pleaseSelectModel")
+            : t("product.pleaseSelectCase")}
         </p>
       )}
 
       {status === "added" && !cartError && (
         <p className="sf-message-in text-sm text-ink sm:order-7 max-sm:text-[13px]">
-          Added to cart.{" "}
+          {t("product.addedToCart")}{" "}
           <Link href="/cart" className="font-semibold underline underline-offset-4">
-            View cart →
+            {t("product.viewCart")}
           </Link>
         </p>
       )}
@@ -435,9 +437,9 @@ export function VariantPicker({
           htmlFor={noteId}
           className="flex max-w-xs items-center justify-between gap-3 text-sm font-medium tracking-tight text-ink max-sm:max-w-none"
         >
-          <span>Add a note</span>
+          <span>{t("product.addNote")}</span>
           <span className="rounded-pill bg-surface px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-            Optional
+            {t("common.optional")}
           </span>
         </label>
         <textarea
@@ -447,12 +449,12 @@ export function VariantPicker({
           maxLength={500}
           value={itemNote}
           onChange={(e) => setItemNote(e.target.value)}
-          placeholder="Add a name, short request, or print note…"
+          placeholder={t("product.notePlaceholder")}
           className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-accent focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y"
         />
         <div className={`flex justify-end max-w-xs max-sm:max-w-none ${itemNote.length === 0 ? "max-sm:hidden" : ""}`}>
           <span className="text-[11px] text-muted-foreground">
-            {itemNote.length} / 500
+            {t("product.noteCounter", { count: itemNote.length })}
           </span>
         </div>
       </div>

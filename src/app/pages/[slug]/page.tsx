@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { getStaticPage } from "@/lib/data/pages";
+import { getI18n } from "@/i18n/server";
 
 export async function generateMetadata({
   params,
@@ -11,7 +12,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const page = await getStaticPage(slug);
-  return { title: page ? page.title : "Page not available" };
+  const { t } = await getI18n();
+  return { title: page ? page.title : t("pages.pageNotAvailable") };
 }
 
 export default async function StaticPage({
@@ -21,6 +23,7 @@ export default async function StaticPage({
 }) {
   const { slug } = await params;
   const page = await getStaticPage(slug);
+  const { t } = await getI18n();
 
   return (
     <>
@@ -37,18 +40,16 @@ export default async function StaticPage({
           ) : (
             <div className="py-16 text-center">
               <h1 className="font-display text-3xl tracking-tighter text-ink">
-                Not published yet
+                {t("pages.notPublishedTitle")}
               </h1>
               <p className="mt-3 text-muted-foreground">
-                This page (&quot;{slug}&quot;) hasn&apos;t been written yet —
-                content is managed by the shop owner via the backend&apos;s
-                content system.
+                {t("pages.notPublishedBody", { slug })}
               </p>
               <Link
                 href="/"
                 className="mt-6 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent"
               >
-                Back to home
+                {t("pages.backHome")}
               </Link>
             </div>
           )}

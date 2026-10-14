@@ -1,27 +1,23 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import type { Locale } from "@/i18n/config";
+import { formatDayShort } from "@/i18n/format";
+import { useI18n } from "@/i18n/I18nProvider";
 
 /** Earliest / latest arrival, in calendar days from the customer's today. */
 const MIN_DAYS = 1;
 const MAX_DAYS = 5;
 
-/** "Sat, 18 Oct" in the browser's calendar day. */
-function formatDay(date: Date): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).formatToParts(date);
-  const pick = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${pick("weekday")}, ${pick("day")} ${pick("month")}`;
-}
-
-/** "Sat, 18 Oct – Wed, 22 Oct", from `now` + 1 and + 5 days. */
-export function deliveryRange(now: Date = new Date()): string {
+/**
+ * "Sat, 18 Oct – Wed, 22 Oct" (or the Arabic equivalent), from `now` + 1
+ * and + 5 days. Only the presentation is localized; the day arithmetic is
+ * the same for every language.
+ */
+export function deliveryRange(locale: Locale, now: Date = new Date()): string {
   const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() + MIN_DAYS);
   const to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + MAX_DAYS);
-  return `${formatDay(from)} – ${formatDay(to)}`;
+  return `${formatDayShort(locale, from)} – ${formatDayShort(locale, to)}`;
 }
 
 const subscribeNever = () => () => {};
@@ -33,22 +29,14 @@ const ICON = {
 } as const;
 
 const ITEMS = [
-  {
-    icon: ICON.truck,
-    title: "Fast delivery",
-    text: "At your door in 3–5 business days.",
-  },
-  {
-    icon: ICON.print,
-    title: "Premium print",
-    text: "Crisp colour on a clear-sided case.",
-  },
+  { icon: ICON.truck, title: "product.assurance.fastTitle", text: "product.assurance.fastText" },
+  { icon: ICON.print, title: "product.assurance.printTitle", text: "product.assurance.printText" },
   {
     icon: ICON.shield,
-    title: "Lifetime print warranty",
-    text: "Covered against peeling and fading.",
+    title: "product.assurance.warrantyTitle",
+    text: "product.assurance.warrantyText",
   },
-];
+] as const;
 
 /**
  * Compact reassurance block under the product title. Static copy plus an
@@ -61,23 +49,24 @@ const ITEMS = [
  * motion shows every line immediately.
  */
 export function PurchaseAssurance({ className = "" }: { className?: string }) {
+  const { t, locale } = useI18n();
   // null on the server and during hydration, the real range afterwards.
   const range = useSyncExternalStore(
     subscribeNever,
-    () => deliveryRange(),
+    () => deliveryRange(locale),
     () => null,
   );
 
   return (
     <section
-      aria-label="Delivery and quality"
+      aria-label={t("product.assurance.label")}
       className={`sf-assure rounded-card border border-border bg-surface/70 p-4 max-sm:p-3.5 ${className}`}
     >
       <p
         className="sf-assure-item flex flex-wrap items-baseline gap-x-2 text-sm"
         style={{ "--i": 0 } as React.CSSProperties}
       >
-        <span className="font-semibold text-ink">Estimated delivery</span>
+        <span className="font-semibold text-ink">{t("product.assurance.estimatedDelivery")}</span>
         {/* Reserved width so the line does not shift when the dates arrive. */}
         <span className="inline-block min-h-5 min-w-[11.5rem] text-muted-foreground">
           {range && <span className="sf-fade-in inline-block">{range}</span>}
@@ -104,8 +93,8 @@ export function PurchaseAssurance({ className = "" }: { className?: string }) {
               <path d={item.icon} />
             </svg>
             <p className="text-sm leading-5">
-              <span className="block font-semibold text-ink">{item.title}</span>
-              <span className="block text-muted-foreground">{item.text}</span>
+              <span className="block font-semibold text-ink">{t(item.title)}</span>
+              <span className="block text-muted-foreground">{t(item.text)}</span>
             </p>
           </li>
         ))}

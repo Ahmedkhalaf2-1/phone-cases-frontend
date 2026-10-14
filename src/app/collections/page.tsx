@@ -3,15 +3,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { getI18n } from "@/i18n/server";
 import { getMoodCollections } from "@/lib/data/collections";
 import { getProducts } from "@/lib/data/products";
 import { getCollectionCover } from "@/config/collection-covers";
 
-export const metadata: Metadata = {
-  title: "Collections",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("catalog.collectionsTitle") };
+}
 
 export default async function CollectionsPage() {
+  const { t, tn } = await getI18n();
   const { collections } = await getMoodCollections();
 
   // A few cases per collection for the tile preview, plus its total count.
@@ -39,19 +42,19 @@ export default async function CollectionsPage() {
         <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
           <header className="mb-8">
             <p className="mb-1 text-xs font-medium tracking-tight text-muted-foreground">
-              {tiles.length} collection{tiles.length === 1 ? "" : "s"}
+              {tn("catalog.collectionsCount", tiles.length)}
             </p>
             <h1 className="font-display text-4xl tracking-tighter text-ink sm:text-5xl">
-              Collections
+              {t("catalog.collectionsTitle")}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Pick a theme and find the case that feels like you.
+              {t("catalog.collectionsIntro")}
             </p>
           </header>
 
           {tiles.length === 0 ? (
             <p className="py-16 text-center text-muted-foreground">
-              No collections yet.
+              {t("catalog.noCollections")}
             </p>
           ) : (
             <div data-motion-stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -112,7 +115,7 @@ export default async function CollectionsPage() {
                           </p>
                         )}
                         <p className="mt-1 text-xs font-medium text-muted-foreground">
-                          {total} design{total === 1 ? "" : "s"}
+                          {tn("catalog.designs", total)}
                         </p>
                       </div>
                       <span

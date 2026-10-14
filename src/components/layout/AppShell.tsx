@@ -67,9 +67,9 @@ export function AppShell({
       {/* Technically redundant with the outer wrapper's own bg-background
           (same color, same area) — kept explicit so this rail's fill
           doesn't silently depend on the wrapper never changing. */}
-      <div className="absolute inset-y-0 left-0 z-30 hidden w-[calc(68px+12px)] bg-background lg:block" />
+      <div className="absolute inset-y-0 start-0 z-30 hidden w-[calc(68px+12px)] bg-background lg:block" />
       <SiteSidebar />
-      <div className="lg:pt-[12px] lg:pr-[18px] lg:pb-[18px] lg:pl-[calc(68px+12px)]">
+      <div className="lg:pt-[12px] lg:pe-[18px] lg:pb-[18px] lg:ps-[calc(68px+12px)]">
         <div className="min-h-full lg:flex lg:min-h-[calc(100vh-30px)] lg:flex-col lg:overflow-clip lg:rounded-[32px] lg:bg-surface lg:shadow-[0_2px_10px_rgba(0,0,0,0.025),0_12px_36px_rgba(0,0,0,0.04)]">
           {showAnnouncement && announcement}
           {children}

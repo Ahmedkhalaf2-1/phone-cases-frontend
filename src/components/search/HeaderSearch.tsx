@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useFormatPrice } from "@/i18n/useFormatPrice";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type {
   SearchCollectionHit,
@@ -79,6 +81,7 @@ export function HeaderSearch({
   /** Called after the visitor follows a result (e.g. to close a mobile sheet). */
   onNavigate?: () => void;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const inputId = useId();
   const panelId = useId();
@@ -179,8 +182,10 @@ export function HeaderSearch({
 
   const placeholder =
     placeholderNames.length > 0
-      ? `Search “${placeholderNames[placeholderIndex % placeholderNames.length]}”…`
-      : "What are you shopping for today?";
+      ? t("search.placeholderNamed", {
+          name: placeholderNames[placeholderIndex % placeholderNames.length],
+        })
+      : t("search.placeholderDefault");
 
   function close() {
     setIsOpen(false);
@@ -199,7 +204,7 @@ export function HeaderSearch({
       id={panelId}
       className={
         variant === "inline"
-          ? "absolute left-0 top-full z-50 mt-2 w-[min(640px,calc(100vw-2rem))] overflow-hidden rounded-[24px] border border-border bg-surface shadow-lifted animate-search-pop"
+          ? "absolute start-0 top-full z-50 mt-2 w-[min(640px,calc(100vw-2rem))] overflow-hidden rounded-[24px] border border-border bg-surface shadow-lifted animate-search-pop"
           : "mt-3 overflow-hidden rounded-[24px] border border-border bg-surface shadow-soft"
       }
     >
@@ -228,7 +233,7 @@ export function HeaderSearch({
       <form
         role="search"
         onSubmit={submit}
-        className={`group/search relative flex w-full items-center gap-2 rounded-pill border p-1 pl-4 transition-all duration-300 ${
+        className={`group/search relative flex w-full items-center gap-2 rounded-pill border p-1 ps-4 transition-all duration-300 ${
           isOpen
             ? "border-ink/25 bg-white shadow-[0_0_0_4px_rgb(0_0_0_/_0.05),0_8px_30px_-8px_rgb(0_0_0_/_0.18)]"
             : "border-border bg-background hover:border-cool-stone hover:bg-white"
@@ -238,7 +243,7 @@ export function HeaderSearch({
           className={`shrink-0 transition-colors ${isOpen ? "text-ink" : "text-muted-foreground"}`}
         />
         <label htmlFor={inputId} className="sr-only">
-          Search phone cases and collections
+          {t("search.label")}
         </label>
         <input
           ref={inputRef}
@@ -259,7 +264,7 @@ export function HeaderSearch({
         {query ? (
           <button
             type="button"
-            aria-label="Clear search"
+            aria-label={t("search.clear")}
             onClick={() => {
               setQuery("");
               inputRef.current?.focus();
@@ -280,10 +285,10 @@ export function HeaderSearch({
         )}
         <button
           type="submit"
-          aria-label="Search"
+          aria-label={t("search.submit")}
           className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-ink text-white transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden className="rtl:-scale-x-100">
             <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
@@ -307,6 +312,7 @@ function Spotlight({
   reducedMotion: boolean;
   onNavigate: () => void;
 }) {
+  const { t } = useI18n();
   // Prefer collections with a cover; fall back to all of them.
   const featured = useMemo(() => {
     const withCover = collections.filter((c) => c.cover);
@@ -374,14 +380,14 @@ function Spotlight({
           <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
             <div className="min-w-0">
               <p className="text-xs font-medium text-white/70">
-                Searching for <span className="text-white">{current.name}</span>?
+                {t("search.searchingFor", { name: current.name })}
               </p>
               <p className="font-display text-xl tracking-tighter text-white sm:text-2xl">
-                Here are some of our best
+                {t("search.hereAreBest")}
               </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-white/15 px-3 py-1.5 text-xs font-medium text-white backdrop-blur transition-colors group-hover:bg-white group-hover:text-ink">
-              View all <span aria-hidden>→</span>
+              {t("search.viewAll")} <span aria-hidden className="rtl:-scale-x-100">→</span>
             </span>
           </div>
         </Link>
@@ -415,7 +421,7 @@ function Spotlight({
         </div>
 
         {featured.length > 1 && (
-          <div className="mt-3 flex items-center justify-center gap-1.5" role="tablist" aria-label="Spotlight collection">
+          <div className="mt-3 flex items-center justify-center gap-1.5" role="tablist" aria-label={t("search.spotlight")}>
             {featured.map((c, i) => {
               const active = i === index % featured.length;
               return (
@@ -437,7 +443,7 @@ function Spotlight({
       </div>
 
       <div>
-        <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">Browse collections</p>
+        <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">{t("search.browseCollections")}</p>
         <div className="flex flex-wrap gap-1.5">
           {collections.map((c) => (
             <Link
@@ -472,6 +478,8 @@ function QueryResults({
   fallbackCollections: SearchCollectionHit[];
   onNavigate: () => void;
 }) {
+  const { t } = useI18n();
+  const formatPrice = useFormatPrice();
   if (!results) return <PanelSkeleton />;
 
   const { collections, products } = results;
@@ -481,7 +489,7 @@ function QueryResults({
     <div className={`flex flex-col gap-5 transition-opacity ${isLoading ? "opacity-60" : ""}`}>
       {collections.length > 0 && (
         <section>
-          <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">Collections</p>
+          <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">{t("search.collections")}</p>
           <div className="grid grid-cols-2 gap-2">
             {collections.slice(0, 4).map((c, i) => (
               <Link
@@ -512,7 +520,7 @@ function QueryResults({
                   <span className="truncate font-display text-lg tracking-tighter text-white">
                     {c.name}
                   </span>
-                  <span aria-hidden className="text-white/80 transition-transform group-hover:translate-x-0.5">
+                  <span aria-hidden className="text-white/80 transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5">
                     →
                   </span>
                 </div>
@@ -524,7 +532,7 @@ function QueryResults({
 
       {products.length > 0 && (
         <section>
-          <p className="mb-1 px-1 text-xs font-medium text-muted-foreground">Cases</p>
+          <p className="mb-1 px-1 text-xs font-medium text-muted-foreground">{t("search.cases")}</p>
           <ul className="flex flex-col">
             {products.map((p, i) => (
               <li key={p.slug} className="animate-search-fade" style={{ animationDelay: `${i * 40}ms` }}>
@@ -547,7 +555,11 @@ function QueryResults({
                       <span className="block truncate text-xs text-muted-foreground">{p.collection}</span>
                     )}
                   </span>
-                  {p.price && <span className="shrink-0 text-sm font-medium text-ink">{p.price}</span>}
+                  {p.priceMinor !== null && p.currency && (
+                    <span className="shrink-0 text-sm font-medium text-ink">
+                      {formatPrice(p.priceMinor, p.currency)}
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
@@ -558,9 +570,9 @@ function QueryResults({
       {isEmpty && !isLoading && (
         <div className="px-1 py-4 text-center">
           <p className="text-sm text-ink">
-            No matches for “<span className="font-medium">{query}</span>”
+            {t("search.noMatches", { query })}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Try one of our collections instead</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("search.tryCollections")}</p>
           <div className="mt-3 flex flex-wrap justify-center gap-1.5">
             {fallbackCollections.slice(0, 8).map((c) => (
               <Link
@@ -582,8 +594,8 @@ function QueryResults({
           onClick={onNavigate}
           className="flex items-center justify-between rounded-[14px] bg-background px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-ink hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          <span className="truncate">See all results for “{query}”</span>
-          <span aria-hidden>→</span>
+          <span className="truncate">{t("search.seeAll", { query })}</span>
+          <span aria-hidden className="rtl:-scale-x-100">→</span>
         </Link>
       )}
     </div>
@@ -605,8 +617,9 @@ function Highlight({ text, query }: { text: string; query: string }) {
 }
 
 function PanelSkeleton() {
+  const { t } = useI18n();
   return (
-    <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading">
+    <div className="flex flex-col gap-3" aria-busy="true" aria-label={t("common.loading")}>
       <div className="aspect-[16/7] animate-pulse rounded-[18px] bg-background" />
       <div className="grid grid-cols-4 gap-2">
         {Array.from({ length: 4 }, (_, i) => (

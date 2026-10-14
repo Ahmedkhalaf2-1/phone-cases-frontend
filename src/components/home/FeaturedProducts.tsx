@@ -1,8 +1,9 @@
+import { getI18n } from "@/i18n/server";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import type { PublicProductSummary } from "@/lib/api/types";
 import type { DemoProduct } from "@/lib/demo/products.demo";
 
-export function FeaturedProducts({
+export async function FeaturedProducts({
   products,
   source,
   sharedImageSlugs,
@@ -12,6 +13,7 @@ export function FeaturedProducts({
   /** Products whose image is the card -> page morph source on this page (unique per document). */
   sharedImageSlugs?: ReadonlySet<string>;
 }) {
+  const { t } = await getI18n();
   return (
     <section
       aria-labelledby="featured-heading"
@@ -21,7 +23,7 @@ export function FeaturedProducts({
         id="featured-heading"
         className="mb-6 font-display text-4xl tracking-tighter text-ink sm:text-5xl"
       >
-        Caught our eye
+        {t("home.featured")}
       </h2>
 
       <div data-motion-stagger className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -36,8 +38,8 @@ export function FeaturedProducts({
       </div>
 
       {source === "demo" && (
-        <p className="mt-4 text-right text-[10px] font-medium tracking-tight text-muted-foreground uppercase">
-          DESIGN CONCEPT — SAMPLE IMAGES & NAMES
+        <p className="mt-4 text-end text-[10px] font-medium tracking-tight text-muted-foreground uppercase">
+          {t("home.demoConcept")}
         </p>
       )}
     </section>

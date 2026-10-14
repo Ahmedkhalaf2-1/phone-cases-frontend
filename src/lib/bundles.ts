@@ -1,19 +1,21 @@
 import type { AnnouncementBanner, BundleOffer } from "@/lib/api/types";
 import type { BundleProgress } from "@/lib/cart/types";
+import { formatOfferPriceFor } from "@/i18n/format";
+import type { Translator } from "@/i18n/translate";
 
 /**
  * Everything the storefront SAYS about bundles lives here, built only from
  * values the backend returned (size, total, minimum saving, flags). Nothing
- * is hardcoded and nothing is inferred from discount arithmetic.
+ * is hardcoded and nothing is inferred from discount arithmetic. Copy comes
+ * from the i18n dictionary, so it follows the active language.
  */
 
-/** "450 EGP" - promotional copy: whole amounts without decimals. */
-export function formatOfferPrice(minorUnits: number, currency: string): string {
-  const amount = minorUnits / 100;
-  const text = Number.isInteger(amount)
-    ? amount.toLocaleString("en-US")
-    : amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${text} ${currency}`;
+/** The subset of the translator the copy helpers need. */
+export type BundleI18n = Pick<Translator, "t" | "tn" | "locale">;
+
+/** "450 EGP" / "450 ج.م" - promotional copy: whole amounts without decimals. */
+export function formatOfferPrice(minorUnits: number, currency: string, locale: BundleI18n["locale"] = "en"): string {
+  return formatOfferPriceFor(locale, minorUnits, currency);
 }
 
 const perUnit = (o: Pick<BundleOffer, "fixedTotal" | "bundleSize">) => o.fixedTotal / o.bundleSize;
@@ -30,11 +32,14 @@ export function pickPrimaryOffer(offers: BundleOffer[]): BundleOffer | null {
  * The banner for the top announcement bar. The backend already resolves
  * which single offer may show one; this only reads it.
  */
-export function pickAnnouncementBanner(offers: BundleOffer[]): AnnouncementBanner | null {
+export function pickAnnouncementBanner(
+  offers: BundleOffer[],
+  i18n: BundleI18n,
+): AnnouncementBanner | null {
   for (const offer of offers) {
     const banner = offer.announcementBanner;
     if (banner?.enabled && banner.text.trim() && banner.target?.href.startsWith("/")) {
-      return banner;
+      return { ...banner, ...localizedBanner(banner, offer, i18n) };
     }
   }
   return null;
@@ -64,33 +69,71 @@ export function offerSignature(o: BundleOffer): string {
   ].join(":");
 }
 
-const cases = (n: number) => (n === 1 ? "case" : "cases");
+const price = (i18n: BundleI18n, minor: number, currency: string) =>
+  formatOfferPrice(minor, currency, i18n.locale);
 
 /** "2 CASES. 450 EGP." */
-export function offerHeadline(o: BundleOffer): string {
-  return `${o.bundleSize} ${cases(o.bundleSize)}. ${formatOfferPrice(o.fixedTotal, o.currency)}.`.toUpperCase();
+export function offerHeadline(o: BundleOffer, i18n: BundleI18n): string {
+  return i18n
+    .t("bundles.headline", {
+      cases: i18n.tn("bundles.cases", o.bundleSize),
+      price: price(i18n, o.fixedTotal, o.currency),
+    })
+    .toUpperCase();
 }
 
-export function offerBody(o: BundleOffer): string {
-  const pick = `Pick any ${o.bundleSize} eligible ${cases(o.bundleSize)}${
-    o.requireDifferentPhoneModels ? " for different phone models" : ""
-  }`;
+export function offerBody(o: BundleOffer, i18n: BundleI18n): string {
+  const params = {
+    cases: i18n.tn("bundles.eligibleCases", o.bundleSize),
+    diff: o.requireDifferentPhoneModels ? i18n.t("bundles.diffModelsPlural") : "",
+  };
   return o.minSavings > 0
-    ? `${pick} and save at least ${formatOfferPrice(o.minSavings, o.currency)} automatically.`
-    : `${pick} and get the bundle price automatically.`;
+    ? i18n.t("bundles.bodySave", { ...params, saving: price(i18n, o.minSavings, o.currency) })
+    : i18n.t("bundles.bodyPrice", params);
 }
 
-export function productNote(o: BundleOffer): string {
-  const price = formatOfferPrice(o.fixedTotal, o.currency);
+export function productNote(o: BundleOffer, i18n: BundleI18n): string {
+  const total = price(i18n, o.fixedTotal, o.currency);
   if (o.bundleSize === 2) {
     return o.requireDifferentPhoneModels
-      ? `Pair it with a case for a different phone model and get both for ${price}.`
-      : `Add any second eligible case and get both for ${price}.`;
+      ? i18n.t("bundles.noteDifferent", { price: total })
+      : i18n.t("bundles.noteSecond", { price: total });
   }
-  const more = o.bundleSize - 1;
-  return `Add any ${more} more eligible ${cases(more)}${
-    o.requireDifferentPhoneModels ? ", each for a different phone model," : ""
-  } and get all ${o.bundleSize} for ${price}.`;
+  return i18n.t("bundles.noteMore", {
+    more: i18n.tn("bundles.moreEligible", o.bundleSize - 1),
+    diff: o.requireDifferentPhoneModels ? i18n.t("bundles.diffEach") : "",
+    size: o.bundleSize,
+    price: total,
+  });
+}
+
+/**
+ * The top-bar text/CTA. The backend generates an English default when an
+ * admin leaves them empty; when the received text is exactly that default
+ * it is rebuilt here in the active language from the offer's own values.
+ * Admin-written copy is always shown as written.
+ */
+export function localizedBanner(
+  banner: AnnouncementBanner,
+  offer: BundleOffer,
+  i18n: BundleI18n,
+): { text: string; ctaLabel: string } {
+  const amount = offer.fixedTotal / 100;
+  const enPrice = Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+  const backendDefault = `${offer.bundleSize} CASES FOR ${enPrice} ${offer.currency}`.toUpperCase();
+  const isDefaultText = banner.text.trim().toUpperCase() === backendDefault;
+  const isDefaultCta = banner.ctaLabel.trim().toUpperCase() === "SHOP NOW";
+  return {
+    text: isDefaultText
+      ? i18n
+          .t("bundles.bannerDefaultText", {
+            cases: i18n.tn("bundles.cases", offer.bundleSize),
+            price: price(i18n, offer.fixedTotal, offer.currency),
+          })
+          .toUpperCase()
+      : banner.text,
+    ctaLabel: isDefaultCta ? i18n.t("bundles.bannerDefaultCta") : banner.ctaLabel,
+  };
 }
 
 export type CartBundleMessage =
@@ -106,38 +149,47 @@ export function cartBundleMessage(
   progress: BundleProgress | null | undefined,
   bundleDiscountTotal: number,
   currency: string,
+  i18n: BundleI18n,
 ): CartBundleMessage | null {
   if (!progress) return null;
-  const price = formatOfferPrice(progress.fixedTotal, progress.currency);
   const size = progress.bundleSize;
 
   if (progress.blockedByCoupon && progress.eligibleUnits >= size) {
     return {
       kind: "coupon-blocked",
-      text: `Your coupon can't be combined with the ${size} for ${price} bundle. Remove the coupon to get the bundle price.`,
+      text: i18n.t("bundles.cartBlocked", {
+        size,
+        price: price(i18n, progress.fixedTotal, progress.currency),
+      }),
     };
   }
 
-  const more = (n: number) =>
-    `${n} more eligible ${cases(n)}${progress.requireDifferentPhoneModels ? " for a different phone model" : ""}`;
-
   if (progress.groupsApplied > 0) {
-    const saved = formatOfferPrice(bundleDiscountTotal, currency);
+    const saved = price(i18n, bundleDiscountTotal, currency);
     return {
       kind: "applied",
       text:
         progress.groupsApplied === 1
-          ? `Bundle applied — you saved ${saved}.`
-          : `${progress.groupsApplied} bundles applied — you saved ${saved}.`,
+          ? i18n.t("bundles.cartAppliedOne", { saved })
+          : i18n.t("bundles.cartAppliedMany", { count: progress.groupsApplied, saved }),
     };
   }
 
   if (progress.unitsNeeded !== null && progress.unitsNeeded > 0) {
-    const unlock =
+    const saving =
       progress.savingsIfCompleted !== null && progress.savingsIfCompleted > 0
-        ? ` to unlock the bundle and save at least ${formatOfferPrice(progress.savingsIfCompleted, progress.currency)}`
-        : " to unlock the bundle";
-    return { kind: "progress", text: `Add ${more(progress.unitsNeeded)}${unlock}.` };
+        ? i18n.t("bundles.cartSaving", {
+            saving: price(i18n, progress.savingsIfCompleted, progress.currency),
+          })
+        : "";
+    return {
+      kind: "progress",
+      text: i18n.t("bundles.cartProgress", {
+        more: i18n.tn("bundles.moreEligible", progress.unitsNeeded),
+        diff: progress.requireDifferentPhoneModels ? i18n.t("bundles.diffModelForOne") : "",
+        saving,
+      }),
+    };
   }
   return null;
 }

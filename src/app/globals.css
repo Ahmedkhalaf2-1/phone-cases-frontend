@@ -475,11 +475,15 @@ body {
   .sf-select {
     appearance: none;
     -webkit-appearance: none;
-    padding-right: 2.5rem;
+    padding-inline-end: 2.5rem;
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
     background-size: 1.125rem 1.125rem;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+  }
+  /* RTL: the chevron sits at the start-of-row's far edge (left). */
+  html[dir="rtl"] .sf-select {
+    background-position: left 0.9rem center;
   }
   .sf-select[data-active="true"] {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
@@ -487,4 +491,68 @@ body {
   .sf-select:disabled {
     opacity: 0.5;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Arabic typography (html[lang="ar"] only; English is untouched).     */
+/* Thmanyah first; Inter stays in the stack for Latin glyphs (product  */
+/* names, model names, prices), then the platform Arabic UI fonts.     */
+/* The files live in /public/fonts/thmanyah (see its README).          */
+/* ------------------------------------------------------------------ */
+@font-face {
+  font-family: "Thmanyah";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahsans-Light.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahsans-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahsans-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahsans-Bold.woff2") format("woff2");
+}
+
+/* Thmanyah first; Inter stays for Latin glyphs (product/model names,
+   prices), then the platform Arabic UI fonts as the fallback if the font
+   files are not present on the server. */
+html[lang="ar"] body,
+html[lang="ar"] .font-display {
+  font-family:
+    "Thmanyah", var(--font-body), ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro",
+    sans-serif;
+}
+
+/* Letter-spacing disconnects Arabic letters; tracking utilities are
+   tuned for Latin, so neutralize them in Arabic. */
+html[lang="ar"] body,
+html[lang="ar"] body * {
+  letter-spacing: normal;
+}
+
+/* Latin-only values keep their direction (aligned to the RTL start). */
+html[lang="ar"] code,
+html[lang="ar"] kbd {
+  direction: ltr;
+}
+html[lang="ar"] input[type="email"],
+html[lang="ar"] input[type="tel"],
+html[lang="ar"] input[type="url"] {
+  direction: ltr;
+  text-align: right;
 }

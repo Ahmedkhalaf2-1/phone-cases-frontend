@@ -8,6 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { apiErrorMessage } from "@/i18n/api-errors";
+import { useI18n } from "@/i18n/I18nProvider";
 import { ApiError } from "@/lib/api/http";
 import { cartClient, CART_SOURCE } from "@/lib/cart/cart-client";
 import type { CartView } from "@/lib/cart/types";
@@ -50,6 +52,12 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const i18n = useI18n();
+  // Latest translator for async error text without re-running the init effect.
+  const i18nRef = useRef(i18n);
+  useEffect(() => {
+    i18nRef.current = i18n;
+  }, [i18n]);
   const [cart, setCart] = useState<CartView | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,11 +87,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (!isInvalidCredential(err)) {
             // Transient failure (network/server) — keep the stored token,
             // don't silently start a brand new cart over it.
-            setError(
-              err instanceof ApiError
-                ? err.message
-                : "Could not load your bag. Check your connection and retry.",
-            );
+            setError(apiErrorMessage(err, i18nRef.current, "cart.errors.loadBag"));
             setIsLoading(false);
             return;
           }
@@ -99,7 +103,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCart(created.cart);
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Could not load the bag.");
+        setError(apiErrorMessage(err, i18nRef.current, "cart.errors.loadBag"));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -121,7 +125,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
    */
   const run = useCallback(
     async (action: (activeToken: string) => Promise<CartView>) => {
-      if (!token) throw new ApiError("Your bag isn't ready yet — try again in a moment.");
+      if (!token) throw new ApiError(i18nRef.current.t("cart.errors.notReady"));
       const mySeq = ++mutationSeq.current;
       setError(null);
       try {
@@ -129,7 +133,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (mySeq === mutationSeq.current) setCart(updated);
       } catch (err) {
         if (mySeq === mutationSeq.current) {
-          setError(err instanceof ApiError ? err.message : "Something went wrong.");
+          setError(apiErrorMessage(err, i18nRef.current, "cart.errors.generic"));
         }
         throw err;
       }

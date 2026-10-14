@@ -7,6 +7,8 @@ import { useEffect, useId, useState } from "react";
 import { PRIMARY_NAV, SITE } from "@/config/site";
 import { useCart } from "@/lib/cart/CartProvider";
 import { HeaderSearch } from "@/components/search/HeaderSearch";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
+import { useI18n } from "@/i18n/I18nProvider";
 
 /**
  * The left sidebar (SiteSidebar, lg+ only) is the primary nav on desktop
@@ -21,6 +23,7 @@ export function SiteHeader() {
   const menuId = useId();
   const searchId = useId();
   const { itemCount } = useCart();
+  const { t, tn } = useI18n();
   const pathname = usePathname();
 
   /**
@@ -77,16 +80,16 @@ export function SiteHeader() {
         </div>
 
         <nav
-          aria-label="Primary"
+          aria-label={t("nav.primary")}
           className="hidden items-center gap-8 md:flex lg:hidden"
         >
           {PRIMARY_NAV.map((item) => (
             <Link
-              key={item.label}
+              key={item.key}
               href={item.href}
               className="text-sm font-medium tracking-tight text-ink transition-colors hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
-              {item.label}
+              {t(`nav.${item.key}`)}
             </Link>
           ))}
         </nav>
@@ -96,16 +99,17 @@ export function SiteHeader() {
             type="button"
             aria-expanded={isSearchOpen}
             aria-controls={searchId}
-            aria-label={isSearchOpen ? "Close search" : "Search"}
+            aria-label={isSearchOpen ? t("nav.closeSearch") : t("nav.openSearch")}
             onClick={() => setIsSearchOpen((open) => !open)}
             className="sm:hidden inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <SearchIcon />
           </button>
+          <LanguageSwitcher />
           <span aria-hidden className="hidden h-5 w-px bg-border sm:inline-block lg:hidden" />
           <Link
             href="/cart"
-            aria-label={`Shopping bag${itemCount > 0 ? `, ${itemCount} item${itemCount === 1 ? "" : "s"}` : ""}`}
+            aria-label={itemCount > 0 ? tn("nav.shoppingBagCount", itemCount) : t("nav.shoppingBag")}
             className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 transition-colors hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:hidden"
           >
             <BagIcon />
@@ -117,7 +121,7 @@ export function SiteHeader() {
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-pill p-2 lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             aria-expanded={isMenuOpen}
             aria-controls={menuId}
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={isMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
             onClick={() => setIsMenuOpen((open) => !open)}
           >
             <MenuIcon open={isMenuOpen} />
@@ -147,17 +151,17 @@ export function SiteHeader() {
       >
         <div className="min-h-0">
           <nav
-            aria-label="Mobile"
+            aria-label={t("nav.mobile")}
             className="flex flex-col gap-1 px-4 py-4 sm:px-6"
           >
             {PRIMARY_NAV.map((item) => (
               <Link
-                key={item.label}
+                key={item.key}
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
                 className="min-h-11 rounded-pill px-3 py-3 text-sm font-medium tracking-tight text-ink hover:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                {item.label}
+                {t(`nav.${item.key}`)}
               </Link>
             ))}
           </nav>

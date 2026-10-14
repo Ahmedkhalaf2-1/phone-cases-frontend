@@ -2,7 +2,6 @@ import type { NextRequest } from "next/server";
 import { getMoodCollections } from "@/lib/data/collections";
 import { getProducts } from "@/lib/data/products";
 import { getCollectionCover } from "@/config/collection-covers";
-import { formatPrice } from "@/lib/format-price";
 import type {
   SearchCollectionHit,
   SearchProductHit,
@@ -73,10 +72,11 @@ export async function GET(request: NextRequest) {
         slug: p.slug,
         name: p.name,
         image: p.primaryImage?.url ?? null,
-        price:
+        priceMinor:
           products?.source === "live" && p.effectivePriceFrom !== null
-            ? formatPrice(p.effectivePriceFrom, p.currency)
+            ? p.effectivePriceFrom
             : null,
+        currency: products?.source === "live" ? p.currency : null,
         collection: p.collections[0]?.name ?? null,
       }),
     );

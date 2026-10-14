@@ -11,8 +11,9 @@ export interface SearchProductHit {
   slug: string;
   name: string;
   image: string | null;
-  /** Pre-formatted, or null when there's no price to show (e.g. demo data). */
-  price: string | null;
+  /** Minor units + currency (null when there is no price to show, e.g. demo data); formatted on the client. */
+  priceMinor: number | null;
+  currency: string | null;
   collection: string | null;
 }
 

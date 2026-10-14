@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useI18n } from "@/i18n/I18nProvider";
 import { PurchaseAssurance } from "@/components/catalog/PurchaseAssurance";
 import { VariantPicker } from "@/components/catalog/VariantPicker";
 import { SharedProductImage } from "@/components/motion/SharedProductImage";
@@ -25,6 +26,7 @@ export function ProductGallery({
   /** Server-built sentence about an active bundle this product is eligible for. */
   bundleNote?: string;
 }) {
+  const { t } = useI18n();
   const sortedMedia = [...product.media].sort((a, b) => a.displayOrder - b.displayOrder);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [variantImage, setVariantImage] = useState<{ url: string; altText: string | null } | null>(
@@ -49,7 +51,7 @@ export function ProductGallery({
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
-              No image
+              {t("product.noImage")}
             </div>
           )}
         </div>
@@ -65,7 +67,7 @@ export function ProductGallery({
                   setVariantImage(null);
                   setGalleryIndex(index);
                 }}
-                aria-label={`Show image ${index + 1}`}
+                aria-label={t("product.showImage", { number: index + 1 })}
                 aria-current={!variantImage && galleryIndex === index}
                 className={`size-16 shrink-0 overflow-hidden rounded-2xl border bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   !variantImage && galleryIndex === index ? "border-accent" : "border-border"
@@ -111,16 +113,16 @@ export function ProductGallery({
             className="mt-6 flex items-center justify-between gap-3 rounded-card border border-accent bg-accent-wash px-4 py-3 text-sm text-ink transition-colors hover:bg-accent hover:text-white max-sm:mt-4"
           >
             <span>
-              <span className="block font-semibold">Personalize this case</span>
-              <span className="opacity-80">Upload your own photo and preview it</span>
+              <span className="block font-semibold">{t("product.personalizeTitle")}</span>
+              <span className="opacity-80">{t("product.personalizeBody")}</span>
             </span>
-            <span aria-hidden>→</span>
+            <span aria-hidden className="rtl:-scale-x-100">→</span>
           </Link>
         )}
 
         {source === "demo" && (
           <p className="mt-6 text-xs text-muted-foreground">
-            Demo data — sample product, not real inventory or pricing.
+            {t("common.demoNotice")}
           </p>
         )}
       </div>

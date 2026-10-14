@@ -6,7 +6,8 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { CartLineThumbnail } from "@/components/catalog/CartLineThumbnail";
 import { useCart } from "@/lib/cart/CartProvider";
-import { formatPrice } from "@/lib/format-price";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useFormatPrice } from "@/i18n/useFormatPrice";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { TickValue } from "@/components/motion/TickValue";
 import { BundleProgressNotice } from "@/components/bundles/BundleProgressNotice";
@@ -37,6 +38,8 @@ export default function CartPage() {
     removeCoupon,
     retryInit,
   } = useCart();
+  const { t } = useI18n();
+  const formatPrice = useFormatPrice();
   const [couponInput, setCouponInput] = useState("");
   const [couponBusy, setCouponBusy] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -94,17 +97,16 @@ export default function CartPage() {
       <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
           <h1 className="mb-6 font-display text-4xl tracking-tighter text-ink sm:text-5xl">
-            Your bag
+            {t("cart.title")}
           </h1>
 
           {source === "demo" && (
             <p className="mb-6 rounded-pill bg-surface px-4 py-3 text-sm text-muted-foreground shadow-soft">
-              Demo mode — this cart is simulated locally in your browser
-              (backend offline). It is not a real order.
+              {t("cart.demoNotice")}
             </p>
           )}
 
-          {isLoading && <LoadingRow label="Loading your bag…" />}
+          {isLoading && <LoadingRow label={t("cart.loading")} />}
 
           {!isLoading && error && (
             <div className="flex items-center justify-between gap-4 rounded-pill bg-accent/5 px-4 py-3 text-sm text-accent">
@@ -115,7 +117,7 @@ export default function CartPage() {
                   onClick={retryInit}
                   className="shrink-0 font-semibold underline underline-offset-4"
                 >
-                  Retry
+                  {t("common.retry")}
                 </button>
               )}
             </div>
@@ -123,12 +125,12 @@ export default function CartPage() {
 
           {!isLoading && cart && cart.items.length === 0 && (
             <div className="py-16 text-center">
-              <p className="text-muted-foreground">Your bag is empty.</p>
+              <p className="text-muted-foreground">{t("cart.empty")}</p>
               <Link
                 href="/collections"
                 className="mt-4 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                Browse phone cases
+                {t("cart.browse")}
               </Link>
             </div>
           )}
@@ -174,21 +176,21 @@ export default function CartPage() {
                               </p>
                               {(item.isPersonalized || item.customDesignId) && (
                                 <p className="mt-1 inline-block rounded-full bg-accent-wash px-2 py-0.5 text-xs font-semibold text-ink">
-                                  Your own design
+                                  {t("common.yourOwnDesign")}
                                   {item.customizationPrice
-                                    ? ` · includes ${formatPrice(item.customizationPrice, cart.currency)}`
+                                    ? ` · ${t("cart.includes", { price: formatPrice(item.customizationPrice, cart.currency) })}`
                                     : ""}
                                 </p>
                               )}
                               {item.note && (
                                 <p className="mt-1 text-xs text-ink/80 italic whitespace-pre-wrap" dir="auto">
-                                  Note: {item.note}
+                                  {t("common.note")}: {item.note}
                                 </p>
                               )}
                               {!item.isAvailable && (
                                 <p className="mt-1 text-xs font-semibold text-accent uppercase">
-                                  {item.unavailableReason ?? "Unavailable"} —
-                                  excluded from your total
+                                  {item.unavailableReason ?? t("common.unavailable")} —{" "}
+                                  {t("cart.unavailableExcluded")}
                                 </p>
                               )}
                             </div>
@@ -207,12 +209,12 @@ export default function CartPage() {
                                   updateItemQuantity(item.id, item.quantity - 1).catch(() => {})
                                 }
                                 disabled={item.quantity <= 1}
-                                aria-label="Decrease quantity"
+                                aria-label={t("common.decreaseQuantity")}
                                 className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                               >
                                 −
                               </button>
-                              <span className="w-8 text-center text-sm" aria-label="Quantity">
+                              <span className="w-8 text-center text-sm" aria-label={t("common.quantity")}>
                                 <TickValue value={item.quantity}>{item.quantity}</TickValue>
                               </span>
                               <button
@@ -221,7 +223,7 @@ export default function CartPage() {
                                   updateItemQuantity(item.id, item.quantity + 1).catch(() => {})
                                 }
                                 disabled={item.quantity >= 20}
-                                aria-label="Increase quantity"
+                                aria-label={t("common.increaseQuantity")}
                                 className="min-h-11 min-w-11 px-2.5 py-1 text-ink hover:text-accent disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                               >
                                 +
@@ -235,7 +237,7 @@ export default function CartPage() {
                                 }
                                 className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                               >
-                                {editingItemId === item.id ? "Cancel" : "Change"}
+                                {editingItemId === item.id ? t("common.cancel") : t("common.change")}
                               </button>
                             )}
                             <button
@@ -243,7 +245,7 @@ export default function CartPage() {
                               onClick={() => handleRemove(item, rowIndex)}
                               className="text-sm text-muted-foreground underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                             >
-                              Remove
+                              {t("common.remove")}
                             </button>
                           </div>
 
@@ -267,20 +269,20 @@ export default function CartPage() {
 
               <div className="flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card lg:sticky lg:top-24 lg:self-start">
                 <h2 className="font-display text-xl tracking-tight text-ink">
-                  Summary
+                  {t("cart.summary")}
                 </h2>
 
                 {cart.coupon ? (
                   <div className="flex items-center justify-between text-sm">
                     <span>
-                      Coupon <strong>{cart.coupon.code}</strong>
+                      {t("cart.coupon")} <strong dir="ltr">{cart.coupon.code}</strong>
                     </span>
                     <button
                       type="button"
                       onClick={() => removeCoupon().catch(() => {})}
                       className="text-muted-foreground underline underline-offset-4 hover:text-accent"
                     >
-                      Remove
+                      {t("common.remove")}
                     </button>
                   </div>
                 ) : (
@@ -301,13 +303,14 @@ export default function CartPage() {
                     className="flex gap-2"
                   >
                     <label htmlFor="coupon" className="sr-only">
-                      Coupon code
+                      {t("cart.couponCode")}
                     </label>
                     <input
                       id="coupon"
                       value={couponInput}
                       onChange={(event) => setCouponInput(event.target.value)}
-                      placeholder="Coupon code"
+                      placeholder={t("cart.couponCode")}
+                      dir="ltr"
                       className="w-full rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     />
                     <button
@@ -315,7 +318,7 @@ export default function CartPage() {
                       disabled={couponBusy}
                       className="rounded-pill border border-border px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent disabled:opacity-50"
                     >
-                      Apply
+                      {t("common.apply")}
                     </button>
                   </form>
                 )}
@@ -324,43 +327,43 @@ export default function CartPage() {
                 )}
                 {source === "demo" && !cart.coupon && (
                   <p className="text-xs text-muted-foreground">
-                    Try demo code <strong>WELCOME10</strong>.
+                    {t("cart.demoCode", { code: "WELCOME10" })}
                   </p>
                 )}
 
                 <dl className="flex flex-col gap-1.5 border-t border-border pt-4 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Subtotal</dt>
+                    <dt className="text-muted-foreground">{t("common.subtotal")}</dt>
                     <dd>{formatPrice(cart.subtotal, cart.currency)}</dd>
                   </div>
                   {cart.discountTotal > 0 && (
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Discount</dt>
+                      <dt className="text-muted-foreground">{t("common.discount")}</dt>
                       <dd>−{formatPrice(cart.discountTotal, cart.currency)}</dd>
                     </div>
                   )}
                   {cart.bundleDiscountTotal > 0 && (
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Bundle discount</dt>
+                      <dt className="text-muted-foreground">{t("common.bundleDiscount")}</dt>
                       <dd>
                         −{formatPrice(cart.bundleDiscountTotal, cart.currency)}
                       </dd>
                     </div>
                   )}
                   <div className="flex justify-between border-t border-border pt-1.5 font-semibold text-ink">
-                    <dt>Total</dt>
+                    <dt>{t("common.total")}</dt>
                     <dd>{formatPrice(cart.total, cart.currency)}</dd>
                   </div>
                 </dl>
                 <p className="text-xs text-muted-foreground">
-                  Shipping is calculated at checkout.
+                  {t("cart.shippingAtCheckout")}
                 </p>
 
                 <Link
                   href="/checkout"
                   className="mt-2 inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-6 py-3.5 text-sm font-medium tracking-tight text-white hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  Checkout
+                  {t("cart.checkout")}
                 </Link>
               </div>
             </div>
@@ -387,8 +390,9 @@ function CartItemVariantEditor({
   currentVariantId: string;
   onSelect: (variantId: string) => void;
 }) {
+  const { t } = useI18n();
   const [variants, setVariants] = useState<PublicVariant[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -398,15 +402,15 @@ function CartItemVariantEditor({
         setVariants(result?.product.variants ?? []);
       })
       .catch(() => {
-        if (!cancelled) setError("Could not load other options for this product.");
+        if (!cancelled) setFailed(true);
       });
     return () => {
       cancelled = true;
     };
   }, [productSlug]);
 
-  if (error) return <p className="mt-2 text-xs text-accent">{error}</p>;
-  if (!variants) return <p className="mt-2 text-xs text-muted-foreground">Loading options…</p>;
+  if (failed) return <p className="mt-2 text-xs text-accent">{t("cart.loadOptionsError")}</p>;
+  if (!variants) return <p className="mt-2 text-xs text-muted-foreground">{t("cart.loadingOptions")}</p>;
 
   return (
     <div className="mt-2 flex flex-wrap gap-2">
@@ -424,7 +428,7 @@ function CartItemVariantEditor({
         >
           {[variant.phoneModel?.name, variant.caseType?.name].filter(Boolean).join(" · ") ||
             variant.sku}
-          {!variant.isAvailable && " (out of stock)"}
+          {!variant.isAvailable && ` (${t("cart.outOfStockSuffix")})`}
         </button>
       ))}
     </div>

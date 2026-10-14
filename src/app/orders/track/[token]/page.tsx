@@ -8,7 +8,10 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { cartClient, CART_SOURCE } from "@/lib/cart/cart-client";
 import { getOrderCartCredential } from "@/lib/cart/order-credentials";
 import { ApiError } from "@/lib/api/http";
-import { formatPrice } from "@/lib/format-price";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useFormatPrice } from "@/i18n/useFormatPrice";
+import { formatDateTimeFor } from "@/i18n/format";
+import { apiErrorMessage } from "@/i18n/api-errors";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { GuestOrderView } from "@/lib/cart/types";
@@ -19,6 +22,8 @@ export default function OrderTrackingPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = use(params);
+  const { t, locale } = useI18n();
+  const formatPrice = useFormatPrice();
   const searchParams = useSearchParams();
   const justPlaced = searchParams.get("justPlaced") === "1";
 
@@ -39,8 +44,8 @@ export default function OrderTrackingPage({
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 404
-          ? "No order was found for this tracking link."
-          : "Could not load this order.",
+          ? t("orders.notFoundBody")
+          : t("orders.loadError"),
       );
     } finally {
       setIsLoading(false);
@@ -84,19 +89,19 @@ export default function OrderTrackingPage({
       <SiteHeader />
       <main data-motion="page" className="flex-1">
         <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-          {isLoading && <LoadingRow label="Loading order…" />}
+          {isLoading && <LoadingRow label={t("orders.loadingOrder")} />}
 
           {!isLoading && error && (
             <div className="py-16 text-center">
               <h1 className="font-display text-3xl tracking-tighter text-ink">
-                Order not found
+                {t("orders.notFoundTitle")}
               </h1>
               <p className="mt-2 text-muted-foreground">{error}</p>
               <Link
                 href="/track"
                 className="mt-6 inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-medium tracking-tight text-white hover:bg-accent"
               >
-                Try another tracking link
+                {t("orders.tryAnother")}
               </Link>
             </div>
           )}
@@ -105,43 +110,41 @@ export default function OrderTrackingPage({
             <>
               {justPlaced && CART_SOURCE === "demo" && (
                 <p className="mb-6 rounded-pill bg-accent/5 px-4 py-3 text-sm text-accent">
-                  Demo mode — this is a simulated order confirmation stored
-                  only in your browser. No real order was placed and no
-                  backend was contacted.
+                  {t("orders.demoPlaced")}
                 </p>
               )}
               {justPlaced && CART_SOURCE === "live" && (
                 <p className="mb-6 rounded-pill bg-surface px-4 py-3 text-sm text-ink shadow-soft">
-                  Thank you — your order was placed.
+                  {t("orders.thanks")}
                 </p>
               )}
 
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h1 className="font-display text-4xl tracking-tighter text-ink sm:text-5xl">
-                    Order {order.orderNumber}
+                    {t("orders.orderNumber", { number: order.orderNumber })}
                   </h1>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Placed {new Date(order.createdAt).toLocaleString()}
+                    {t("orders.placed", { date: formatDateTimeFor(locale, order.createdAt) })}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>
-                      Tracking token: <code className="font-mono text-ink">{token}</code>
+                      {t("orders.trackingTokenLabel")} <code dir="ltr" className="font-mono text-ink">{token}</code>
                     </span>
                     <button
                       type="button"
                       onClick={copyToken}
                       className="font-semibold text-accent underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     >
-                      {tokenCopied ? "Copied" : "Copy token"}
+                      {tokenCopied ? t("common.copied") : t("orders.copyToken")}
                     </button>
                   </div>
                   <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                    Save this token — it&apos;s what you enter on the{" "}
+                    {t("orders.saveTokenBefore")}{" "}
                     <Link href="/track" className="underline underline-offset-4 hover:text-accent">
-                      Track order
+                      {t("orders.trackTitle")}
                     </Link>{" "}
-                    page (the order number above won&apos;t work there).
+                    {t("orders.saveTokenAfter")}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -150,7 +153,7 @@ export default function OrderTrackingPage({
                     onClick={copyLink}
                     className="rounded-pill border border-border px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
-                    {copied ? "Link copied" : "Copy tracking link"}
+                    {copied ? t("orders.linkCopied") : t("orders.copyLink")}
                   </button>
                   <button
                     type="button"
@@ -158,14 +161,14 @@ export default function OrderTrackingPage({
                     disabled={isRefreshing}
                     className="rounded-pill border border-border px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
-                    {isRefreshing ? "Refreshing…" : "Refresh status"}
+                    {isRefreshing ? t("orders.refreshing") : t("orders.refresh")}
                   </button>
                 </div>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <OrderStatusBadge label="Fulfillment" value={order.fulfillmentStatus} />
-                <OrderStatusBadge label="Payment" value={order.paymentStatus} />
+                <OrderStatusBadge label={t("orders.fulfillment")} value={order.fulfillmentStatus} />
+                <OrderStatusBadge label={t("orders.payment")} value={order.paymentStatus} />
               </div>
 
               {order.receipts.length > 0 && (
@@ -193,12 +196,12 @@ export default function OrderTrackingPage({
                         </p>
                         {item.hasCustomDesign && (
                           <p className="mt-1 inline-block rounded-full bg-accent-wash px-2 py-0.5 text-xs font-semibold text-ink">
-                            Your own design
+                            {t("common.yourOwnDesign")}
                           </p>
                         )}
                         {item.note && (
                           <p className="mt-1 text-xs text-ink/80 italic whitespace-pre-wrap" dir="auto">
-                            Note: {item.note}
+                            {t("common.note")}: {item.note}
                           </p>
                         )}
                       </div>
@@ -211,7 +214,7 @@ export default function OrderTrackingPage({
 
                 <div className="flex flex-col gap-3 rounded-card bg-surface p-5 shadow-card">
                   <h2 className="font-display text-lg tracking-tight text-ink">
-                    Shipping to
+                    {t("orders.shippingTo")}
                   </h2>
                   <p className="text-sm text-ink">
                     {order.shippingAddress.fullName}
@@ -226,7 +229,7 @@ export default function OrderTrackingPage({
                     <br />
                     {order.shippingAddress.city}, {order.shippingAddress.country}
                     <br />
-                    {order.shippingAddress.phone}
+                    <bdi dir="ltr">{order.shippingAddress.phone}</bdi>
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {order.shippingRateName}
@@ -234,7 +237,7 @@ export default function OrderTrackingPage({
                   {order.customerNote && (
                     <div className="border-t border-border pt-3">
                       <h3 className="font-display text-sm tracking-tight text-ink uppercase">
-                        Order notes
+                        {t("orders.orderNotes")}
                       </h3>
                       <p className="mt-1 whitespace-pre-wrap text-sm text-ink/90" dir="auto">
                         {order.customerNote}
@@ -243,27 +246,27 @@ export default function OrderTrackingPage({
                   )}
                   <dl className="mt-2 flex flex-col gap-1 border-t border-border pt-3 text-sm">
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Subtotal</dt>
+                      <dt className="text-muted-foreground">{t("common.subtotal")}</dt>
                       <dd>{formatPrice(order.subtotal, order.currency)}</dd>
                     </div>
                     {order.discountTotal > 0 && (
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Coupon discount</dt>
+                        <dt className="text-muted-foreground">{t("common.couponDiscount")}</dt>
                         <dd>−{formatPrice(order.discountTotal, order.currency)}</dd>
                       </div>
                     )}
                     {order.bundleDiscountTotal > 0 && (
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Bundle discount</dt>
+                        <dt className="text-muted-foreground">{t("common.bundleDiscount")}</dt>
                         <dd>−{formatPrice(order.bundleDiscountTotal, order.currency)}</dd>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <dt className="text-muted-foreground">Shipping</dt>
+                      <dt className="text-muted-foreground">{t("common.shipping")}</dt>
                       <dd>{formatPrice(order.shippingTotal, order.currency)}</dd>
                     </div>
                     <div className="flex justify-between font-semibold text-ink">
-                      <dt>Total</dt>
+                      <dt>{t("common.total")}</dt>
                       <dd>{formatPrice(order.total, order.currency)}</dd>
                     </div>
                   </dl>
@@ -302,6 +305,7 @@ function ReceiptSection({
   order: GuestOrderView;
   onReplaced: () => void;
 }) {
+  const { t, locale } = useI18n();
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const latest = order.receipts[order.receipts.length - 1];
@@ -319,7 +323,7 @@ function ReceiptSection({
     } catch (err) {
       setStatus("error");
       setUploadError(
-        err instanceof ApiError ? err.message : "Could not upload the replacement receipt.",
+        apiErrorMessage(err, { t, locale }, "orders.replacementError"),
       );
     }
   }
@@ -327,7 +331,7 @@ function ReceiptSection({
   return (
     <div className="mt-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        Receipt:
+        {t("orders.receipt")}
         <StatusBadge status={latest.status} />
         {latest.rejectionReason && <span>— {latest.rejectionReason}</span>}
       </div>
@@ -340,7 +344,7 @@ function ReceiptSection({
                 htmlFor="replacement-receipt"
                 className="text-sm font-semibold text-ink"
               >
-                Upload a replacement receipt
+                {t("orders.uploadReplacement")}
               </label>
               <input
                 id="replacement-receipt"
@@ -351,7 +355,7 @@ function ReceiptSection({
                 className="mt-2 block w-full text-sm"
               />
               {status === "uploading" && (
-                <p className="mt-1 text-xs text-muted-foreground">Uploading…</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("orders.uploading")}</p>
               )}
               {status === "error" && uploadError && (
                 <p className="mt-1 text-xs text-accent">{uploadError}</p>
@@ -359,10 +363,7 @@ function ReceiptSection({
             </>
           ) : (
             <p className="text-sm text-accent">
-              We can&apos;t confirm this browser has the original checkout
-              session needed to securely accept a replacement receipt for
-              this order. Please contact us for help resolving payment on
-              this order.
+              {t("orders.noSession")}
             </p>
           )}
         </div>

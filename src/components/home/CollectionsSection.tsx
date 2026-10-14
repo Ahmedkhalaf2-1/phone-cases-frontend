@@ -1,12 +1,14 @@
 import Link from "next/link";
+import { getI18n } from "@/i18n/server";
 import { MoodTileArt } from "@/components/graphics/MoodTileArt";
 import type { MoodCollection } from "@/lib/demo/collections.demo";
 
-export function CollectionsSection({
+export async function CollectionsSection({
   collections,
 }: {
   collections: MoodCollection[];
 }) {
+  const { t } = await getI18n();
   return (
     <section
       id="collections"
@@ -18,13 +20,13 @@ export function CollectionsSection({
           id="collections-heading"
           className="font-display text-4xl tracking-tighter text-ink sm:text-5xl"
         >
-          Pick your mood
+          {t("home.pickMood")}
         </h2>
         <Link
           href="/collections"
           className="hidden shrink-0 items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:inline-flex"
         >
-          View all collections <span aria-hidden>→</span>
+          {t("home.viewAllCollections")} <span aria-hidden className="rtl:-scale-x-100">→</span>
         </Link>
       </div>
 
@@ -58,7 +60,7 @@ export function CollectionsSection({
         href="/collections"
         className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:hidden"
       >
-        View all collections <span aria-hidden>→</span>
+        {t("home.viewAllCollections")} <span aria-hidden className="rtl:-scale-x-100">→</span>
       </Link>
     </section>
   );

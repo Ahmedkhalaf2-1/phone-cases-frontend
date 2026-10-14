@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ProductFilters } from "@/components/catalog/ProductFilters";
 import { ProductListing } from "@/components/catalog/ProductListing";
 import { getProducts } from "@/lib/data/products";
+import { getI18n } from "@/i18n/server";
 import { getMoodCollections } from "@/lib/data/collections";
 import { getPhoneModels } from "@/lib/data/phone-catalog";
 import { getCaseTypes } from "@/lib/data/case-types";
@@ -13,9 +14,10 @@ import {
   type CatalogSearchParams,
 } from "@/lib/catalog-params";
 
-export const metadata: Metadata = {
-  title: "Search",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t("catalog.searchTitle") };
+}
 
 /**
  * Product search results — where the header search, "Find your phone" and
@@ -27,6 +29,7 @@ export default async function SearchPage({
   searchParams: Promise<CatalogSearchParams>;
 }) {
   const params = await searchParams;
+  const { t } = await getI18n();
 
   const [productList, collectionsResult, phoneModelsResult, caseTypesResult] =
     await Promise.all([
@@ -43,12 +46,12 @@ export default async function SearchPage({
     (model) => model.slug === params.phoneModel,
   );
   const heading = params.q
-    ? `Results for “${params.q}”`
+    ? t("catalog.resultsFor", { query: params.q })
     : phoneModel
-      ? `Cases for ${phoneModel.brand.name} ${phoneModel.name}`
+      ? t("catalog.casesFor", { model: `${phoneModel.brand.name} ${phoneModel.name}` })
       : params.sort === "newest"
-        ? "New in"
-        : "Search";
+        ? t("catalog.newIn")
+        : t("catalog.searchTitle");
 
   return (
     <>

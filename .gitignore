@@ -41,3 +41,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Licensed Thmanyah font files: never committed (see public/fonts/thmanyah/README.md)
+/public/fonts/thmanyah/*.woff2
+/public/fonts/thmanyah/*.otf

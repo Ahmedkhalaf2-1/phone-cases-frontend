@@ -4,6 +4,7 @@ import { CartCountBadge } from "@/components/motion/CartCountBadge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/lib/cart/CartProvider";
+import { useI18n } from "@/i18n/I18nProvider";
 
 /**
  * Persistent left icon rail — the primary desktop navigation, replacing
@@ -11,11 +12,16 @@ import { useCart } from "@/lib/cart/CartProvider";
  * Hidden on admin routes (which have their own nav in admin/layout.tsx)
  * and on mobile (the header's hamburger menu covers small screens).
  */
-const NAV_ITEMS = [
-  { href: "/", label: "Home", icon: HomeIcon, match: "home" as const },
-  { href: "/collections", label: "Collections", icon: GridIcon, match: "prefix" as const },
-  { href: "/customize", label: "Design your case", icon: BrushIcon, match: "prefix" as const },
-  { href: "/track", label: "Track order", icon: TagIcon, match: "prefix" as const },
+const NAV_ITEMS: {
+  href: string;
+  label: "nav.home" | "nav.collections" | "nav.designYourCase" | "nav.trackOrder";
+  icon: () => React.JSX.Element;
+  match: "home" | "prefix";
+}[] = [
+  { href: "/", label: "nav.home", icon: HomeIcon, match: "home" },
+  { href: "/collections", label: "nav.collections", icon: GridIcon, match: "prefix" },
+  { href: "/customize", label: "nav.designYourCase", icon: BrushIcon, match: "prefix" },
+  { href: "/track", label: "nav.trackOrder", icon: TagIcon, match: "prefix" },
 ];
 
 const ICON_BUTTON =
@@ -24,6 +30,7 @@ const ICON_BUTTON =
 export function SiteSidebar() {
   const pathname = usePathname();
   const { itemCount } = useCart();
+  const { t, tn } = useI18n();
   if (pathname.startsWith("/admin")) return null;
 
   function isItemActive(item: (typeof NAV_ITEMS)[number]) {
@@ -32,10 +39,10 @@ export function SiteSidebar() {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 hidden w-[68px] flex-col items-center bg-background py-5 lg:flex">
+    <aside className="fixed inset-y-0 start-0 z-50 hidden w-[68px] flex-col items-center bg-background py-5 lg:flex">
       <Link
         href="/"
-        aria-label="Home"
+        aria-label={t("nav.home")}
         className="flex size-11 items-center justify-center rounded-[16px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -54,9 +61,9 @@ export function SiteSidebar() {
           const Icon = item.icon;
           return (
             <Link
-              key={item.label}
+              key={item.href}
               href={item.href}
-              aria-label={item.label}
+              aria-label={t(item.label)}
               aria-current={isActive ? "page" : undefined}
               className={`${ICON_BUTTON} ${
                 isActive ? "bg-surface text-ink" : "text-ink/70 hover:bg-surface hover:text-ink"
@@ -70,7 +77,7 @@ export function SiteSidebar() {
 
       <Link
         href="/cart"
-        aria-label={`Shopping bag${itemCount > 0 ? `, ${itemCount} item${itemCount === 1 ? "" : "s"}` : ""}`}
+        aria-label={itemCount > 0 ? tn("nav.shoppingBagCount", itemCount) : t("nav.shoppingBag")}
         className={`relative ${ICON_BUTTON} ${
           pathname === "/cart" ? "bg-surface text-ink" : "text-ink/70 hover:bg-surface hover:text-ink"
         }`}

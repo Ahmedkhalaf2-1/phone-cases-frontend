@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/i18n/I18nProvider";
 import { usePathname } from "next/navigation";
 import { apiGet } from "@/lib/api/http";
 import { DEMO_MODE } from "@/lib/env";
@@ -61,6 +62,7 @@ function rememberDismissal(signature: string) {
  */
 export function BundlePromoSheet() {
   const pathname = usePathname();
+  const i18n = useI18n();
   const [offer, setOffer] = useState<BundleOffer | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const browsing = isBrowsingPath(pathname);
@@ -113,12 +115,12 @@ export function BundlePromoSheet() {
       role="dialog"
       aria-modal="false"
       aria-labelledby="bundle-promo-title"
-      className="sf-sheet-in fixed inset-x-0 bottom-[var(--pdp-dock-h,0px)] z-50 rounded-t-3xl bg-ink px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-white shadow-lifted sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[22rem] sm:rounded-3xl sm:pb-5"
+      className="sf-sheet-in fixed inset-x-0 bottom-[var(--pdp-dock-h,0px)] z-50 rounded-t-3xl bg-ink px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-white shadow-lifted sm:inset-x-auto sm:end-6 sm:bottom-6 sm:w-[22rem] sm:rounded-3xl sm:pb-5"
     >
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Close offer"
+        aria-label={i18n.t("bundles.popupClose")}
         className="absolute end-2 top-2 inline-flex size-11 items-center justify-center rounded-pill text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -127,22 +129,22 @@ export function BundlePromoSheet() {
       </button>
 
       <p className="text-[11px] font-semibold tracking-widest text-white/60 uppercase">
-        Bundle offer
+        {i18n.t("bundles.popupLabel")}
       </p>
       <h2
         id="bundle-promo-title"
         className="mt-1 pe-10 font-display text-3xl leading-tight tracking-tighter"
       >
-        {offerHeadline(offer)}
+        {offerHeadline(offer, i18n)}
       </h2>
-      <p className="mt-2 text-sm leading-5 text-white/80">{offerBody(offer)}</p>
+      <p className="mt-2 text-sm leading-5 text-white/80">{offerBody(offer, i18n)}</p>
 
       <Link
         href="/phone-cases"
         onClick={dismiss}
         className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-pill bg-white px-6 text-sm font-semibold tracking-tight text-ink transition-colors hover:bg-accent-wash focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
       >
-        Shop Cases
+        {i18n.t("bundles.popupCta")}
       </Link>
     </aside>
   );

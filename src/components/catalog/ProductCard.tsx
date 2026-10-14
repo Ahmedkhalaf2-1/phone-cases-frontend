@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { formatPrice } from "@/lib/format-price";
+import { useI18n } from "@/i18n/I18nProvider";
+import { useFormatPrice } from "@/i18n/useFormatPrice";
 import { getCompatibilityLabel } from "@/lib/compatibility";
 import { LinkPending } from "@/components/motion/LinkPending";
 import { SharedProductImage } from "@/components/motion/SharedProductImage";
@@ -29,6 +32,9 @@ export function ProductCard({
    */
   sharedImage?: boolean;
 }) {
+  const { t } = useI18n();
+  const formatPrice = useFormatPrice();
+
   return (
     <Link
       href={`/products/${product.slug}`}
@@ -48,7 +54,7 @@ export function ProductCard({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-              No image
+              {t("product.noImage")}
             </div>
           )}
         </div>
@@ -58,13 +64,15 @@ export function ProductCard({
         <div className="min-w-0">
           <p className="font-medium tracking-tight text-ink">{product.name}</p>
           <p className="text-sm text-muted-foreground">
-            {hasVariants(product)
-              ? getCompatibilityLabel(product.variants)
-              : (product.collections[0]?.name ?? "")}
+            <bdi>
+              {hasVariants(product)
+                ? getCompatibilityLabel(product.variants)
+                : (product.collections[0]?.name ?? "")}
+            </bdi>
           </p>
           {!product.isAvailable && (
             <p className="mt-1 text-xs font-medium text-accent">
-              Out of stock
+              {t("common.outOfStock")}
             </p>
           )}
           {source === "live" && product.effectivePriceFrom !== null && (
@@ -75,7 +83,7 @@ export function ProductCard({
         </div>
         <span
           aria-hidden
-          className="inline-flex size-8 shrink-0 items-center justify-center rounded-pill border border-border text-ink transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-white"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-pill rtl:-scale-x-100 border border-border text-ink transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-white"
         >
           →
         </span>
