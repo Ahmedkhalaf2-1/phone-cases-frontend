@@ -29,6 +29,7 @@ export default function AdminCollectionsPage() {
   const [nameEn, setNameEn] = useState("");
   const [nameAr, setNameAr] = useState("");
   const [descriptionEn, setDescriptionEn] = useState("");
+  const [descriptionAr, setDescriptionAr] = useState("");
 
   function load() {
     if (!accessToken) return;
@@ -55,12 +56,14 @@ export default function AdminCollectionsPage() {
           nameEn,
           nameAr,
           descriptionEn: descriptionEn || undefined,
+          descriptionAr: descriptionAr || undefined,
         }),
       );
       setSlug("");
       setNameEn("");
       setNameAr("");
       setDescriptionEn("");
+      setDescriptionAr("");
       // Straight to the new collection so the cover can be added next.
       router.push(`/admin/catalog/collections/${created.id}`);
     } catch (err) {
@@ -174,6 +177,13 @@ export default function AdminCollectionsPage() {
           placeholder="Description (English, optional)"
           value={descriptionEn}
           onChange={(e) => setDescriptionEn(e.target.value)}
+          className={inputClass}
+        />
+        <input
+          dir="rtl"
+          placeholder="الوصف (عربي، اختياري)"
+          value={descriptionAr}
+          onChange={(e) => setDescriptionAr(e.target.value)}
           className={inputClass}
         />
         <button type="submit" disabled={isBusy} className={`${buttonClass} self-start`}>

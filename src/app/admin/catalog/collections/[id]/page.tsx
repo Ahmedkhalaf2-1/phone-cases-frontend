@@ -55,6 +55,7 @@ export default function AdminCollectionDetailPage({
   const [nameEn, setNameEn] = useState("");
   const [nameAr, setNameAr] = useState("");
   const [descriptionEn, setDescriptionEn] = useState("");
+  const [descriptionAr, setDescriptionAr] = useState("");
 
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
@@ -175,6 +176,7 @@ export default function AdminCollectionDetailPage({
     setNameEn(collection.nameEn);
     setNameAr(collection.nameAr);
     setDescriptionEn(collection.descriptionEn ?? "");
+    setDescriptionAr(collection.descriptionAr ?? "");
     setIsEditingDetails(true);
   }
 
@@ -188,6 +190,7 @@ export default function AdminCollectionDetailPage({
           nameEn,
           nameAr,
           descriptionEn: descriptionEn || undefined,
+          descriptionAr: descriptionAr || undefined,
         }),
       );
       await loadCollection();
@@ -406,6 +409,14 @@ export default function AdminCollectionDetailPage({
                 <dd className="text-ink">{collection.descriptionEn}</dd>
               </div>
             )}
+            {collection.descriptionAr && (
+              <div className="sm:col-span-3">
+                <dt className="text-muted-foreground">Description (Arabic)</dt>
+                <dd dir="rtl" className="text-ink">
+                  {collection.descriptionAr}
+                </dd>
+              </div>
+            )}
           </dl>
         ) : (
           <form onSubmit={handleSaveDetails} className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -423,6 +434,16 @@ export default function AdminCollectionDetailPage({
                 rows={2}
                 value={descriptionEn}
                 onChange={(e) => setDescriptionEn(e.target.value)}
+                className={`${inputClass} rounded-2xl`}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold sm:col-span-2">
+              الوصف (عربي، اختياري)
+              <textarea
+                dir="rtl"
+                rows={2}
+                value={descriptionAr}
+                onChange={(e) => setDescriptionAr(e.target.value)}
                 className={`${inputClass} rounded-2xl`}
               />
             </label>

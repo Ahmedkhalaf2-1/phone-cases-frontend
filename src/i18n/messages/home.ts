@@ -20,7 +20,7 @@ export const home = section(
     demoConcept: "مفهوم تصميم — صور وأسماء للعرض فقط",
     viewAll: "عرض الكل",
     seeAll: "عرض كل {count}",
-    railLabel: "أغطية هاتف {name}",
+    railLabel: "كوفرات هاتف {name}",
     railNext: "التالي",
     railPrevious: "السابق",
     findPhone: "ابحث عن هاتفك",

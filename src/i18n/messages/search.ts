@@ -21,7 +21,7 @@ export const search = section(
   {
     placeholderNamed: "ابحث عن «{name}»…",
     placeholderDefault: "بتدوّر على إيه النهارده؟",
-    label: "ابحث في أغطية الهاتف والمجموعات",
+    label: "ابحث في كوفرات الهاتف والمجموعات",
     clear: "مسح البحث",
     submit: "بحث",
     searchingFor: "بتدوّر على {name}؟",
@@ -30,7 +30,7 @@ export const search = section(
     spotlight: "المجموعة المميزة",
     browseCollections: "تصفّح المجموعات",
     collections: "المجموعات",
-    cases: "الأغطية",
+    cases: "الكوفرات",
     noMatches: "لا توجد نتائج لـ «{query}»",
     tryCollections: "جرّب إحدى مجموعاتنا بدلًا من ذلك",
     seeAll: "عرض كل النتائج لـ «{query}»",

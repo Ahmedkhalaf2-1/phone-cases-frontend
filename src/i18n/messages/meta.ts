@@ -13,14 +13,14 @@ export const meta = section(
     customize: "Design your case",
   },
   {
-    titleSuffix: "أغطية الهاتف",
+    titleSuffix: "كوفرات الهاتف",
     description: "تصميم بتختاره. وأسلوب يخصّك.",
     collections: "المجموعات",
-    collectionsDescription: "تصفّح كل مجموعات أغطية CONTRAST للهواتف.",
+    collectionsDescription: "تصفّح كل مجموعات كوفرات CONTRAST للهواتف.",
     search: "بحث",
     track: "تتبع الطلب",
     cart: "سلة التسوق",
     checkout: "إتمام الطلب",
-    customize: "صمّم جرابك",
+    customize: "صمّم كوفرك",
   },
 );
