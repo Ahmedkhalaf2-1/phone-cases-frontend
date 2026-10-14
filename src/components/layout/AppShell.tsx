@@ -52,7 +52,14 @@ export function AppShell({
   const showAnnouncement = !pathname.startsWith("/checkout");
 
   return (
-    <div className="storefront-shell relative min-h-full bg-background">
+    <div
+      className={`storefront-shell relative min-h-full bg-background ${
+        // Tells the sticky header how tall the sticky bar above it is (h-9 / sm:h-10).
+        showAnnouncement && announcement
+          ? "[--sf-announce-h:2.25rem] sm:[--sf-announce-h:2.5rem]"
+          : ""
+      }`}
+    >
       {/* Page-entrance motion for client-side navigations. Rendered only in
           this (storefront) branch - Admin returned above and never mounts it. */}
       <StorefrontMotion />
@@ -63,7 +70,7 @@ export function AppShell({
       <div className="absolute inset-y-0 left-0 z-30 hidden w-[calc(68px+12px)] bg-background lg:block" />
       <SiteSidebar />
       <div className="lg:pt-[12px] lg:pr-[18px] lg:pb-[18px] lg:pl-[calc(68px+12px)]">
-        <div className="min-h-full lg:flex lg:min-h-[calc(100vh-30px)] lg:flex-col lg:overflow-hidden lg:rounded-[32px] lg:bg-surface lg:shadow-[0_2px_10px_rgba(0,0,0,0.025),0_12px_36px_rgba(0,0,0,0.04)]">
+        <div className="min-h-full lg:flex lg:min-h-[calc(100vh-30px)] lg:flex-col lg:overflow-clip lg:rounded-[32px] lg:bg-surface lg:shadow-[0_2px_10px_rgba(0,0,0,0.025),0_12px_36px_rgba(0,0,0,0.04)]">
           {showAnnouncement && announcement}
           {children}
         </div>

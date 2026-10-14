@@ -28,7 +28,7 @@ export function AnnouncementBar({ banner }: { banner: AnnouncementBanner }) {
   return (
     <Link
       href={banner.target.href}
-      className="sf-announce block h-9 overflow-hidden bg-ink text-xs font-semibold uppercase leading-9 tracking-[0.08em] text-white focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white sm:h-10 sm:text-[13px] sm:leading-10"
+      className="sf-announce sticky top-0 z-40 block h-9 overflow-hidden bg-ink text-xs font-semibold uppercase leading-9 tracking-[0.08em] text-white focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white sm:h-10 sm:text-[13px] sm:leading-10"
     >
       <span className="sr-only">{label}</span>
       <span aria-hidden className="sf-announce-track whitespace-nowrap">
