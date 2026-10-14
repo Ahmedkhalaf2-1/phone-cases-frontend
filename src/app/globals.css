@@ -159,6 +159,49 @@ body {
   font-weight: 600;
 }
 
+/* Storefront numerals use Thmanyah in every language. This family is the same
+   licensed files limited to the digits 0-9, listed first so digits come from
+   Thmanyah while all other characters keep the normal font. If the files are
+   not on the server the browser simply falls through to the next font. */
+@font-face {
+  font-family: "Thmanyah Digits";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+  src: url("/fonts/thmanyah/thmanyahsans-Light.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Digits";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+  src: url("/fonts/thmanyah/thmanyahsans-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Digits";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+  src: url("/fonts/thmanyah/thmanyahsans-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Digits";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+  src: url("/fonts/thmanyah/thmanyahsans-Bold.woff2") format("woff2");
+}
+html[data-scope="store"] body {
+  font-family: "Thmanyah Digits", var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+html[data-scope="store"] .font-display {
+  font-family: "Thmanyah Digits", var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -38,6 +38,11 @@ async function resolveLocale(): Promise<Locale> {
   return scope === "admin" ? "en" : getLocale();
 }
 
+/** "store" for customer pages, "admin" for the dashboard (font/direction scoping). */
+async function resolveScope(): Promise<"store" | "admin"> {
+  return (await headers()).get("x-contrast-scope") === "admin" ? "admin" : "store";
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await resolveLocale();
   const { t } = createTranslator(locale, getMessages(locale));
@@ -63,6 +68,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Server-resolved; null (and nothing rendered) unless an admin has turned
   // the announcement banner on for a currently active bundle.
   const locale = await resolveLocale();
+  const scope = await resolveScope();
   const messages = getMessages(locale);
   const i18n = createTranslator(locale, messages);
   const banner = pickAnnouncementBanner(await getActiveBundleOffers(), i18n);
@@ -71,6 +77,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang={locale}
       dir={DIRECTION[locale]}
+      data-scope={scope}
       className={`${displayFont.variable} ${bodyFont.variable} h-full`}
     >
       <body className="min-h-full overflow-x-hidden bg-background text-foreground antialiased">
