@@ -1,5 +1,6 @@
 import { DEMO_MODE } from "@/lib/env";
 import { apiGet } from "@/lib/api/http";
+import type { Locale } from "@/i18n/config";
 import type { HomepageSection } from "@/lib/api/types";
 
 /**
@@ -8,11 +9,11 @@ import type { HomepageSection } from "@/lib/api/types";
  * in demo mode or when nothing is enabled just means nothing renders,
  * never a fake placeholder banner.
  */
-export async function getEnabledHomepageSections(): Promise<HomepageSection[]> {
+export async function getEnabledHomepageSections(locale?: Locale): Promise<HomepageSection[]> {
   if (DEMO_MODE) return [];
 
   try {
-    return await apiGet<HomepageSection[]>("/homepage-sections");
+    return await apiGet<HomepageSection[]>("/homepage-sections", { locale });
   } catch {
     // A CMS outage shouldn't take the whole homepage down with it.
     return [];

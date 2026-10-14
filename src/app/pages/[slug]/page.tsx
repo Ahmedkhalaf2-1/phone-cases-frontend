@@ -11,8 +11,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const page = await getStaticPage(slug);
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
+  const page = await getStaticPage(slug, locale);
   return { title: page ? page.title : t("pages.pageNotAvailable") };
 }
 
@@ -22,8 +22,8 @@ export default async function StaticPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const page = await getStaticPage(slug);
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
+  const page = await getStaticPage(slug, locale);
 
   return (
     <>

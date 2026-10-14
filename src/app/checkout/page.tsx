@@ -135,10 +135,13 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     cartClient
-      .getShippingOptions(SHIPPING_COUNTRY)
+      .getShippingOptions(SHIPPING_COUNTRY, locale)
       .then((options) => {
         setShippingOptions(options);
-        setShippingRateId(options[0]?.id ?? "");
+        // Keep the customer's choice when only the language changed.
+        setShippingRateId((current) =>
+          options.some((option) => option.id === current) ? current : (options[0]?.id ?? ""),
+        );
       })
       .catch((err) =>
         setQuoteError(
@@ -146,7 +149,7 @@ export default function CheckoutPage() {
         ),
       )
       .finally(() => setIsShippingLoading(false));
-  }, []);
+  }, [locale]);
 
   // A signature of everything that should invalidate the current quote:
   // shipping choice, or the cart's own contents/coupon changing under us.

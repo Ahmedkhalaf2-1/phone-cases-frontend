@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ProductFilters } from "@/components/catalog/ProductFilters";
 import { ProductListing } from "@/components/catalog/ProductListing";
 import { getProducts } from "@/lib/data/products";
+import type { Locale } from "@/i18n/config";
 import { getI18n } from "@/i18n/server";
 import { getMoodCollections } from "@/lib/data/collections";
 import { getPhoneModels } from "@/lib/data/phone-catalog";
@@ -17,8 +18,8 @@ import {
   type CatalogSearchParams,
 } from "@/lib/catalog-params";
 
-async function findCollection(slug: string) {
-  const { collections } = await getMoodCollections();
+async function findCollection(slug: string, locale: Locale) {
+  const { collections } = await getMoodCollections(locale);
   return collections.find((collection) => collection.slug === slug);
 }
 
@@ -27,8 +28,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const collection = await findCollection((await params).slug);
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
+  const collection = await findCollection((await params).slug, locale);
   return { title: collection?.name ?? t("catalog.collectionFallback") };
 }
 
@@ -40,17 +41,17 @@ export default async function CollectionPage({
   searchParams: Promise<CatalogSearchParams>;
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const collection = await findCollection(slug);
+  const { t, locale } = await getI18n();
+  const collection = await findCollection(slug, locale);
   if (!collection) notFound();
-  const { t } = await getI18n();
 
   const basePath = `/collections/${collection.slug}`;
   const cover = getCollectionCover(collection.slug, collection.coverImage);
 
   const [productList, phoneModelsResult, caseTypesResult] = await Promise.all([
-    getProducts({ ...parseCatalogParams(query), collection: collection.slug }),
-    getPhoneModels(),
-    getCaseTypes(),
+    getProducts({ ...parseCatalogParams(query), collection: collection.slug, locale }),
+    getPhoneModels(locale),
+    getCaseTypes(locale),
   ]);
 
   return (

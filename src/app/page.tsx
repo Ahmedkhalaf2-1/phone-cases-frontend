@@ -1,3 +1,4 @@
+import { getLocale } from "@/i18n/server";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Hero } from "@/components/home/Hero";
@@ -9,17 +10,18 @@ import { getMoodCollections } from "@/lib/data/collections";
 import { getEnabledHomepageSections } from "@/lib/data/homepage-sections";
 
 export default async function Home() {
+  const locale = await getLocale();
   const [collectionsResult, featuredProducts, homepageSections] = await Promise.all([
-    getMoodCollections(),
-    getFeaturedProducts(4),
-    getEnabledHomepageSections(),
+    getMoodCollections(locale),
+    getFeaturedProducts(4, locale),
+    getEnabledHomepageSections(locale),
   ]);
 
   // One row per collection (Anime, Cars, …), each with its first few cases.
   const collectionRows = await Promise.all(
     collectionsResult.collections.map(async (collection) => ({
       collection,
-      products: await getProducts({ collection: collection.slug, page: 1, pageSize: 10 }),
+      products: await getProducts({ collection: collection.slug, page: 1, pageSize: 10, locale }),
     })),
   );
 

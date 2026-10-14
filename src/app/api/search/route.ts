@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { getLocale } from "@/i18n/server";
 import { getMoodCollections } from "@/lib/data/collections";
 import { getProducts } from "@/lib/data/products";
 import { getCollectionCover } from "@/config/collection-covers";
@@ -21,16 +22,18 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const q = (params.get("q") ?? "").trim().slice(0, MAX_QUERY_LENGTH);
   const collectionSlug = params.get("collection")?.trim() || undefined;
+  const locale = await getLocale();
 
   try {
     const [{ collections }, productList] = await Promise.all([
-      getMoodCollections(),
+      getMoodCollections(locale),
       q || collectionSlug
         ? getProducts({
             q: q || undefined,
             collection: collectionSlug,
             page: 1,
             pageSize: q ? 6 : 4,
+            locale,
           })
         : null,
     ]);
@@ -64,6 +67,7 @@ export async function GET(request: NextRequest) {
             collection: collectionHits[0].slug,
             page: 1,
             pageSize: 6,
+            locale,
           })
         : productList;
 
@@ -86,7 +90,11 @@ export async function GET(request: NextRequest) {
       products: productHits,
     };
     return Response.json(body, {
-      headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" },
+      // The language comes from the cookie, so caches must key on it.
+      headers: {
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        Vary: "Cookie",
+      },
     });
   } catch {
     return Response.json(

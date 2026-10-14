@@ -29,17 +29,18 @@ export default async function SearchPage({
   searchParams: Promise<CatalogSearchParams>;
 }) {
   const params = await searchParams;
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
 
   const [productList, collectionsResult, phoneModelsResult, caseTypesResult] =
     await Promise.all([
       getProducts({
         ...parseCatalogParams(params),
         collection: params.collection || undefined,
+        locale,
       }),
-      getMoodCollections(),
-      getPhoneModels(),
-      getCaseTypes(),
+      getMoodCollections(locale),
+      getPhoneModels(locale),
+      getCaseTypes(locale),
     ]);
 
   const phoneModel = phoneModelsResult.models.find(

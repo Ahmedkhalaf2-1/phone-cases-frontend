@@ -137,6 +137,8 @@ export interface ProductQueryParams {
   sort?: ProductSort;
   page?: number;
   pageSize?: number;
+  /** Content language for localized fields (backend `?locale=`); English when omitted. */
+  locale?: "en" | "ar";
 }
 
 /**

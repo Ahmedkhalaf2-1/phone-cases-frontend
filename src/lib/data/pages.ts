@@ -1,5 +1,6 @@
 import { DEMO_MODE } from "@/lib/env";
 import { apiGet, ApiError } from "@/lib/api/http";
+import type { Locale } from "@/i18n/config";
 
 export interface StaticPageSummary {
   slug: string;
@@ -22,11 +23,12 @@ export interface StaticPageDetail {
  */
 export async function getStaticPage(
   slug: string,
+  locale?: Locale,
 ): Promise<StaticPageDetail | null> {
   if (DEMO_MODE) return null;
 
   try {
-    return await apiGet<StaticPageDetail>(`/pages/${slug}`);
+    return await apiGet<StaticPageDetail>(`/pages/${slug}`, { locale });
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;

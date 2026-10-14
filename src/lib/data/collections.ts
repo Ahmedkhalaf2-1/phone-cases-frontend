@@ -1,5 +1,6 @@
 import { DEMO_MODE } from "@/lib/env";
 import { apiGet } from "@/lib/api/http";
+import type { Locale } from "@/i18n/config";
 import type { Collection } from "@/lib/api/types";
 import {
   DEMO_MOOD_COLLECTIONS,
@@ -25,12 +26,12 @@ const ARTWORK_ROTATION: MoodCollection["artwork"][] = [
  * imagery is a documented gap for the next milestone (see
  * docs/FRONTEND_PROGRESS.md), not something this layer invents.
  */
-export async function getMoodCollections(): Promise<MoodCollectionsResult> {
+export async function getMoodCollections(locale?: Locale): Promise<MoodCollectionsResult> {
   if (DEMO_MODE) {
     return { source: "demo", collections: DEMO_MOOD_COLLECTIONS };
   }
 
-  const collections = await apiGet<Collection[]>("/collections");
+  const collections = await apiGet<Collection[]>("/collections", { locale });
 
   return {
     source: "live",

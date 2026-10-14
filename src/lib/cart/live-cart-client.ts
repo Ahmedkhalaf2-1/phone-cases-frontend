@@ -153,9 +153,10 @@ export const liveCartClient = {
     return response.blob();
   },
 
-  getShippingOptions(country: string): Promise<ShippingOption[]> {
+  getShippingOptions(country: string, locale?: string): Promise<ShippingOption[]> {
+    const localeQuery = locale ? `&locale=${encodeURIComponent(locale)}` : "";
     return apiRequest<ShippingOption[]>(
-      `/shipping-options?country=${encodeURIComponent(country)}`,
+      `/shipping-options?country=${encodeURIComponent(country)}${localeQuery}`,
     );
   },
 

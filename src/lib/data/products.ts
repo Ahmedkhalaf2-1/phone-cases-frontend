@@ -1,5 +1,6 @@
 import { DEMO_MODE } from "@/lib/env";
 import { apiGet } from "@/lib/api/http";
+import type { Locale } from "@/i18n/config";
 import type {
   PaginatedResult,
   ProductQueryParams,
@@ -23,6 +24,7 @@ export interface FeaturedProductsResult {
  */
 export async function getFeaturedProducts(
   limit = 4,
+  locale?: Locale,
 ): Promise<FeaturedProductsResult> {
   if (DEMO_MODE) {
     return { source: "demo", products: DEMO_PRODUCTS.slice(0, limit) };
@@ -30,7 +32,7 @@ export async function getFeaturedProducts(
 
   const result = await apiGet<PaginatedResult<PublicProductSummary>>(
     "/products",
-    { sort: "newest", pageSize: limit, page: 1, availableOnly: true },
+    { sort: "newest", pageSize: limit, page: 1, availableOnly: true, locale },
   );
 
   return { source: "live", products: result.items };
@@ -137,6 +139,7 @@ export interface ProductDetailResult {
 /** Single product for the /products/:slug detail page. Returns null on a 404. */
 export async function getProductBySlug(
   slug: string,
+  locale?: Locale,
 ): Promise<ProductDetailResult | null> {
   if (DEMO_MODE) {
     const product = DEMO_PRODUCTS.find((p) => p.slug === slug);
@@ -144,7 +147,7 @@ export async function getProductBySlug(
   }
 
   try {
-    const product = await apiGet<PublicProductDetail>(`/products/${slug}`);
+    const product = await apiGet<PublicProductDetail>(`/products/${slug}`, { locale });
     return { source: "live", product };
   } catch (error) {
     if (

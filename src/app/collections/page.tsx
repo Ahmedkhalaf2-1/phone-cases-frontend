@@ -14,8 +14,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CollectionsPage() {
-  const { t, tn } = await getI18n();
-  const { collections } = await getMoodCollections();
+  const { t, tn, locale } = await getI18n();
+  const { collections } = await getMoodCollections(locale);
 
   // A few cases per collection for the tile preview, plus its total count.
   const tiles = (
@@ -25,6 +25,7 @@ export default async function CollectionsPage() {
           collection: collection.slug,
           page: 1,
           pageSize: 3,
+          locale,
         });
         return {
           collection,

@@ -15,8 +15,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getProductBySlug(slug);
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
+  const result = await getProductBySlug(slug, locale);
   return { title: result ? result.product.name : t("common.notFoundTitle") };
 }
 
@@ -26,12 +26,12 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const result = await getProductBySlug(slug);
+  const i18n = await getI18n();
+  const result = await getProductBySlug(slug, i18n.locale);
 
   if (!result) notFound();
 
   const { product, source } = result;
-  const i18n = await getI18n();
   const bundleOffer = offerForProduct(await getActiveBundleOffers(), product.slug);
 
   return (
