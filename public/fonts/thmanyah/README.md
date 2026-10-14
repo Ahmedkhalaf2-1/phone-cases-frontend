@@ -12,6 +12,14 @@ folder on every machine that serves the site (local, VPS):
 - `thmanyahsans-Medium.woff2`  (500)
 - `thmanyahsans-Bold.woff2`    (700)
 
+Headings (`.font-display`) in Arabic also use **Thmanyah Serif Display**:
+
+- `thmanyahserifdisplay-Light.woff2`   (300)
+- `thmanyahserifdisplay-Regular.woff2` (400)
+- `thmanyahserifdisplay-Medium.woff2`  (500)
+- `thmanyahserifdisplay-Bold.woff2`    (700)
+- `thmanyahserifdisplay-Black.woff2`   (900)
+
 Files in `public/` are served at runtime, so copying them needs no rebuild.
 If they are missing, Arabic falls back to the platform's Arabic system font.
 The `@font-face` rules and font stack live in `src/app/globals.css`

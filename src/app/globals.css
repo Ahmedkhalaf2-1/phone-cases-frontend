@@ -581,6 +581,49 @@ html[lang="ar"] .font-display {
     sans-serif;
 }
 
+/* Arabic headings and prices (.font-display) use Thmanyah Serif Display;
+   body text stays Thmanyah Sans. English typography is unchanged. */
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahserifdisplay-Light.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahserifdisplay-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahserifdisplay-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahserifdisplay-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahserifdisplay-Black.woff2") format("woff2");
+}
+html[lang="ar"] .font-display {
+  font-family:
+    "Thmanyah Serif Display", "Thmanyah", var(--font-display), ui-sans-serif, system-ui,
+    "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
+}
+
 /* Letter-spacing disconnects Arabic letters; tracking utilities are
    tuned for Latin, so neutralize them in Arabic. */
 html[lang="ar"] body,
