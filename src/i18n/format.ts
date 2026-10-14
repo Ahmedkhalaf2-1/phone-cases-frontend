@@ -35,7 +35,7 @@ export function formatOfferPriceFor(locale: Locale, minorUnits: number, currency
   return `${text} ${label}`;
 }
 
-/** "Sat, 18 Oct" / "السبت، 18 أكتوبر" in the visitor's calendar day. */
+/** "Sat, 18 Oct" / "السبت 18 أكتوبر" in the visitor's calendar day. */
 export function formatDayShort(locale: Locale, date: Date): string {
   const parts = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     weekday: "short",
@@ -43,8 +43,9 @@ export function formatDayShort(locale: Locale, date: Date): string {
     month: "short",
   }).formatToParts(date);
   const pick = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  const comma = locale === "ar" ? "،" : ",";
-  return `${pick("weekday")}${comma} ${pick("day")} ${pick("month")}`;
+  // Arabic reads naturally without the comma: "الأحد 18 أكتوبر".
+  const separator = locale === "ar" ? "" : ",";
+  return `${pick("weekday")}${separator} ${pick("day")} ${pick("month")}`;
 }
 
 /** Locale-aware long date + time for order timestamps. */
