@@ -186,6 +186,7 @@ export function VariantPicker({
           </label>
           <select
             id={brandId}
+            data-active={activeStep === "brand"}
             value={selectedBrandSlug}
             onChange={(event) => {
               const brandSlug = event.target.value;
@@ -201,7 +202,7 @@ export function VariantPicker({
                 setSelectedCaseTypeSlug("");
               }
             }}
-            className={`w-full min-h-11 rounded-pill border border-border bg-background px-3 py-2.5 text-base text-ink ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+            className={`sf-select w-full min-h-11 rounded-pill border border-border bg-background px-3 py-2.5 text-base text-ink ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
             <option value="">Brand</option>
             {brands.map((brand) => (
@@ -223,12 +224,13 @@ export function VariantPicker({
           </label>
           <select
             id={modelId}
+            data-active={activeStep === "model"}
             value={selectedModelSlug}
             onChange={(event) => {
               setSelectedModelSlug(event.target.value);
               setSelectedCaseTypeSlug("");
             }}
-            className={`w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
             <option value="">Select phone model</option>
             {modelsForBrand.map((model) =>
@@ -255,10 +257,11 @@ export function VariantPicker({
           </label>
           <select
             id={caseTypeId}
+            data-active={activeStep === "case"}
             disabled={!selectedModelSlug}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
-            className={`w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
           >
             <option value="">
               {!selectedModelSlug

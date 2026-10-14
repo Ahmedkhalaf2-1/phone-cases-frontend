@@ -467,3 +467,24 @@ body {
     animation-delay: calc(var(--i, 0) * 190ms);
   }
 }
+
+/* Mobile purchase dock selects: a crisp custom chevron instead of the tiny
+   native arrow (which washes out on the violet active step). Below 640px
+   only; desktop selects keep the native control. */
+@media (max-width: 639.98px) {
+  .sf-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.5rem;
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    background-size: 1.125rem 1.125rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+  }
+  .sf-select[data-active="true"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7.5l5 5 5-5'/%3E%3C/svg%3E");
+  }
+  .sf-select:disabled {
+    opacity: 0.5;
+  }
+}
