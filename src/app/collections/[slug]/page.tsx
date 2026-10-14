@@ -49,9 +49,9 @@ export default async function CollectionPage({
   const cover = getCollectionCover(collection.slug, collection.coverImage);
 
   const [productList, phoneModelsResult, caseTypesResult] = await Promise.all([
-    getProducts({ ...parseCatalogParams(query), collection: collection.slug, locale }),
-    getPhoneModels(locale),
-    getCaseTypes(locale),
+    getProducts({ ...parseCatalogParams(query), collection: collection.slug }),
+    getPhoneModels(),
+    getCaseTypes(),
   ]);
 
   return (

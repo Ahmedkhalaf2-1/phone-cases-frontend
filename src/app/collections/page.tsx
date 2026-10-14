@@ -25,7 +25,6 @@ export default async function CollectionsPage() {
           collection: collection.slug,
           page: 1,
           pageSize: 3,
-          locale,
         });
         return {
           collection,

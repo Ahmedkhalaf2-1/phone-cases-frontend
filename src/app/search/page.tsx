@@ -36,11 +36,10 @@ export default async function SearchPage({
       getProducts({
         ...parseCatalogParams(params),
         collection: params.collection || undefined,
-        locale,
       }),
       getMoodCollections(locale),
-      getPhoneModels(locale),
-      getCaseTypes(locale),
+      getPhoneModels(),
+      getCaseTypes(),
     ]);
 
   const phoneModel = phoneModelsResult.models.find(

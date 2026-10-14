@@ -8,6 +8,7 @@ import { getProductBySlug } from "@/lib/data/products";
 import { getActiveBundleOffers } from "@/lib/data/bundles";
 import { offerForProduct, productNote } from "@/lib/bundles";
 import { getI18n } from "@/i18n/server";
+import { getMoodCollections } from "@/lib/data/collections";
 
 export async function generateMetadata({
   params,
@@ -15,8 +16,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { t, locale } = await getI18n();
-  const result = await getProductBySlug(slug, locale);
+  const { t } = await getI18n();
+  const result = await getProductBySlug(slug);
   return { title: result ? result.product.name : t("common.notFoundTitle") };
 }
 
@@ -27,11 +28,18 @@ export default async function ProductDetailPage({
 }) {
   const { slug } = await params;
   const i18n = await getI18n();
-  const result = await getProductBySlug(slug, i18n.locale);
+  const result = await getProductBySlug(slug);
 
   if (!result) notFound();
 
   const { product, source } = result;
+  // Product copy stays as stored; only the collection name follows the language.
+  const firstCollection = product.collections[0];
+  const collectionName = firstCollection
+    ? ((await getMoodCollections(i18n.locale)).collections.find(
+        (c) => c.slug === firstCollection.slug,
+      )?.name ?? firstCollection.name)
+    : null;
   const bundleOffer = offerForProduct(await getActiveBundleOffers(), product.slug);
 
   return (
@@ -57,7 +65,7 @@ export default async function ProductDetailPage({
                   href={`/collections/${product.collections[0].slug}`}
                   className="hover:text-accent"
                 >
-                  {product.collections[0].name}
+                  {collectionName}
                 </Link>{" "}
                 /{" "}
               </>

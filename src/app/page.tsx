@@ -13,7 +13,7 @@ export default async function Home() {
   const locale = await getLocale();
   const [collectionsResult, featuredProducts, homepageSections] = await Promise.all([
     getMoodCollections(locale),
-    getFeaturedProducts(4, locale),
+    getFeaturedProducts(4),
     getEnabledHomepageSections(locale),
   ]);
 
@@ -21,7 +21,7 @@ export default async function Home() {
   const collectionRows = await Promise.all(
     collectionsResult.collections.map(async (collection) => ({
       collection,
-      products: await getProducts({ collection: collection.slug, page: 1, pageSize: 10, locale }),
+      products: await getProducts({ collection: collection.slug, page: 1, pageSize: 10 }),
     })),
   );
 

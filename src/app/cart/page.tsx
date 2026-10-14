@@ -390,13 +390,13 @@ function CartItemVariantEditor({
   currentVariantId: string;
   onSelect: (variantId: string) => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [variants, setVariants] = useState<PublicVariant[] | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getProductBySlug(productSlug, locale)
+    getProductBySlug(productSlug)
       .then((result) => {
         if (cancelled) return;
         setVariants(result?.product.variants ?? []);
@@ -407,7 +407,7 @@ function CartItemVariantEditor({
     return () => {
       cancelled = true;
     };
-  }, [productSlug, locale]);
+  }, [productSlug]);
 
   if (failed) return <p className="mt-2 text-xs text-accent">{t("cart.loadOptionsError")}</p>;
   if (!variants) return <p className="mt-2 text-xs text-muted-foreground">{t("cart.loadingOptions")}</p>;

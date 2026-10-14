@@ -19,13 +19,13 @@ export default async function CustomizePage({
   searchParams: Promise<{ product?: string }>;
 }) {
   const { product: productParam } = await searchParams;
-  const { t, locale } = await getI18n();
+  const { t } = await getI18n();
   const slug = productParam || CUSTOM_CASE_PRODUCT_SLUG;
 
   let result: Awaited<ReturnType<typeof getProductBySlug>> = null;
   let loadError = false;
   try {
-    result = await getProductBySlug(slug, locale);
+    result = await getProductBySlug(slug);
   } catch {
     loadError = true;
   }

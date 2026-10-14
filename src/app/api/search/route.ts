@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
             collection: collectionSlug,
             page: 1,
             pageSize: q ? 6 : 4,
-            locale,
           })
         : null,
     ]);
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest) {
             collection: collectionHits[0].slug,
             page: 1,
             pageSize: 6,
-            locale,
           })
         : productList;
 
@@ -81,7 +79,11 @@ export async function GET(request: NextRequest) {
             ? p.effectivePriceFrom
             : null,
         currency: products?.source === "live" ? p.currency : null,
-        collection: p.collections[0]?.name ?? null,
+        // Product names stay as stored; the collection label follows the language.
+        collection:
+          collections.find((c) => c.slug === p.collections[0]?.slug)?.name ??
+          p.collections[0]?.name ??
+          null,
       }),
     );
 
