@@ -72,7 +72,14 @@ export function VariantPicker({
   const [customBrand, setCustomBrand] = useState("");
   const [customModel, setCustomModel] = useState("");
   const isCustomPhone = selectedModelSlug === OTHER_PHONE || selectedBrandSlug === OTHER_PHONE;
-  const customDetailsDone = customBrand.trim().length > 0 && customModel.trim().length > 0;
+  // A brand already picked from the list needn't be typed again.
+  const pickedBrand =
+    selectedBrandSlug && selectedBrandSlug !== OTHER_PHONE
+      ? brands.find((b) => b.slug === selectedBrandSlug)
+      : undefined;
+  const effectiveCustomBrand = pickedBrand ? pickedBrand.name : customBrand;
+  const customDetailsDone =
+    effectiveCustomBrand.trim().length > 0 && customModel.trim().length > 0;
   const customVariants = useMemo(() => fallbackVariants(variants), [variants]);
 
   const caseTypesForModel = useMemo(() => {
@@ -282,6 +289,7 @@ export function VariantPicker({
       {!isAccessory && isCustomPhone && (
         <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3 sm:order-1">
           <p className="text-xs text-muted-foreground">{t("product.customHint")}</p>
+          {!pickedBrand && (
           <label className="flex flex-col gap-1 text-sm font-medium text-ink">
             {t("product.customBrand")}
             <input
@@ -294,6 +302,7 @@ export function VariantPicker({
               className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             />
           </label>
+          )}
           <label className="flex flex-col gap-1 text-sm font-medium text-ink">
             {t("product.customModel")}
             <input
@@ -439,7 +448,7 @@ export function VariantPicker({
               selectedVariant.id,
               quantity,
               isCustomPhone
-                ? customPhoneNote(customBrand, customModel, itemNote)
+                ? customPhoneNote(effectiveCustomBrand, customModel, itemNote)
                 : itemNote.trim() || undefined,
             );
             setStatus("added");

@@ -129,7 +129,10 @@ export function CustomizeStudio({
   const [customBrand, setCustomBrand] = useState("");
   const [customModel, setCustomModel] = useState("");
   const isCustomPhone = brandSlug === OTHER_PHONE || modelSlug === OTHER_PHONE;
-  const customDetailsDone = customBrand.trim().length > 0 && customModel.trim().length > 0;
+  // A brand already picked from the list needn't be typed again.
+  const pickedBrand = brandSlug && brandSlug !== OTHER_PHONE ? brands.find((b) => b.slug === brandSlug) : undefined;
+  const effectiveCustomBrand = pickedBrand ? pickedBrand.name : customBrand;
+  const customDetailsDone = effectiveCustomBrand.trim().length > 0 && customModel.trim().length > 0;
   const customVariants = useMemo(() => fallbackVariants(variants), [variants]);
 
   const caseOptions = useMemo(
@@ -149,7 +152,7 @@ export function CustomizeStudio({
     isCustomPhone ? undefined : (variant?.phoneModel?.slug ?? (modelSlug || undefined)),
     isCustomPhone ? undefined : (variant?.phoneModel?.brand.slug ?? (brandSlug || undefined)),
   );
-  const phoneName = isCustomPhone ? `${customBrand.trim()} ${customModel.trim()}`.trim() : variant?.phoneModel?.name;
+  const phoneName = isCustomPhone ? `${effectiveCustomBrand.trim()} ${customModel.trim()}`.trim() : variant?.phoneModel?.name;
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -309,7 +312,7 @@ export function CustomizeStudio({
       await addItem(
         variant.id,
         quantity,
-        isCustomPhone ? customPhoneNote(customBrand, customModel, note) : note.trim() || undefined,
+        isCustomPhone ? customPhoneNote(effectiveCustomBrand, customModel, note) : note.trim() || undefined,
         design.id,
       );
       writeStored(productSlug, null);
@@ -472,6 +475,7 @@ export function CustomizeStudio({
           {isCustomPhone && (
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <p className="text-xs text-muted-foreground sm:col-span-2">{t("customize.customHint")}</p>
+              {!pickedBrand && (
               <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
                 {t("customize.customBrand")}
                 <input
@@ -488,6 +492,7 @@ export function CustomizeStudio({
                   className={selectClass}
                 />
               </label>
+              )}
               <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
                 {t("customize.customModel")}
                 <input
