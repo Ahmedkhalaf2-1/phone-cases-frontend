@@ -360,7 +360,7 @@ export function CustomizeStudio({
       : null;
 
   const selectClass =
-    "w-full rounded-pill border border-border bg-background px-4 py-3 text-sm text-ink disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+    "w-full rounded-pill border border-border bg-background px-4 py-3 text-sm text-ink disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start">

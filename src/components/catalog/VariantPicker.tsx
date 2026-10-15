@@ -189,7 +189,7 @@ export function VariantPicker({
         : null;
   const activeRing = (step: string) =>
     activeStep === step
-      ? "max-sm:border-accent max-sm:bg-accent max-sm:font-semibold max-sm:text-accent-foreground [&_option]:bg-background [&_option]:font-normal [&_option]:text-ink"
+      ? "max-sm:border-ink max-sm:font-semibold"
       : "";
   const stepIn =
     "max-sm:animate-[sf-message-in_var(--sf-dur-normal)_var(--sf-ease)_both]";
@@ -239,7 +239,7 @@ export function VariantPicker({
                 setSelectedCaseTypeSlug("");
               }
             }}
-            className={`sf-select w-full min-h-11 rounded-pill border border-border bg-background px-3 py-2.5 text-base text-ink ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+            className={`sf-select w-full min-h-11 rounded-pill border border-border bg-background px-3 py-2.5 text-base text-ink ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
           >
             <option value="">{t("product.brandPlaceholder")}</option>
             {brands.map((brand) => (
@@ -268,7 +268,7 @@ export function VariantPicker({
               setSelectedModelSlug(event.target.value);
               setSelectedCaseTypeSlug("");
             }}
-            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
           >
             <option value="">{t("product.selectModel")}</option>
             {modelsForBrand.map((model) =>
@@ -299,7 +299,7 @@ export function VariantPicker({
               value={customBrand}
               onChange={(e) => setCustomBrand(e.target.value)}
               placeholder={t("product.customBrandPlaceholder")}
-              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             />
           </label>
           )}
@@ -312,7 +312,7 @@ export function VariantPicker({
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
               placeholder={t("product.customModelPlaceholder")}
-              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             />
           </label>
         </div>
@@ -332,7 +332,7 @@ export function VariantPicker({
             disabled={!selectedModelSlug || (isCustomPhone && !customDetailsDone)}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
-            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
           >
             <option value="">
               {!selectedModelSlug
@@ -408,7 +408,7 @@ export function VariantPicker({
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               aria-label={t("common.decreaseQuantity")}
-              className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               −
             </button>
@@ -423,13 +423,13 @@ export function VariantPicker({
                   Math.max(1, Math.min(20, Number(event.target.value) || 1)),
                 )
               }
-              className="w-12 border-x border-border bg-background py-2 text-center text-sm max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="w-12 border-x border-border bg-background py-2 text-center text-sm max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             />
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.min(20, q + 1))}
               aria-label={t("common.increaseQuantity")}
-              className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="min-h-11 min-w-11 px-3 py-2 text-ink hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               +
             </button>
@@ -520,7 +520,7 @@ export function VariantPicker({
           value={itemNote}
           onChange={(e) => setItemNote(e.target.value)}
           placeholder={t("product.notePlaceholder")}
-          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-accent focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent resize-y"
+          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink resize-y"
         />
         <div className={`flex justify-end max-w-xs max-sm:max-w-none ${itemNote.length === 0 ? "max-sm:hidden" : ""}`}>
           <span className="text-[11px] text-muted-foreground">
