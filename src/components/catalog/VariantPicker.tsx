@@ -392,7 +392,7 @@ export function VariantPicker({
       )}
 
       {bundleNote && (
-        <p className={`rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink max-sm:bg-ink max-sm:text-white sm:order-5 max-sm:py-1.5 max-sm:text-xs max-sm:leading-4 ${mobileOnlyWhen(showPurchase)}`}>
+        <p className={`rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink max-sm:hidden sm:order-5`}>
           {bundleNote}
         </p>
       )}
@@ -520,7 +520,7 @@ export function VariantPicker({
           value={itemNote}
           onChange={(e) => setItemNote(e.target.value)}
           placeholder={t("product.notePlaceholder")}
-          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 max-sm:border-ink max-sm:bg-ink max-sm:text-white max-sm:placeholder:text-white/60 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink resize-y"
+          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink resize-y"
         />
         <div className={`flex justify-end max-w-xs max-sm:max-w-none ${itemNote.length === 0 ? "max-sm:hidden" : ""}`}>
           <span className="text-[11px] text-muted-foreground">
