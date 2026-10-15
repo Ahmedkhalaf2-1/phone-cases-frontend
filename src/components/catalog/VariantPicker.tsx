@@ -299,7 +299,7 @@ export function VariantPicker({
               value={customBrand}
               onChange={(e) => setCustomBrand(e.target.value)}
               placeholder={t("product.customBrandPlaceholder")}
-              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className="w-full rounded-pill border border-ink bg-ink px-4 py-2.5 text-sm font-normal text-white placeholder:text-white/60 max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             />
           </label>
           )}
@@ -312,7 +312,7 @@ export function VariantPicker({
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
               placeholder={t("product.customModelPlaceholder")}
-              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className="w-full rounded-pill border border-ink bg-ink px-4 py-2.5 text-sm font-normal text-white placeholder:text-white/60 max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             />
           </label>
         </div>

@@ -489,7 +489,7 @@ export function CustomizeStudio({
                   }}
                   onBlur={() => onVariantChanged(resolve(brandSlug, modelSlug, caseTypeSlug))}
                   placeholder={t("customize.customBrandPlaceholder")}
-                  className={selectClass}
+                  className={`${selectClass} !border-ink !bg-ink !text-white placeholder:text-white/60`}
                 />
               </label>
               )}
@@ -504,7 +504,7 @@ export function CustomizeStudio({
                   onChange={(e) => setCustomModel(e.target.value)}
                   onBlur={() => onVariantChanged(resolve(brandSlug, modelSlug, caseTypeSlug))}
                   placeholder={t("customize.customModelPlaceholder")}
-                  className={selectClass}
+                  className={`${selectClass} !border-ink !bg-ink !text-white placeholder:text-white/60`}
                 />
               </label>
             </div>
