@@ -46,7 +46,7 @@ export const customize = section(
     fileHint: "JPG, PNG, WebP or iPhone photo · up to 10 MB",
     fitNote:
       "We fit your image to the case automatically and print the center of it. Keep faces and text away from the edges.",
-    step3: "Check your design",
+    step3: "Your photo on the case",
     cropCaption: "The bright area is what gets printed. The dark edges are trimmed.",
     yourImage: "Your image",
     printSize: "Print size",
@@ -135,7 +135,7 @@ export const customize = section(
     fileHint: "JPG أو PNG أو WebP أو صورة آيفون · حتى 10 ميجا",
     fitNote:
       "بنظبط الصورة على الكوفر أوتوماتيك وبنطبع منتصفها. ابعد الوشوش والكتابة عن الأطراف.",
-    step3: "راجع تصميمك",
+    step3: "صورتك على الكوفر",
     cropCaption: "المنطقة المضيئة هي اللي هتتطبع، والأطراف الغامقة هتتقص.",
     yourImage: "صورتك",
     printSize: "مقاس الطباعة",

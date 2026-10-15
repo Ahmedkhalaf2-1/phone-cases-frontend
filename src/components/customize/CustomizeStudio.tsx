@@ -347,28 +347,11 @@ export function CustomizeStudio({
   const ratio = design ? qualityRatio(design) : 1;
   const busy = phase === "uploading" || phase === "previewing" || phase === "adding";
 
-  // Server center-crops to the print area's shape: show what survives.
-  const crop =
-    design && design.print.widthPx && design.print.heightPx && design.original.width && design.original.height
-      ? (() => {
-          const imageRatio = design.original.width / design.original.height;
-          const printRatio = design.print.widthPx / design.print.heightPx;
-          return imageRatio > printRatio
-            ? { width: (printRatio / imageRatio) * 100, height: 100 }
-            : { width: 100, height: (imageRatio / printRatio) * 100 };
-        })()
-      : null;
-
   const selectClass =
     "w-full rounded-pill border border-border bg-background px-4 py-3 text-sm text-ink disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
-  return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start">
-      {/* Preview */}
-      <section
-        aria-label={t("customize.preview")}
-        className="order-2 rounded-card bg-surface p-3 shadow-card lg:sticky lg:top-6 lg:order-1"
-      >
+  const previewBody = (
+    <>
         <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-card-inner bg-background">
           {mockup ? (
             // The real case photo, with the customer's image shown the
@@ -416,6 +399,17 @@ export function CustomizeStudio({
             </p>
           )
         )}
+    </>
+  );
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start">
+      {/* Preview (desktop; on phones it lives inside step 3) */}
+      <section
+        aria-label={t("customize.preview")}
+        className="order-2 rounded-card bg-surface p-3 shadow-card max-lg:hidden lg:sticky lg:top-6 lg:order-1"
+      >
+        {previewBody}
       </section>
 
       {/* Steps */}
@@ -602,56 +596,18 @@ export function CustomizeStudio({
         )}
 
         {design && (
-          <Step number={3} title={t("customize.step3")}>
-            {lastFile && crop && (
-              <figure>
-                <div
-                  className="relative mx-auto max-h-64 overflow-hidden rounded-2xl bg-background"
-                  style={{ aspectRatio: `${design.original.width} / ${design.original.height}` }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img ref={localImgRef} alt="" className="h-full w-full object-contain" />
-                  <div
-                    aria-hidden
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border-2 border-dashed border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]"
-                    style={{ width: `${crop.width}%`, height: `${crop.height}%` }}
-                  />
-                </div>
-                <figcaption className="mt-2 text-xs text-muted-foreground">
-                  {t("customize.cropCaption")}
-                </figcaption>
-              </figure>
-            )}
-            <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-2xl bg-background p-2">
-                <dt className="text-muted-foreground">{t("customize.yourImage")}</dt>
-                <dd className="font-semibold text-ink">
-                  <bdi dir="ltr">{t("customize.px", { w: design.original.width ?? 0, h: design.original.height ?? 0 })}</bdi>
-                </dd>
-              </div>
-              <div className="rounded-2xl bg-background p-2">
-                <dt className="text-muted-foreground">{t("customize.printSize")}</dt>
-                <dd className="font-semibold text-ink">
-                  <bdi dir="ltr">{t("customize.px", { w: design.print.widthPx ?? 0, h: design.print.heightPx ?? 0 })}</bdi>
-                </dd>
-              </div>
-            </dl>
+          <Step number={3} title={t("customize.step3")} className="lg:hidden">
+            {previewBody}
             {ratio < 0.5 ? (
-              <p className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800">
-                {t("customize.qualityLow")}
-              </p>
+              <p className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t("customize.qualityLow")}</p>
             ) : ratio < 0.8 ? (
-              <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
-                {t("customize.qualityMid")}
-              </p>
-            ) : (
-              <p className="mt-3 text-sm font-semibold text-green-700">{t("customize.qualityGood")}</p>
-            )}
+              <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">{t("customize.qualityMid")}</p>
+            ) : null}
           </Step>
         )}
 
         {design && phase !== "added" && (
-          <Step number={4} title={t("customize.step4")}>
+          <Step number={4} numberLg={3} title={t("customize.step4")}>
             <label htmlFor={ids.note} className="text-sm font-medium text-ink">
               {t("customize.noteLabel")} <span className="font-normal text-muted-foreground">({t("common.optional")})</span>
             </label>
@@ -736,22 +692,36 @@ export function CustomizeStudio({
 
 function Step({
   number,
+  numberLg,
   title,
   disabled,
+  className = "",
   children,
 }: {
   number: number;
+  /** Number shown on large screens, when an earlier step is hidden there. */
+  numberLg?: number;
   title: string;
   disabled?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
     <section
       aria-labelledby={`step-${number}`}
-      className={`rounded-card bg-surface p-4 shadow-card sm:p-5 ${disabled ? "opacity-60" : ""}`}
+      className={`rounded-card bg-surface p-4 shadow-card sm:p-5 ${disabled ? "opacity-60" : ""} ${className}`}
     >
       <h2 id={`step-${number}`} className="mb-3 flex items-center gap-2 font-semibold text-ink">
-        <span className="flex size-6 items-center justify-center rounded-full bg-ink text-xs text-white">{number}</span>
+        <span className="flex size-6 items-center justify-center rounded-full bg-ink text-xs text-white">
+          {numberLg ? (
+            <>
+              <span className="lg:hidden">{number}</span>
+              <span className="max-lg:hidden">{numberLg}</span>
+            </>
+          ) : (
+            number
+          )}
+        </span>
         {title}
       </h2>
       {children}
