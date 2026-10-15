@@ -134,7 +134,10 @@ export function CustomizeStudio({
       : caseOptions.find((v) => (v.caseType?.slug ?? "") === caseTypeSlug);
 
   // Model-specific case photo when one exists (e.g. iPhone 17 Pro Max).
-  const { mockup, isLoading: isMockupLoading } = useCaseMockup(variant?.phoneModel?.slug ?? (modelSlug || undefined));
+  const { mockup, isLoading: isMockupLoading } = useCaseMockup(
+    variant?.phoneModel?.slug ?? (modelSlug || undefined),
+    variant?.phoneModel?.brand.slug ?? (brandSlug || undefined),
+  );
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);

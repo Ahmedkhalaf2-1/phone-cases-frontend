@@ -33,6 +33,11 @@ export interface CaseMockupConfig {
    * Applied after `include`.
    */
   exclude?: MockupRect[];
+  /**
+   * How colourful the case back may be and still count as printable
+   * (default 40). Raise for tinted cases such as lavender.
+   */
+  maxSaturation?: number;
 }
 
 /**
@@ -49,6 +54,32 @@ export const CASE_MOCKUPS_BY_MODEL: Record<string, CaseMockupConfig> = {
   },
 };
 
-export function caseMockupFor(phoneModelSlug: string | undefined): CaseMockupConfig {
-  return (phoneModelSlug && CASE_MOCKUPS_BY_MODEL[phoneModelSlug]) || { src: CASE_MOCKUP_SRC };
+/**
+ * Brand-wide case photos (1024×1536), used for every model of a brand that
+ * has no model-specific photo above.
+ */
+export const CASE_MOCKUPS_BY_BRAND: Record<string, CaseMockupConfig> = {
+  xiaomi: { src: "/customize/case-mockup-xiaomi.png" },
+  poco: { src: "/customize/case-mockup-poco.png" },
+  samsung: { src: "/customize/case-mockup-samsung.png" },
+  honor: { src: "/customize/case-mockup-honor.png" },
+  huawei: { src: "/customize/case-mockup-huawei.png" },
+  infinix: { src: "/customize/case-mockup-infinix.png" },
+  realme: { src: "/customize/case-mockup-realme.png", maxSaturation: 60 },
+  redmi: {
+    src: "/customize/case-mockup-redmi.png",
+    maxSaturation: 75,
+    // The tinted camera plateau is the same colour as the back.
+    exclude: [{ x: 232, y: 92, width: 392, height: 456, radius: 50 }],
+  },
+};
+
+export function caseMockupFor(
+  phoneModelSlug: string | undefined,
+  brandSlug?: string,
+): CaseMockupConfig {
+  return (
+    (phoneModelSlug && CASE_MOCKUPS_BY_MODEL[phoneModelSlug]) ||
+    (brandSlug && CASE_MOCKUPS_BY_BRAND[brandSlug]) || { src: CASE_MOCKUP_SRC }
+  );
 }

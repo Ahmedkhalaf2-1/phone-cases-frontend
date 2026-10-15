@@ -144,7 +144,7 @@ function applyOverrides(
 
 function analyse(
   image: HTMLImageElement,
-  overrides: Pick<CaseMockupConfig, "include" | "exclude"> = {},
+  overrides: Pick<CaseMockupConfig, "include" | "exclude" | "maxSaturation"> = {},
 ): Mockup | null {
   const width = image.naturalWidth;
   const height = image.naturalHeight;
@@ -181,25 +181,34 @@ function analyse(
   const saturation = (i: number) =>
     Math.max(data[i * 4], data[i * 4 + 1], data[i * 4 + 2]) - brightness(i);
 
-  // Seed from the lower middle of the case (well away from the camera),
-  // nudging down until it lands on an opaque, light pixel.
-  const cx = Math.round(caseBounds.x + caseBounds.width / 2);
-  let seed = -1;
-  for (let y = Math.round(caseBounds.y + caseBounds.height * 0.6); y < caseBounds.y + caseBounds.height; y++) {
-    const i = y * width + cx;
-    if (alpha(i) > 200 && saturation(i) < SURFACE_MAX_SATURATION) {
-      seed = i;
-      break;
+  // Seed from the lower part of the case (well away from the camera),
+  // nudging down until it lands on an opaque, light pixel. A few columns are
+  // tried so a centre stripe splitting the back doesn't hide half of it.
+  const maxSaturation = overrides.maxSaturation ?? SURFACE_MAX_SATURATION;
+  const surface = new Uint8Array(width * height);
+  let seeded = false;
+  for (const fraction of [0.5, 0.3, 0.7]) {
+    const sx = Math.round(caseBounds.x + caseBounds.width * fraction);
+    let seed = -1;
+    for (let y = Math.round(caseBounds.y + caseBounds.height * 0.6); y < caseBounds.y + caseBounds.height; y++) {
+      const i = y * width + sx;
+      if (alpha(i) > 200 && saturation(i) < maxSaturation) {
+        seed = i;
+        break;
+      }
     }
+    if (seed < 0 || surface[seed]) continue;
+    seeded = true;
+    const floor = brightness(seed) - SURFACE_TOLERANCE;
+    const region = floodFill(
+      width,
+      height,
+      [seed],
+      (i) => alpha(i) > 200 && brightness(i) >= floor && saturation(i) < maxSaturation,
+    );
+    for (let i = 0; i < region.length; i++) if (region[i]) surface[i] = 1;
   }
-  if (seed < 0) return null;
-  const floor = brightness(seed) - SURFACE_TOLERANCE;
-  const surface = floodFill(
-    width,
-    height,
-    [seed],
-    (i) => alpha(i) > 200 && brightness(i) >= floor && saturation(i) < SURFACE_MAX_SATURATION,
-  );
+  if (!seeded) return null;
   applyOverrides(surface, width, height, (i) => alpha(i) > 200, overrides);
   const surfaceBounds = boundsOf(surface, width);
   if (!surfaceBounds) return null;
@@ -237,8 +246,8 @@ function loadMockup(config: CaseMockupConfig): Promise<Mockup | null> {
  * The case photo for this phone model (or the generic one), if it exists
  * and has a usable printable area.
  */
-export function useCaseMockup(phoneModelSlug?: string): { mockup: Mockup | null; isLoading: boolean } {
-  const config = caseMockupFor(phoneModelSlug);
+export function useCaseMockup(phoneModelSlug?: string, brandSlug?: string): { mockup: Mockup | null; isLoading: boolean } {
+  const config = caseMockupFor(phoneModelSlug, brandSlug);
   const [state, setState] = useState<{ src: string | null; mockup: Mockup | null }>({ src: null, mockup: null });
   useEffect(() => {
     let cancelled = false;
