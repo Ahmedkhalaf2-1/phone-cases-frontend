@@ -120,8 +120,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-wash: var(--accent-wash);
   --color-ink: var(--ink);
-  --font-display: "Thmanyah Serif Display", "Thmanyah", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Thmanyah", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Thmanyah Serif Text", "Thmanyah", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Thmanyah Serif Text", "Thmanyah", ui-sans-serif, system-ui, sans-serif;
   --font-gt-standard: var(--font-gt-standard);
   --font-shopify-sans: var(--font-shopify-sans);
 
@@ -149,12 +149,12 @@
   choice, not an oversight — dark mode is out of scope for this milestone.
 */
 body {
-  font-family: "Thmanyah", ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
+  font-family: "Thmanyah Serif Text", "Thmanyah", ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
   letter-spacing: -0.011em;
 }
 
 .font-display {
-  font-family: "Thmanyah Serif Display", "Thmanyah", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Thmanyah Serif Text", "Thmanyah", ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.03em;
   font-weight: 600;
 }
@@ -171,7 +171,7 @@ textarea,
 code,
 kbd,
 pre {
-  font-family: "Thmanyah", ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
+  font-family: "Thmanyah Serif Text", "Thmanyah", ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -523,6 +523,41 @@ pre {
 /* names, model names, prices), then the platform Arabic UI fonts.     */
 /* The files live in /public/fonts/thmanyah (see its README).          */
 /* ------------------------------------------------------------------ */
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahseriftext-Light.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahseriftext-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahseriftext-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahseriftext-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/fonts/thmanyah/thmanyahseriftext-Black.woff2") format("woff2");
+}
 @font-face {
   font-family: "Thmanyah";
   font-style: normal;
