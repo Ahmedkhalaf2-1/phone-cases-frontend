@@ -15,11 +15,14 @@ function hasVariants(
   return "variants" in product;
 }
 
+export type ProductCardLayout = "grid" | "list";
+
 export function ProductCard({
   product,
   source,
   imageLoading = "lazy",
   sharedImage = true,
+  layout = "grid",
 }: {
   product: PublicProductSummary | DemoProduct;
   source: "demo" | "live";
@@ -31,6 +34,8 @@ export function ProductCard({
    * view-transition name must be unique per document.
    */
   sharedImage?: boolean;
+  /** "list" shows a compact horizontal row (image left, details right). */
+  layout?: ProductCardLayout;
 }) {
   const { t } = useI18n();
   const formatPrice = useFormatPrice();
@@ -38,11 +43,11 @@ export function ProductCard({
   return (
     <Link
       href={`/products/${product.slug}`}
-      className="sf-nav-target group flex h-full flex-col rounded-card bg-surface shadow-card transition-transform duration-[var(--sf-dur-normal)] ease-[var(--sf-ease)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985] motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className={`sf-nav-target group flex h-full ${layout === "list" ? "flex-row items-center" : "flex-col"} rounded-card bg-surface shadow-card transition-transform duration-[var(--sf-dur-normal)] ease-[var(--sf-ease)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985] motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
     >
       <LinkPending />
       <SharedProductImage slug={product.slug} enabled={sharedImage}>
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-card-inner m-2 bg-surface">
+        <div className={`flex aspect-square items-center justify-center overflow-hidden rounded-card-inner m-2 bg-surface ${layout === "list" ? "w-28 shrink-0 sm:w-40" : ""}`}>
           {product.primaryImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -60,7 +65,7 @@ export function ProductCard({
         </div>
       </SharedProductImage>
 
-      <div className="flex flex-1 items-start justify-between gap-2 p-3 sm:p-4">
+      <div className={`flex flex-1 items-start justify-between gap-2 p-3 sm:p-4 ${layout === "list" ? "items-center" : ""}`}>
         <div className="min-w-0">
           <p className="font-medium tracking-tight text-ink">{product.name}</p>
           <p className="text-sm text-muted-foreground">

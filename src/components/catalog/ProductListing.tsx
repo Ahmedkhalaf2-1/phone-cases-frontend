@@ -1,54 +1,45 @@
 import { getI18n } from "@/i18n/server";
-import { ProductCard } from "@/components/catalog/ProductCard";
+import { InfiniteProductGrid } from "@/components/catalog/InfiniteProductGrid";
 import { Pagination } from "@/components/catalog/Pagination";
 import type { ProductListResult } from "@/lib/data/products";
 
-/** Result count + product grid + pagination, shared by /search and collection pages. */
+/**
+ * Result count + product grid shared by /search and collection pages. The
+ * first page is server-rendered; the rest loads as the customer scrolls.
+ * Plain pagination links stay available without JavaScript.
+ */
 export async function ProductListing({
   productList,
+  query,
   buildHref,
   emptyMessage,
 }: {
   productList: ProductListResult;
+  /** Active filters, used to fetch the following pages. */
+  query: Record<string, string | undefined>;
   buildHref: (page: number) => string;
   emptyMessage?: string;
 }) {
   const { t, tn } = await getI18n();
-  const { items, meta, source } = productList;
+  const { meta, source } = productList;
+  const queryKey = JSON.stringify(query);
 
   return (
     <>
-      <p className="my-4 text-sm text-muted-foreground">
-        {tn("catalog.results", meta.totalItems)}
-      </p>
-
-      {items.length === 0 ? (
-        <p className="py-16 text-center text-muted-foreground">
-          {emptyMessage ?? t("catalog.noMatch")}
-        </p>
-      ) : (
-        <div data-motion-stagger className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          {items.map((product, index) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              source={source}
-              imageLoading={index < 4 ? "eager" : "lazy"}
-            />
-          ))}
-        </div>
-      )}
-
-      <Pagination
-        page={meta.page}
-        totalPages={meta.totalPages}
-        buildHref={buildHref}
+      <InfiniteProductGrid
+        key={queryKey}
+        initial={productList}
+        query={query}
+        countLabel={tn("catalog.results", meta.totalItems)}
+        emptyMessage={emptyMessage ?? t("catalog.noMatch")}
       />
 
+      <noscript>
+        <Pagination page={meta.page} totalPages={meta.totalPages} buildHref={buildHref} />
+      </noscript>
+
       {source === "demo" && (
-        <p className="mt-6 text-xs text-muted-foreground">
-          {t("catalog.demoProducts")}
-        </p>
+        <p className="mt-6 text-xs text-muted-foreground">{t("catalog.demoProducts")}</p>
       )}
     </>
   );

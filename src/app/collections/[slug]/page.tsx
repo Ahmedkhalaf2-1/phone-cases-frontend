@@ -113,6 +113,7 @@ export default async function CollectionPage({
 
           <ProductListing
             productList={productList}
+            query={{ ...query, collection: collection.slug, page: undefined }}
             buildHref={pageHrefBuilder(basePath, query)}
             emptyMessage={t("catalog.noMatchCollection", { name: collection.name })}
           />

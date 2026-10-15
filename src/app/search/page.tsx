@@ -71,6 +71,7 @@ export default async function SearchPage({
 
           <ProductListing
             productList={productList}
+            query={{ ...params, page: undefined }}
             buildHref={pageHrefBuilder("/search", params)}
           />
         </div>
