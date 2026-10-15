@@ -10,6 +10,7 @@ import { useCart } from "@/lib/cart/CartProvider";
 import { liveCartClient } from "@/lib/cart/live-cart-client";
 import type { PublicVariant } from "@/lib/api/types";
 import { CaseMockup, useCaseMockup } from "@/components/customize/CaseMockup";
+import { OTHER_PHONE, customPhoneNote, fallbackVariants } from "@/lib/custom-phone";
 import { normalizeImageFile } from "@/lib/image-normalize";
 import type { CustomDesign } from "@/lib/cart/types";
 
@@ -123,21 +124,32 @@ export function CustomizeStudio({
     return [...seen.values()];
   }, [variants, brandSlug]);
 
+  // A phone that isn't listed: the order attaches to the cheapest in-stock
+  // variant per case type, and the typed brand/model goes in the item note.
+  const [customBrand, setCustomBrand] = useState("");
+  const [customModel, setCustomModel] = useState("");
+  const isCustomPhone = brandSlug === OTHER_PHONE || modelSlug === OTHER_PHONE;
+  const customDetailsDone = customBrand.trim().length > 0 && customModel.trim().length > 0;
+  const customVariants = useMemo(() => fallbackVariants(variants), [variants]);
+
   const caseOptions = useMemo(
-    () => variants.filter((v) => v.phoneModel?.slug === modelSlug),
-    [variants, modelSlug],
+    () => (isCustomPhone ? customVariants : variants.filter((v) => v.phoneModel?.slug === modelSlug)),
+    [variants, modelSlug, isCustomPhone, customVariants],
   );
 
   const variant =
-    caseOptions.length === 1
-      ? caseOptions[0]
-      : caseOptions.find((v) => (v.caseType?.slug ?? "") === caseTypeSlug);
+    isCustomPhone && !customDetailsDone
+      ? undefined
+      : caseOptions.length === 1
+        ? caseOptions[0]
+        : caseOptions.find((v) => (v.caseType?.slug ?? "") === caseTypeSlug);
 
   // Model-specific case photo when one exists (e.g. iPhone 17 Pro Max).
   const { mockup, isLoading: isMockupLoading } = useCaseMockup(
-    variant?.phoneModel?.slug ?? (modelSlug || undefined),
-    variant?.phoneModel?.brand.slug ?? (brandSlug || undefined),
+    isCustomPhone ? undefined : (variant?.phoneModel?.slug ?? (modelSlug || undefined)),
+    isCustomPhone ? undefined : (variant?.phoneModel?.brand.slug ?? (brandSlug || undefined)),
   );
+  const phoneName = isCustomPhone ? `${customBrand.trim()} ${customModel.trim()}`.trim() : variant?.phoneModel?.name;
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -267,7 +279,7 @@ export function CustomizeStudio({
   function onVariantChanged(next: PublicVariant | undefined) {
     if (!design || !next || next.id === design.variantId) return;
     if (lastFile) {
-      setNotice(t("customize.notices.placingOn", { model: next.phoneModel?.name ?? t("customize.notices.newModel") }));
+      setNotice(t("customize.notices.placingOn", { model: phoneName ?? next.phoneModel?.name ?? t("customize.notices.newModel") }));
       void upload(lastFile, next);
     } else {
       setDesign(null);
@@ -279,6 +291,12 @@ export function CustomizeStudio({
   }
 
   function resolve(brand: string, model: string, caseType: string) {
+    if (brand === OTHER_PHONE || model === OTHER_PHONE) {
+      if (!customDetailsDone) return undefined;
+      return customVariants.length === 1
+        ? customVariants[0]
+        : customVariants.find((v) => (v.caseType?.slug ?? "") === caseType);
+    }
     const options = variants.filter((v) => v.phoneModel?.brand.slug === brand && v.phoneModel?.slug === model);
     return options.length === 1 ? options[0] : options.find((v) => (v.caseType?.slug ?? "") === caseType);
   }
@@ -288,7 +306,12 @@ export function CustomizeStudio({
     setPhase("adding");
     setError(null);
     try {
-      await addItem(variant.id, quantity, note.trim() || undefined, design.id);
+      await addItem(
+        variant.id,
+        quantity,
+        isCustomPhone ? customPhoneNote(customBrand, customModel, note) : note.trim() || undefined,
+        design.id,
+      );
       writeStored(productSlug, null);
       setPhase("added");
     } catch (err) {
@@ -381,12 +404,12 @@ export function CustomizeStudio({
           <p className="mt-2 px-1 text-xs text-muted-foreground">
             {design && !lastFile
               ? t("customize.savedHint")
-              : t("customize.centerPrinted", { model: variant?.phoneModel?.name ?? t("customize.phoneFallback") })}
+              : t("customize.centerPrinted", { model: phoneName ?? t("customize.phoneFallback") })}
           </p>
         ) : (
           previewUrl && (
             <p className="mt-2 px-1 text-xs text-muted-foreground">
-              {t("customize.standardPreview", { model: variant?.phoneModel?.name ?? t("customize.phoneFallback") })}
+              {t("customize.standardPreview", { model: phoneName ?? t("customize.phoneFallback") })}
             </p>
           )
         )}
@@ -405,8 +428,9 @@ export function CustomizeStudio({
                 value={brandSlug}
                 disabled={busy}
                 onChange={(e) => {
-                  setBrandSlug(e.target.value);
-                  setModelSlug("");
+                  const next = e.target.value;
+                  setBrandSlug(next);
+                  setModelSlug(next === OTHER_PHONE ? OTHER_PHONE : "");
                   setCaseTypeSlug("");
                 }}
                 className={selectClass}
@@ -417,6 +441,7 @@ export function CustomizeStudio({
                     {b.name}
                   </option>
                 ))}
+                <option value={OTHER_PHONE}>{t("customize.otherPhone")}</option>
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -440,9 +465,45 @@ export function CustomizeStudio({
                     {m.name}
                   </option>
                 ))}
+                <option value={OTHER_PHONE}>{t("customize.otherPhone")}</option>
               </select>
             </div>
           </div>
+          {isCustomPhone && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <p className="text-xs text-muted-foreground sm:col-span-2">{t("customize.customHint")}</p>
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+                {t("customize.customBrand")}
+                <input
+                  type="text"
+                  dir="auto"
+                  maxLength={60}
+                  value={customBrand}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setCustomBrand(e.target.value);
+                  }}
+                  onBlur={() => onVariantChanged(resolve(brandSlug, modelSlug, caseTypeSlug))}
+                  placeholder={t("customize.customBrandPlaceholder")}
+                  className={selectClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+                {t("customize.customModel")}
+                <input
+                  type="text"
+                  dir="auto"
+                  maxLength={60}
+                  value={customModel}
+                  disabled={busy}
+                  onChange={(e) => setCustomModel(e.target.value)}
+                  onBlur={() => onVariantChanged(resolve(brandSlug, modelSlug, caseTypeSlug))}
+                  placeholder={t("customize.customModelPlaceholder")}
+                  className={selectClass}
+                />
+              </label>
+            </div>
+          )}
           {caseOptions.length > 1 && (
             <fieldset className="mt-4">
               <legend className="text-sm font-medium text-ink">{t("customize.caseType")}</legend>

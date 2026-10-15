@@ -7,6 +7,7 @@ import { useFormatPrice } from "@/i18n/useFormatPrice";
 import { useCart } from "@/lib/cart/CartProvider";
 import type { PhoneBrand, PublicVariant } from "@/lib/api/types";
 import { Spinner } from "@/components/ui/Spinner";
+import { OTHER_PHONE, customPhoneNote, fallbackVariants } from "@/lib/custom-phone";
 
 export function VariantPicker({
   variants,
@@ -68,8 +69,16 @@ export function VariantPicker({
   }, [variants]);
 
   const [selectedModelSlug, setSelectedModelSlug] = useState("");
+  const [customBrand, setCustomBrand] = useState("");
+  const [customModel, setCustomModel] = useState("");
+  const isCustomPhone = selectedModelSlug === OTHER_PHONE || selectedBrandSlug === OTHER_PHONE;
+  const customDetailsDone = customBrand.trim().length > 0 && customModel.trim().length > 0;
+  const customVariants = useMemo(() => fallbackVariants(variants), [variants]);
 
   const caseTypesForModel = useMemo(() => {
+    if (isCustomPhone) {
+      return customVariants.flatMap((v) => (v.caseType ? [v.caseType] : []));
+    }
     if (!selectedModelSlug) return [];
     const seen = new Map<string, PublicVariant["caseType"]>();
     for (const variant of variants) {
@@ -78,7 +87,7 @@ export function VariantPicker({
       }
     }
     return Array.from(seen.values());
-  }, [variants, selectedModelSlug]);
+  }, [variants, selectedModelSlug, isCustomPhone, customVariants]);
 
   const [selectedCaseTypeSlug, setSelectedCaseTypeSlug] = useState("");
 
@@ -91,11 +100,16 @@ export function VariantPicker({
   const isSelectionComplete =
     isAccessory ||
     (Boolean(selectedModelSlug) &&
+      (!isCustomPhone || customDetailsDone) &&
       (caseTypesForModel.length === 0 || Boolean(activeCaseTypeSlug)));
 
   const selectedVariant = isAccessory
     ? variants[0]
-    : isSelectionComplete
+    : isSelectionComplete && isCustomPhone
+      ? customVariants.find(
+          (v) => caseTypesForModel.length === 0 || v.caseType?.slug === activeCaseTypeSlug,
+        )
+      : isSelectionComplete
       ? variants.find(
           (variant) =>
             variant.phoneModel?.slug === selectedModelSlug &&
@@ -152,7 +166,8 @@ export function VariantPicker({
   const showModelStep =
     !isAccessory && (!hasBrandPicker || Boolean(selectedBrandSlug));
   const showCaseStep =
-    !isAccessory && allCaseTypes.length > 0 && Boolean(selectedModelSlug);
+    !isAccessory && allCaseTypes.length > 0 && Boolean(selectedModelSlug) &&
+    (!isCustomPhone || customDetailsDone);
   const showPurchase = isSelectionComplete;
   const mobileOnlyWhen = (show: boolean) => (show ? "" : "max-sm:hidden");
   // The step the customer should act on next gets a stronger outline.
@@ -160,6 +175,8 @@ export function VariantPicker({
     ? "brand"
     : !isAccessory && !selectedModelSlug
       ? "model"
+      : isCustomPhone && !customDetailsDone
+        ? "custom"
       : showCaseStep && !activeCaseTypeSlug
         ? "case"
         : null;
@@ -195,6 +212,16 @@ export function VariantPicker({
               const brandSlug = event.target.value;
               setSelectedBrandSlug(brandSlug);
               // Drop a model/case type that no longer belongs to this brand.
+              if (brandSlug === OTHER_PHONE) {
+                setSelectedModelSlug(OTHER_PHONE);
+                setSelectedCaseTypeSlug("");
+                return;
+              }
+              if (selectedModelSlug === OTHER_PHONE) {
+                setSelectedModelSlug("");
+                setSelectedCaseTypeSlug("");
+                return;
+              }
               const stillValid = models.some(
                 (model) =>
                   model?.slug === selectedModelSlug &&
@@ -213,6 +240,7 @@ export function VariantPicker({
                 {brand.name}
               </option>
             ))}
+            <option value={OTHER_PHONE}>{t("product.otherPhone")}</option>
           </select>
         </div>
       )}
@@ -244,11 +272,42 @@ export function VariantPicker({
                 </option>
               ) : null,
             )}
+            <option value={OTHER_PHONE}>{t("product.otherPhone")}</option>
           </select>
         </div>
       )}
 
       </div>
+
+      {!isAccessory && isCustomPhone && (
+        <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3 sm:order-1">
+          <p className="text-xs text-muted-foreground">{t("product.customHint")}</p>
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            {t("product.customBrand")}
+            <input
+              type="text"
+              dir="auto"
+              maxLength={60}
+              value={customBrand}
+              onChange={(e) => setCustomBrand(e.target.value)}
+              placeholder={t("product.customBrandPlaceholder")}
+              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+            {t("product.customModel")}
+            <input
+              type="text"
+              dir="auto"
+              maxLength={60}
+              value={customModel}
+              onChange={(e) => setCustomModel(e.target.value)}
+              placeholder={t("product.customModelPlaceholder")}
+              className="w-full rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-normal text-ink max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            />
+          </label>
+        </div>
+      )}
 
       {!isAccessory && allCaseTypes.length > 0 && (
         <div className={`flex flex-col gap-1.5 sm:order-2 ${mobileOnlyWhen(showCaseStep)} ${stepIn}`}>
@@ -261,7 +320,7 @@ export function VariantPicker({
           <select
             id={caseTypeId}
             data-active={activeStep === "case"}
-            disabled={!selectedModelSlug}
+            disabled={!selectedModelSlug || (isCustomPhone && !customDetailsDone)}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
             className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
@@ -379,7 +438,9 @@ export function VariantPicker({
             await addItem(
               selectedVariant.id,
               quantity,
-              itemNote.trim() || undefined,
+              isCustomPhone
+                ? customPhoneNote(customBrand, customModel, itemNote)
+                : itemNote.trim() || undefined,
             );
             setStatus("added");
           } catch {
