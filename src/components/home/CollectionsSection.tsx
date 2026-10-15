@@ -24,7 +24,7 @@ export async function CollectionsSection({
         </h2>
         <Link
           href="/collections"
-          className="hidden shrink-0 items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:inline-flex"
+          className="hidden shrink-0 items-center gap-2 rounded-pill bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-ink/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:inline-flex"
         >
           {t("home.viewAllCollections")} <span aria-hidden className="rtl:-scale-x-100">→</span>
         </Link>
@@ -58,7 +58,7 @@ export async function CollectionsSection({
 
       <Link
         href="/collections"
-        className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-ink underline underline-offset-4 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent sm:hidden"
+        className="mt-6 inline-flex items-center gap-2 rounded-pill bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-ink/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:hidden"
       >
         {t("home.viewAllCollections")} <span aria-hidden className="rtl:-scale-x-100">→</span>
       </Link>

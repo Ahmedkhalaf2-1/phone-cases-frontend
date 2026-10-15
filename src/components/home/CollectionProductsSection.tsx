@@ -58,7 +58,7 @@ export async function CollectionProductsSection({
         </div>
         <Link
           href={href}
-          className="group inline-flex shrink-0 items-center gap-1.5 rounded-pill border border-border bg-surface px-4 py-2 text-xs font-medium tracking-tight text-ink shadow-soft transition-colors hover:border-ink hover:bg-ink hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-sm"
+          className="group inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-ink px-4 py-2 text-xs font-medium tracking-tight text-white transition-colors hover:bg-ink/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:text-sm"
         >
           {t("home.viewAll")}
           <span
