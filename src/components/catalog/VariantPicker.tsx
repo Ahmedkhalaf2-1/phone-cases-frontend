@@ -189,7 +189,7 @@ export function VariantPicker({
         : null;
   const activeRing = (step: string) =>
     activeStep === step
-      ? "max-sm:border-ink max-sm:font-semibold"
+      ? "max-sm:font-semibold"
       : "";
   const stepIn =
     "max-sm:animate-[sf-message-in_var(--sf-dur-normal)_var(--sf-ease)_both]";
@@ -239,7 +239,7 @@ export function VariantPicker({
                 setSelectedCaseTypeSlug("");
               }
             }}
-            className={`sf-select w-full min-h-11 rounded-pill border border-ink bg-ink px-3 py-2.5 text-base text-white ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
+            className={`sf-select w-full min-h-11 rounded-pill border border-transparent bg-ink px-3 py-2.5 text-base text-white ${activeRing("brand")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
           >
             <option value="">{t("product.brandPlaceholder")}</option>
             {brands.map((brand) => (
@@ -268,7 +268,7 @@ export function VariantPicker({
               setSelectedModelSlug(event.target.value);
               setSelectedCaseTypeSlug("");
             }}
-            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base max-sm:border-ink max-sm:bg-ink max-sm:text-white ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
+            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base max-sm:border-transparent max-sm:bg-ink max-sm:text-white ${activeRing("model")} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
           >
             <option value="">{t("product.selectModel")}</option>
             {modelsForBrand.map((model) =>
@@ -332,7 +332,7 @@ export function VariantPicker({
             disabled={!selectedModelSlug || (isCustomPhone && !customDetailsDone)}
             value={activeCaseTypeSlug}
             onChange={(event) => setSelectedCaseTypeSlug(event.target.value)}
-            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base max-sm:border-ink max-sm:bg-ink max-sm:text-white ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
+            className={`sf-select w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2.5 text-sm text-ink max-sm:min-h-11 max-sm:max-w-none max-sm:px-3 max-sm:text-base max-sm:border-transparent max-sm:bg-ink max-sm:text-white ${activeRing("case")} disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`}
           >
             <option value="">
               {!selectedModelSlug
@@ -392,7 +392,7 @@ export function VariantPicker({
       )}
 
       {bundleNote && (
-        <p className={`rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink max-sm:bg-ink max-sm:text-white sm:order-5 max-sm:py-1.5 max-sm:text-xs max-sm:leading-4 ${mobileOnlyWhen(showPurchase)}`}>
+        <p className={`rounded-xl bg-surface px-3 py-2 text-[13px] leading-5 text-ink sm:order-5 max-sm:py-1.5 max-sm:text-xs max-sm:leading-4 ${mobileOnlyWhen(showPurchase)}`}>
           {bundleNote}
         </p>
       )}
@@ -520,7 +520,7 @@ export function VariantPicker({
           value={itemNote}
           onChange={(e) => setItemNote(e.target.value)}
           placeholder={t("product.notePlaceholder")}
-          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 max-sm:border-ink max-sm:bg-ink max-sm:text-white max-sm:placeholder:text-white/60 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink resize-y"
+          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink resize-y"
         />
         <div className={`flex justify-end max-w-xs max-sm:max-w-none ${itemNote.length === 0 ? "max-sm:hidden" : ""}`}>
           <span className="text-[11px] text-muted-foreground">
