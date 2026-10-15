@@ -88,7 +88,7 @@ export function PurchaseAssurance({ className = "" }: { className?: string }) {
               strokeWidth={1.6}
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="mt-0.5 size-[18px] shrink-0 text-accent"
+              className="mt-0.5 size-[18px] shrink-0 text-ink"
             >
               <path d={item.icon} />
             </svg>

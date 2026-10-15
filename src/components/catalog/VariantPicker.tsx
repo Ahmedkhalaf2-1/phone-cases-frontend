@@ -392,7 +392,7 @@ export function VariantPicker({
       )}
 
       {bundleNote && (
-        <p className={`rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink sm:order-5 max-sm:py-1.5 max-sm:text-xs max-sm:leading-4 ${mobileOnlyWhen(showPurchase)}`}>
+        <p className={`rounded-xl bg-accent-wash px-3 py-2 text-[13px] leading-5 text-ink max-sm:bg-ink max-sm:text-white sm:order-5 max-sm:py-1.5 max-sm:text-xs max-sm:leading-4 ${mobileOnlyWhen(showPurchase)}`}>
           {bundleNote}
         </p>
       )}
@@ -468,7 +468,7 @@ export function VariantPicker({
             : undefined
         }
         aria-busy={status === "adding"}
-        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 max-sm:h-12 max-sm:min-h-0 max-sm:max-w-none max-sm:flex-1 rounded-pill bg-accent px-6 py-3.5 text-sm font-semibold tracking-tight text-accent-foreground transition-[background-color,transform] duration-[var(--sf-dur-fast)] enabled:hover:bg-accent/90 enabled:active:scale-[0.98] enabled:active:bg-accent/95 motion-reduce:transform-none disabled:cursor-not-allowed disabled:bg-accent/40 aria-busy:disabled:cursor-progress aria-busy:disabled:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        className="inline-flex min-h-13 w-full max-w-xs items-center justify-center gap-2 max-sm:h-12 max-sm:min-h-0 max-sm:max-w-none max-sm:flex-1 rounded-pill bg-accent px-6 py-3.5 text-sm font-semibold tracking-tight text-accent-foreground transition-[background-color,transform] duration-[var(--sf-dur-fast)] enabled:hover:bg-accent/90 enabled:active:scale-[0.98] enabled:active:bg-accent/95 motion-reduce:transform-none disabled:cursor-not-allowed disabled:bg-accent/40 aria-busy:disabled:cursor-progress aria-busy:disabled:bg-accent max-sm:bg-ink max-sm:text-white max-sm:enabled:hover:bg-ink/90 max-sm:enabled:active:bg-ink max-sm:disabled:bg-ink/40 max-sm:aria-busy:disabled:bg-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
       >
         {status === "adding" && <Spinner />}
         {status === "adding"
@@ -520,7 +520,7 @@ export function VariantPicker({
           value={itemNote}
           onChange={(e) => setItemNote(e.target.value)}
           placeholder={t("product.notePlaceholder")}
-          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink resize-y"
+          className="w-full max-w-xs rounded-2xl border border-border bg-surface px-4 py-3 text-sm leading-5 text-ink shadow-soft transition-colors placeholder:text-muted-foreground/70 max-sm:border-ink max-sm:bg-ink max-sm:text-white max-sm:placeholder:text-white/60 hover:border-ink/30 max-sm:max-w-none max-sm:resize-none max-sm:text-base focus-visible:border-ink focus-visible:bg-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink resize-y"
         />
         <div className={`flex justify-end max-w-xs max-sm:max-w-none ${itemNote.length === 0 ? "max-sm:hidden" : ""}`}>
           <span className="text-[11px] text-muted-foreground">
