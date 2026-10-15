@@ -473,10 +473,10 @@ export function CustomizeStudio({
             </div>
           </div>
           {isCustomPhone && (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <p className="text-xs text-muted-foreground sm:col-span-2">{t("customize.customHint")}</p>
+            <div className="mt-3 grid gap-3 rounded-2xl bg-ink p-4 text-white sm:grid-cols-2">
+              <p className="text-xs text-white/70 sm:col-span-2">{t("customize.customHint")}</p>
               {!pickedBrand && (
-              <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-white">
                 {t("customize.customBrand")}
                 <input
                   type="text"
@@ -489,11 +489,11 @@ export function CustomizeStudio({
                   }}
                   onBlur={() => onVariantChanged(resolve(brandSlug, modelSlug, caseTypeSlug))}
                   placeholder={t("customize.customBrandPlaceholder")}
-                  className={`${selectClass} !border-ink !bg-ink !text-white placeholder:text-white/60`}
+                  className={`${selectClass} !border-white/40 !bg-ink !text-white placeholder:text-white/60`}
                 />
               </label>
               )}
-              <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-white">
                 {t("customize.customModel")}
                 <input
                   type="text"
@@ -504,7 +504,7 @@ export function CustomizeStudio({
                   onChange={(e) => setCustomModel(e.target.value)}
                   onBlur={() => onVariantChanged(resolve(brandSlug, modelSlug, caseTypeSlug))}
                   placeholder={t("customize.customModelPlaceholder")}
-                  className={`${selectClass} !border-ink !bg-ink !text-white placeholder:text-white/60`}
+                  className={`${selectClass} !border-white/40 !bg-ink !text-white placeholder:text-white/60`}
                 />
               </label>
             </div>

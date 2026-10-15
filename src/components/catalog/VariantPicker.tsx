@@ -287,10 +287,10 @@ export function VariantPicker({
       </div>
 
       {!isAccessory && isCustomPhone && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3 sm:order-1">
-          <p className="text-xs text-muted-foreground">{t("product.customHint")}</p>
+        <div className="flex flex-col gap-2 rounded-2xl bg-ink p-4 text-white sm:order-1">
+          <p className="text-xs text-white/70">{t("product.customHint")}</p>
           {!pickedBrand && (
-          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+          <label className="flex flex-col gap-1 text-sm font-medium text-white">
             {t("product.customBrand")}
             <input
               type="text"
@@ -299,11 +299,11 @@ export function VariantPicker({
               value={customBrand}
               onChange={(e) => setCustomBrand(e.target.value)}
               placeholder={t("product.customBrandPlaceholder")}
-              className="w-full rounded-pill border border-ink bg-ink px-4 py-2.5 text-sm font-normal text-white placeholder:text-white/60 max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className="w-full rounded-pill border border-white/40 bg-ink px-4 py-2.5 text-sm font-normal text-white placeholder:text-white/60 max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             />
           </label>
           )}
-          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
+          <label className="flex flex-col gap-1 text-sm font-medium text-white">
             {t("product.customModel")}
             <input
               type="text"
@@ -312,7 +312,7 @@ export function VariantPicker({
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
               placeholder={t("product.customModelPlaceholder")}
-              className="w-full rounded-pill border border-ink bg-ink px-4 py-2.5 text-sm font-normal text-white placeholder:text-white/60 max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className="w-full rounded-pill border border-white/40 bg-ink px-4 py-2.5 text-sm font-normal text-white placeholder:text-white/60 max-sm:min-h-11 max-sm:text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             />
           </label>
         </div>
