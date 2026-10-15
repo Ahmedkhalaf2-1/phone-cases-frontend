@@ -83,7 +83,7 @@ export function SiteSidebar() {
         }`}
       >
         <BagIcon />
-        <CartCountBadge className="absolute end-1 top-1 flex size-4 items-center justify-center rounded-pill bg-accent text-[10px] font-medium text-white shadow-accent" />
+        <CartCountBadge className="absolute end-1 top-1 flex size-4 items-center justify-center rounded-pill bg-accent text-[10px] font-medium text-white" />
       </Link>
     </aside>
   );

@@ -68,8 +68,7 @@ export const CASE_MOCKUPS_BY_BRAND: Record<string, CaseMockupConfig> = {
   realme: { src: "/customize/case-mockup-realme.png", maxSaturation: 60 },
   redmi: {
     src: "/customize/case-mockup-redmi.png",
-    maxSaturation: 75,
-    // The tinted camera plateau is the same colour as the back.
+    // The camera plateau is the same colour as the back.
     exclude: [{ x: 232, y: 92, width: 392, height: 456, radius: 50 }],
   },
 };
