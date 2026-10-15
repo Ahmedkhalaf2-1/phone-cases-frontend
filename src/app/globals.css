@@ -120,8 +120,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-wash: var(--accent-wash);
   --color-ink: var(--ink);
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
+  --font-display: "Thmanyah Serif Display", "Thmanyah", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Thmanyah", ui-sans-serif, system-ui, sans-serif;
   --font-gt-standard: var(--font-gt-standard);
   --font-shopify-sans: var(--font-shopify-sans);
 
@@ -149,29 +149,29 @@
   choice, not an oversight — dark mode is out of scope for this milestone.
 */
 body {
-  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-family: "Thmanyah", ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
   letter-spacing: -0.011em;
 }
 
 .font-display {
-  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-family: "Thmanyah Serif Display", "Thmanyah", ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.03em;
   font-weight: 600;
 }
 
-/* Storefront typography is Thmanyah in every language (admin keeps Inter):
-   Sans for text/numbers, Serif Display for headings and prices (.font-display).
-   The @font-face rules are in the "Arabic typography" section below. If the
-   files are missing on a server the browser falls through to Inter/system. */
-html[data-scope="store"] body {
-  font-family:
-    "Thmanyah", var(--font-body), ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro",
-    sans-serif;
-}
-html[data-scope="store"] .font-display {
-  font-family:
-    "Thmanyah Serif Display", "Thmanyah", var(--font-display), ui-sans-serif, system-ui,
-    "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
+/* Thmanyah is the only font site-wide (storefront and admin). Sans for
+   text/numbers, Serif Display for headings and prices (.font-display).
+   Form controls and monospace utilities are forced onto it too. */
+button,
+input,
+select,
+textarea,
+.font-sans,
+.font-mono,
+code,
+kbd,
+pre {
+  font-family: "Thmanyah", ui-sans-serif, system-ui, "Segoe UI", Tahoma, "Geeza Pro", sans-serif;
 }
 
 @media (prefers-reduced-motion: reduce) {

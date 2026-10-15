@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import localFont from "next/font/local";
 import { CartProvider } from "@/lib/cart/CartProvider";
 import { AppShell } from "@/components/layout/AppShell";
 import { AnnouncementBar } from "@/components/bundles/AnnouncementBar";
@@ -15,22 +14,6 @@ import { createTranslator } from "@/i18n/translate";
 import { SITE } from "@/config/site";
 import { SITE_URL } from "@/lib/env";
 import "./globals.css";
-
-// Inter (latin, variable) is self-hosted so builds never depend on reaching
-// Google Fonts. The same file backs both the display and body variables.
-const displayFont = localFont({
-  src: "./fonts/Inter-latin-variable.woff2",
-  variable: "--font-display",
-  weight: "500 600",
-  display: "swap",
-});
-
-const bodyFont = localFont({
-  src: "./fonts/Inter-latin-variable.woff2",
-  variable: "--font-body",
-  weight: "100 900",
-  display: "swap",
-});
 
 /** The admin dashboard is English-only and never follows the storefront language. */
 async function resolveLocale(): Promise<Locale> {
@@ -78,7 +61,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang={locale}
       dir={DIRECTION[locale]}
       data-scope={scope}
-      className={`${displayFont.variable} ${bodyFont.variable} h-full`}
+      className="h-full"
     >
       <body className="min-h-full overflow-x-hidden bg-background text-foreground antialiased">
         <I18nProvider locale={locale} messages={messages}>
