@@ -24,6 +24,8 @@ export interface PublicProductSummary {
   description: string | null;
   currency: string;
   effectivePriceFrom: number | null;
+  /** Crossed-out "was" price for effectivePriceFrom when it's on sale. Older backends omit it. */
+  compareAtPriceFrom?: number | null;
   isAvailable: boolean;
   primaryImage: ApiImage | null;
   collections: CollectionRef[];

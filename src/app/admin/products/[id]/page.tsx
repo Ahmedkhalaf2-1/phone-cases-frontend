@@ -37,6 +37,8 @@ const SECTIONS = [
   { id: "inventory", label: "Inventory" },
 ] as const;
 
+type ModelScope = "all" | "brands" | "one";
+
 interface VariantFormState {
   sku: string;
   price: number | null;
@@ -96,10 +98,11 @@ export default function AdminProductDetailPage({
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
   const [editVariantForm, setEditVariantForm] = useState<VariantFormState>(EMPTY_VARIANT_FORM);
 
-  // Bulk generation state for Add Variant
-  const [applyToAllModels, setApplyToAllModels] = useState(false);
-  const [applyToAllCaseTypes, setApplyToAllCaseTypes] = useState(false);
-  const [modelBrandFilter, setModelBrandFilter] = useState<string>("ALL");
+  // Which phone models / case types "Add variants" creates combinations for.
+  const [modelScope, setModelScope] = useState<ModelScope>("all");
+  const [scopeBrandSlugs, setScopeBrandSlugs] = useState<string[]>([]);
+  /** null = every case type (the default, and stays "every" as new ones are added). */
+  const [scopeCaseTypeIds, setScopeCaseTypeIds] = useState<string[] | null>(null);
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Filter state for Variants table
@@ -169,28 +172,16 @@ export default function AdminProductDetailPage({
   }, [phoneModels]);
 
   const targetModels: (PhoneModel | null)[] = useMemo(() => {
-    if (applyToAllModels) {
-      return modelBrandFilter === "ALL"
-        ? phoneModels
-        : phoneModels.filter((m) => m.brand.slug === modelBrandFilter);
-    }
-    if (newVariant.phoneModelId) {
-      const found = phoneModels.find((m) => m.id === newVariant.phoneModelId);
-      return found ? [found] : [null];
-    }
-    return [null];
-  }, [applyToAllModels, modelBrandFilter, phoneModels, newVariant.phoneModelId]);
+    if (modelScope === "all") return phoneModels;
+    if (modelScope === "brands") return phoneModels.filter((m) => scopeBrandSlugs.includes(m.brand.slug));
+    const found = phoneModels.find((m) => m.id === newVariant.phoneModelId);
+    return [found ?? null];
+  }, [modelScope, scopeBrandSlugs, phoneModels, newVariant.phoneModelId]);
 
   const targetCaseTypes: (CaseType | null)[] = useMemo(() => {
-    if (applyToAllCaseTypes) {
-      return caseTypes;
-    }
-    if (newVariant.caseTypeId) {
-      const found = caseTypes.find((c) => c.id === newVariant.caseTypeId);
-      return found ? [found] : [null];
-    }
-    return [null];
-  }, [applyToAllCaseTypes, caseTypes, newVariant.caseTypeId]);
+    const picked = scopeCaseTypeIds === null ? caseTypes : caseTypes.filter((c) => scopeCaseTypeIds.includes(c.id));
+    return picked.length > 0 ? picked : [null];
+  }, [scopeCaseTypeIds, caseTypes]);
 
   const existingCombos = useMemo(() => {
     const set = new Set<string>();
@@ -217,7 +208,6 @@ export default function AdminProductDetailPage({
     return list;
   }, [targetModels, targetCaseTypes, existingCombos]);
 
-  const isBulkMode = applyToAllModels || applyToAllCaseTypes;
   const totalCombosCount = targetModels.length * targetCaseTypes.length;
   const skippedCombosCount = totalCombosCount - pendingCombos.length;
 
@@ -267,7 +257,8 @@ export default function AdminProductDetailPage({
       ...personalization,
       sku: form.sku,
       price: form.price ?? 0,
-      compareAtPrice: form.compareAtPrice ?? undefined,
+      // null clears an existing "was" price (ends the sale).
+      compareAtPrice: form.compareAtPrice ?? (original?.compareAtPrice != null ? null : undefined),
       phoneModelId: form.phoneModelId || undefined,
       caseTypeId: form.caseTypeId || undefined,
       isActive: form.isActive,
@@ -294,30 +285,8 @@ export default function AdminProductDetailPage({
       setError("Enter the variant's price.");
       return;
     }
-
-    if (!isBulkMode) {
-      if (!newVariant.sku.trim()) {
-        setError("Enter a SKU for this variant.");
-        return;
-      }
-      setIsBusy(true);
-      setError(null);
-      try {
-        await authorizedFetch((token) =>
-          adminClient.createVariant(token, id, variantInputFromForm(newVariant)),
-        );
-        setNewVariant((prev) => ({
-          ...EMPTY_VARIANT_FORM,
-          price: product.basePrice ?? null,
-          isUnlimitedStock: true,
-        }));
-        await loadProduct();
-        flash("Variant added.");
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Could not add variant.");
-      } finally {
-        setIsBusy(false);
-      }
+    if (newVariant.compareAtPrice !== null && newVariant.compareAtPrice <= newVariant.price) {
+      setError("The old (“was”) price must be higher than the selling price.");
       return;
     }
 
@@ -382,12 +351,9 @@ export default function AdminProductDetailPage({
     await loadProduct();
 
     if (createdCount > 0 && failedCount === 0) {
-      flash(`Successfully created all ${createdCount} variants.`);
-      setNewVariant((prev) => ({
-        ...EMPTY_VARIANT_FORM,
-        price: product.basePrice ?? null,
-        isUnlimitedStock: true,
-      }));
+      flash(createdCount === 1 ? "Variant added." : `Created ${createdCount} variants.`);
+      // Keep price / was / stock settings so the next batch can reuse them.
+      setNewVariant((prev) => ({ ...prev, sku: "", phoneModelId: "" }));
     } else if (createdCount > 0 && failedCount > 0) {
       flash(`Created ${createdCount} variants (${failedCount} failed: ${errors.join(", ")}).`);
     } else {
@@ -912,31 +878,10 @@ export default function AdminProductDetailPage({
         description="One variant per phone model / case type this design is sold for."
       >
         {product.variants.length === 0 ? (
-          <div className="mb-6 rounded-2xl border-2 border-dashed border-accent/30 bg-accent-wash/30 p-8 text-center">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-wash text-xl">
-              📱
-            </div>
-            <h3 className="mt-3 text-base font-semibold text-ink">No variants yet</h3>
-            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-              Phone cases usually sell across multiple phone models and case types. You can quickly generate variants for all phone models and case types in one click.
-            </p>
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={() => {
-                setApplyToAllModels(true);
-                setApplyToAllCaseTypes(true);
-                setNewVariant((prev) => ({
-                  ...prev,
-                  price: prev.price ?? product.basePrice,
-                  isUnlimitedStock: true,
-                }));
-              }}
-              className={`${buttonClass} mt-4 inline-flex items-center gap-2 shadow-sm`}
-            >
-              ⚡ Setup for all phone models & case types
-            </button>
-          </div>
+          <p className="mb-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+            No variants yet — customers can&apos;t buy this design until you add some. The form below is already set
+            to every phone model and case type; set a price and create them.
+          </p>
         ) : (
           <>
             {/* Table Filters & Bulk Actions */}
@@ -1022,7 +967,14 @@ export default function AdminProductDetailPage({
                           )}
                         </td>
                         <td className="p-2 font-mono text-xs text-muted-foreground">{variant.sku}</td>
-                        <td className="p-2">{formatPrice(variant.price, variant.currency)}</td>
+                        <td className="p-2">
+                          {formatPrice(variant.price, variant.currency)}
+                          {variant.compareAtPrice !== null && (
+                            <s className="ms-1.5 text-xs text-muted-foreground">
+                              {formatPrice(variant.compareAtPrice, variant.currency)}
+                            </s>
+                          )}
+                        </td>
                         <td className="p-2">
                           <input
                             type="checkbox"
@@ -1088,17 +1040,18 @@ export default function AdminProductDetailPage({
             caseTypes={caseTypes}
             stockItems={stockItems}
             productSlug={product.slug}
-            applyToAllModels={applyToAllModels}
-            setApplyToAllModels={setApplyToAllModels}
-            applyToAllCaseTypes={applyToAllCaseTypes}
-            setApplyToAllCaseTypes={setApplyToAllCaseTypes}
-            modelBrandFilter={modelBrandFilter}
-            setModelBrandFilter={setModelBrandFilter}
+            currency={product.currency}
+            modelScope={modelScope}
+            setModelScope={setModelScope}
+            scopeBrandSlugs={scopeBrandSlugs}
+            setScopeBrandSlugs={setScopeBrandSlugs}
+            scopeCaseTypeIds={scopeCaseTypeIds}
+            setScopeCaseTypeIds={setScopeCaseTypeIds}
             pendingCombosCount={pendingCombos.length}
             totalCombosCount={totalCombosCount}
             skippedCombosCount={skippedCombosCount}
-            targetModelsCount={targetModels.length}
-            targetCaseTypesCount={targetCaseTypes.length}
+            targetModelsCount={targetModels.filter(Boolean).length}
+            targetCaseTypesCount={targetCaseTypes.filter(Boolean).length}
             bulkProgress={bulkProgress}
             onSubmit={handleAddVariant}
             disabled={isBusy}
@@ -1259,6 +1212,7 @@ function PricingEditor({
   // MoneyInput keeps its own text; bump to remount after "apply to all".
   const [inputsVersion, setInputsVersion] = useState(0);
   const [allPrice, setAllPrice] = useState<number | null>(null);
+  const [allWas, setAllWas] = useState<number | null>(null);
 
   // Bulk by case type
   const [targetCaseTypeId, setTargetCaseTypeId] = useState("");
@@ -1275,6 +1229,11 @@ function PricingEditor({
     })
     .map((v) => ({ variantId: v.id, price: draft[v.id].price as number, compareAtPrice: draft[v.id].compareAtPrice }));
   const hasEmpty = variants.some((v) => draft[v.id].price === null);
+  const isWasInvalid = (d: { price: number | null; compareAtPrice: number | null }) =>
+    d.price !== null && d.compareAtPrice !== null && d.compareAtPrice <= d.price;
+  const hasInvalidWas = variants.some((v) => isWasInvalid(draft[v.id]));
+  const allWasInvalid = allPrice !== null && allWas !== null && allWas <= allPrice;
+  const onSaleCount = variants.filter((v) => draft[v.id].compareAtPrice !== null).length;
 
   const matchedCaseTypeCount = targetCaseTypeId
     ? variants.filter((v) => v.caseTypeId === targetCaseTypeId).length
@@ -1288,21 +1247,48 @@ function PricingEditor({
             Bulk price updates
           </p>
           <div className="flex flex-wrap items-end gap-2">
-            <MoneyInput label="Same price for all" minorUnits={allPrice} onChange={setAllPrice} className="w-36" />
+            <MoneyInput label="Selling price" minorUnits={allPrice} onChange={setAllPrice} className="w-36" />
+            <MoneyInput label="Old price — optional" minorUnits={allWas} onChange={setAllWas} className="w-36" />
             <button
               type="button"
-              disabled={disabled || allPrice === null}
+              disabled={disabled || allPrice === null || allWasInvalid}
               onClick={() => {
                 setDraft((prev) =>
-                  Object.fromEntries(Object.entries(prev).map(([id, d]) => [id, { ...d, price: allPrice }])),
+                  Object.fromEntries(
+                    Object.entries(prev).map(([id, d]) => [id, { ...d, price: allPrice, compareAtPrice: allWas }]),
+                  ),
                 );
                 setInputsVersion((n) => n + 1);
               }}
               className={secondaryButtonClass}
             >
-              Apply to all {variants.length}
+              {allWas !== null ? `Put all ${variants.length} on sale` : `Apply to all ${variants.length}`}
             </button>
+            {onSaleCount > 0 && (
+              <button
+                type="button"
+                disabled={disabled}
+                title="Each variant goes back to its old price and the crossed-out price disappears."
+                onClick={() => {
+                  setDraft((prev) =>
+                    Object.fromEntries(
+                      Object.entries(prev).map(([id, d]) => [
+                        id,
+                        d.compareAtPrice !== null ? { price: d.compareAtPrice, compareAtPrice: null } : d,
+                      ]),
+                    ),
+                  );
+                  setInputsVersion((n) => n + 1);
+                }}
+                className="px-2 py-2 text-sm font-semibold text-accent hover:underline disabled:opacity-50"
+              >
+                End sale on {onSaleCount}
+              </button>
+            )}
           </div>
+          {allWasInvalid && (
+            <p className="text-xs font-semibold text-red-700">The old price must be higher than the selling price.</p>
+          )}
 
           {caseTypes && caseTypes.length > 0 && (
             <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-accent/10">
@@ -1358,7 +1344,7 @@ function PricingEditor({
                 <p className="font-semibold text-ink">{labelFor(variant)}</p>
                 <p className="text-xs text-muted-foreground">
                   Now {formatPrice(variant.price, currency)}
-                  {variant.compareAtPrice !== null && ` (was ${formatPrice(variant.compareAtPrice, currency)})`}
+                  {variant.compareAtPrice !== null && ` (on sale, was ${formatPrice(variant.compareAtPrice, currency)})`}
                   {!variant.isActive && " · inactive"}
                 </p>
               </div>
@@ -1369,13 +1355,16 @@ function PricingEditor({
                 className="w-36"
               />
               <MoneyInput
-                label="Was (optional)"
+                label="Old price — optional"
                 minorUnits={d.compareAtPrice}
                 onChange={(v) =>
                   setDraft((prev) => ({ ...prev, [variant.id]: { ...prev[variant.id], compareAtPrice: v } }))
                 }
                 className="w-36"
               />
+              {isWasInvalid(d) && (
+                <p className="w-full text-xs font-semibold text-red-700">Old price must be higher than the price.</p>
+              )}
             </li>
           );
         })}
@@ -1383,7 +1372,7 @@ function PricingEditor({
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          disabled={disabled || changes.length === 0 || hasEmpty}
+          disabled={disabled || changes.length === 0 || hasEmpty || hasInvalidWas}
           onClick={() => onSave(changes)}
           className={buttonClass}
         >
@@ -1406,7 +1395,7 @@ function PricingEditor({
         )}
         {hasEmpty && <span className="text-sm text-amber-700">Every variant needs a price.</span>}
         <span className="text-xs text-muted-foreground">
-          &quot;Was&quot; shows as a crossed-out price next to the real one.
+          The old price shows crossed out next to the selling price, on the product page and product cards.
         </span>
       </div>
     </div>
@@ -1473,7 +1462,7 @@ function VariantForm({
         className="w-32"
       />
       <MoneyInput
-        label="Compare-at (optional)"
+        label="Old price — optional"
         minorUnits={form.compareAtPrice}
         onChange={(v) => setForm((f) => ({ ...f, compareAtPrice: v }))}
         className="w-32"
@@ -1567,12 +1556,13 @@ function AddVariantPanel({
   caseTypes,
   stockItems,
   productSlug,
-  applyToAllModels,
-  setApplyToAllModels,
-  applyToAllCaseTypes,
-  setApplyToAllCaseTypes,
-  modelBrandFilter,
-  setModelBrandFilter,
+  currency,
+  modelScope,
+  setModelScope,
+  scopeBrandSlugs,
+  setScopeBrandSlugs,
+  scopeCaseTypeIds,
+  setScopeCaseTypeIds,
   pendingCombosCount,
   totalCombosCount,
   skippedCombosCount,
@@ -1589,12 +1579,13 @@ function AddVariantPanel({
   caseTypes: CaseType[];
   stockItems: StockItem[];
   productSlug: string;
-  applyToAllModels: boolean;
-  setApplyToAllModels: (val: boolean) => void;
-  applyToAllCaseTypes: boolean;
-  setApplyToAllCaseTypes: (val: boolean) => void;
-  modelBrandFilter: string;
-  setModelBrandFilter: (val: string) => void;
+  currency: string;
+  modelScope: ModelScope;
+  setModelScope: (scope: ModelScope) => void;
+  scopeBrandSlugs: string[];
+  setScopeBrandSlugs: (slugs: string[]) => void;
+  scopeCaseTypeIds: string[] | null;
+  setScopeCaseTypeIds: (ids: string[] | null) => void;
   pendingCombosCount: number;
   totalCombosCount: number;
   skippedCombosCount: number;
@@ -1604,116 +1595,65 @@ function AddVariantPanel({
   onSubmit: (event: React.FormEvent) => void;
   disabled: boolean;
 }) {
-  const isBulkMode = applyToAllModels || applyToAllCaseTypes;
+  const allCaseTypesOn = scopeCaseTypeIds === null;
+  const isCaseTypeOn = (id: string) => allCaseTypesOn || scopeCaseTypeIds.includes(id);
+
+  function toggleCaseType(id: string) {
+    const current = scopeCaseTypeIds ?? caseTypes.map((c) => c.id);
+    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
+    setScopeCaseTypeIds(next.length === caseTypes.length ? null : next);
+  }
+
+  function toggleBrand(slug: string) {
+    setScopeBrandSlugs(
+      scopeBrandSlugs.includes(slug) ? scopeBrandSlugs.filter((x) => x !== slug) : [...scopeBrandSlugs, slug],
+    );
+  }
+
+  const wasInvalid = form.price !== null && form.compareAtPrice !== null && form.compareAtPrice <= form.price;
+  const discountPercent =
+    form.price !== null && form.compareAtPrice !== null && !wasInvalid
+      ? Math.round(((form.compareAtPrice - form.price) / form.compareAtPrice) * 100)
+      : null;
+  const nothingPicked = modelScope === "brands" && scopeBrandSlugs.length === 0;
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-background p-4 shadow-sm">
-      {/* Toggles bar */}
-      <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl bg-accent-wash/60 p-3 text-sm">
-        <span className="font-semibold text-ink">Scope:</span>
-        <label className="flex items-center gap-2 cursor-pointer font-medium text-ink select-none">
-          <input
-            type="checkbox"
-            checked={applyToAllModels}
+    <form onSubmit={onSubmit} className="overflow-hidden rounded-2xl border border-border bg-background">
+      <div className="flex flex-col divide-y divide-border">
+        {/* 1. Phone models */}
+        <PanelStep n={1} title="Phone models" summary={modelScope === "one" ? undefined : `${targetModelsCount} selected`}>
+          <Segmented
+            value={modelScope}
+            onChange={setModelScope}
             disabled={disabled}
-            onChange={(e) => setApplyToAllModels(e.target.checked)}
-            className="size-4 accent-accent"
+            options={[
+              { value: "all", label: `All models (${phoneModels.length})` },
+              { value: "brands", label: "Pick brands" },
+              { value: "one", label: "One model" },
+            ]}
           />
-          Apply to all phone models ({phoneModels.length})
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer font-medium text-ink select-none">
-          <input
-            type="checkbox"
-            checked={applyToAllCaseTypes}
-            disabled={disabled}
-            onChange={(e) => setApplyToAllCaseTypes(e.target.checked)}
-            className="size-4 accent-accent"
-          />
-          Apply to all case types ({caseTypes.length})
-        </label>
-        <div className="ms-auto flex items-center gap-3">
-          {!applyToAllModels || !applyToAllCaseTypes ? (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => {
-                setApplyToAllModels(true);
-                setApplyToAllCaseTypes(true);
-                setForm((f) => ({ ...f, isUnlimitedStock: true }));
-              }}
-              className="text-xs font-semibold text-accent hover:underline"
-            >
-              ⚡ Select all models & case types
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => {
-                setApplyToAllModels(false);
-                setApplyToAllCaseTypes(false);
-              }}
-              className="text-xs font-medium text-muted-foreground hover:text-ink"
-            >
-              Single variant mode
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Bulk Preview Card */}
-      {isBulkMode && (
-        <div className="mb-4 rounded-xl border border-accent/20 bg-accent-wash/40 p-3.5 text-sm text-ink">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-semibold text-ink">
-              ⚡ Bulk generation: {targetModelsCount} phone {targetModelsCount === 1 ? "model" : "models"} × {targetCaseTypesCount} case {targetCaseTypesCount === 1 ? "type" : "types"}
-            </span>
-            <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-white">
-              {pendingCombosCount} new {pendingCombosCount === 1 ? "variant" : "variants"} to create
-            </span>
-          </div>
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {skippedCombosCount > 0 ? (
-              <>
-                <strong className="text-ink">{pendingCombosCount}</strong> variants will be created.{" "}
-                <span className="text-amber-700 font-medium">{skippedCombosCount} existing combinations will be skipped</span> to avoid duplicates.
-              </>
-            ) : (
-              <>All {pendingCombosCount} combinations are new and will be generated.</>
-            )}
-            {" "}Sample SKU: <code className="rounded bg-background px-1.5 py-0.5 font-mono text-[11px] text-ink font-semibold">{(form.sku.trim() || productSlug).toUpperCase()}-[MODEL]-[CASETYPE]</code>
-          </p>
-        </div>
-      )}
-
-      {/* Inputs */}
-      <div className="flex flex-wrap items-end gap-3">
-        {/* Phone model selection / Brand filter */}
-        {applyToAllModels ? (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground">Phone models brand</label>
-            <select
-              value={modelBrandFilter}
-              disabled={disabled}
-              onChange={(e) => setModelBrandFilter(e.target.value)}
-              className={`w-48 ${inputClass}`}
-            >
-              <option value="ALL">All brands ({phoneModels.length} models)</option>
-              {phoneBrands.map((b) => (
-                <option key={b.slug} value={b.slug}>
-                  {b.name} only ({phoneModels.filter((m) => m.brand.slug === b.slug).length})
-                </option>
+          {modelScope === "brands" && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {phoneBrands.map((brand) => (
+                <Chip
+                  key={brand.slug}
+                  on={scopeBrandSlugs.includes(brand.slug)}
+                  disabled={disabled}
+                  onClick={() => toggleBrand(brand.slug)}
+                >
+                  {brand.name}
+                  <span className="opacity-60">{phoneModels.filter((m) => m.brand.slug === brand.slug).length}</span>
+                </Chip>
               ))}
-            </select>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground">Phone model</label>
+            </div>
+          )}
+          {modelScope === "one" && (
             <select
+              aria-label="Phone model"
               value={form.phoneModelId}
               disabled={disabled}
               onChange={(e) => setForm((f) => ({ ...f, phoneModelId: e.target.value }))}
-              className={`w-48 ${inputClass}`}
+              className={`mt-3 w-full max-w-xs ${inputClass}`}
             >
               <option value="">No phone model (accessory)</option>
               {phoneBrands.map((brand) => (
@@ -1728,152 +1668,293 @@ function AddVariantPanel({
                 </optgroup>
               ))}
             </select>
-          </div>
-        )}
+          )}
+        </PanelStep>
 
-        {/* Case type selection */}
-        {applyToAllCaseTypes ? (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground">Case type</label>
-            <div className={`flex h-[38px] w-48 items-center rounded-pill border border-border bg-accent-wash/30 px-4 text-xs font-semibold text-ink`}>
-              All case types ({caseTypes.length})
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground">Case type</label>
-            <select
-              value={form.caseTypeId}
+        {/* 2. Case types */}
+        <PanelStep n={2} title="Case types" summary={`${targetCaseTypesCount} selected`}>
+          <div className="flex flex-wrap gap-2">
+            <Chip
+              on={allCaseTypesOn}
               disabled={disabled}
-              onChange={(e) => setForm((f) => ({ ...f, caseTypeId: e.target.value }))}
-              className={`w-48 ${inputClass}`}
+              onClick={() => setScopeCaseTypeIds(allCaseTypesOn ? [] : null)}
             >
-              <option value="">No case type</option>
-              {caseTypes.map((caseType) => (
-                <option key={caseType.id} value={caseType.id}>
-                  {caseType.name}
-                </option>
-              ))}
-            </select>
+              All case types
+            </Chip>
+            <span aria-hidden className="mx-1 w-px self-stretch bg-border" />
+            {caseTypes.map((caseType) => (
+              <Chip
+                key={caseType.id}
+                on={isCaseTypeOn(caseType.id)}
+                disabled={disabled}
+                onClick={() => toggleCaseType(caseType.id)}
+              >
+                {caseType.name}
+              </Chip>
+            ))}
           </div>
-        )}
+          {targetCaseTypesCount === 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">None picked — variants get no case type.</p>
+          )}
+        </PanelStep>
 
-        {/* SKU or Prefix */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-muted-foreground">
-            {isBulkMode ? "SKU Prefix (optional)" : "SKU"}
-          </label>
-          <input
-            required={!isBulkMode}
-            placeholder={isBulkMode ? `Defaults to: ${productSlug.toUpperCase()}` : "SKU (e.g. IPH15-CLR)"}
-            value={form.sku}
-            disabled={disabled}
-            onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-            className={`w-44 ${inputClass}`}
-          />
-        </div>
-
-        {/* Price & CompareAt */}
-        <MoneyInput
-          label="Price"
-          minorUnits={form.price}
-          onChange={(v) => setForm((f) => ({ ...f, price: v }))}
-          className="w-32"
-        />
-        <MoneyInput
-          label="Was (optional)"
-          minorUnits={form.compareAtPrice}
-          onChange={(v) => setForm((f) => ({ ...f, compareAtPrice: v }))}
-          className="w-32"
-        />
-
-        {/* Stock */}
-        <label className="flex items-center gap-2 text-sm font-medium text-ink select-none pb-2">
-          <input
-            type="checkbox"
-            checked={form.isUnlimitedStock}
-            disabled={disabled}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, isUnlimitedStock: e.target.checked, stockItemId: "" }))
-            }
-            className="size-4 accent-accent"
-          />
-          Unlimited stock
-        </label>
-        {!form.isUnlimitedStock && (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground">Stock item</label>
-            <select
-              value={form.stockItemId}
-              disabled={disabled || form.isUnlimitedStock}
-              onChange={(e) => setForm((f) => ({ ...f, stockItemId: e.target.value }))}
-              className={`w-44 ${inputClass} disabled:opacity-50`}
-            >
-              <option value="">No stock item</option>
-              {stockItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.sku} ({item.onHand - item.reserved} avail)
-                </option>
-              ))}
-            </select>
+        {/* 3. Price */}
+        <PanelStep n={3} title="Price">
+          <div className="flex flex-wrap items-end gap-3">
+            <MoneyInput
+              label="Selling price"
+              minorUnits={form.price}
+              onChange={(v) => setForm((f) => ({ ...f, price: v }))}
+              className="w-40"
+            />
+            <MoneyInput
+              label="Old price — optional"
+              minorUnits={form.compareAtPrice}
+              onChange={(v) => setForm((f) => ({ ...f, compareAtPrice: v }))}
+              className="w-40"
+            />
+            <PricePreview price={form.price} was={form.compareAtPrice} currency={currency} />
           </div>
-        )}
+          <p className={`mt-2 text-xs ${wasInvalid ? "font-semibold text-red-700" : "text-muted-foreground"}`}>
+            {wasInvalid
+              ? "The old price must be higher than the selling price."
+              : discountPercent !== null
+                ? `On sale: customers see the old price crossed out (${discountPercent}% off).`
+                : "Fill in an old price to show this as a sale — e.g. old 250, selling 199."}
+          </p>
+        </PanelStep>
 
-        {/* Customization */}
-        <label className="flex items-center gap-2 text-sm font-medium text-ink select-none pb-2">
-          <input
-            type="checkbox"
-            checked={form.isPersonalizable}
-            disabled={disabled}
-            onChange={(e) => setForm((f) => ({ ...f, isPersonalizable: e.target.checked }))}
-            className="size-4 accent-accent"
-          />
-          Custom image upload
-        </label>
-        {form.isPersonalizable && (
-          <MoneyInput
-            label="Design surcharge"
-            minorUnits={form.customizationPrice}
-            onChange={(v) => setForm((f) => ({ ...f, customizationPrice: v }))}
-            className="w-32"
-          />
-        )}
+        {/* More options */}
+        <details className="group px-4 py-3 sm:px-5">
+          <summary className="cursor-pointer list-none text-sm font-semibold text-ink">
+            <span className="inline-block transition-transform group-open:rotate-90">›</span> More options
+            <span className="ms-2 font-normal text-muted-foreground">
+              {[
+                form.isUnlimitedStock ? "made to order" : "tracked stock",
+                form.isPersonalizable ? "custom image on" : null,
+                form.isActive ? null : "inactive",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </summary>
+          <div className="mt-3 flex flex-wrap items-end gap-x-5 gap-y-3">
+            <Field label="SKU prefix (optional)">
+              <input
+                placeholder={productSlug.toUpperCase()}
+                value={form.sku}
+                disabled={disabled}
+                onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                className={`w-48 ${inputClass}`}
+              />
+            </Field>
+            <label className="flex items-center gap-2 pb-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={form.isUnlimitedStock}
+                disabled={disabled}
+                onChange={(e) => setForm((f) => ({ ...f, isUnlimitedStock: e.target.checked, stockItemId: "" }))}
+                className="size-4 accent-accent"
+              />
+              Unlimited stock (made to order)
+            </label>
+            {!form.isUnlimitedStock && (
+              <Field label="Stock item">
+                <select
+                  value={form.stockItemId}
+                  disabled={disabled}
+                  onChange={(e) => setForm((f) => ({ ...f, stockItemId: e.target.value }))}
+                  className={`w-48 ${inputClass}`}
+                >
+                  <option value="">No stock item</option>
+                  {stockItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.sku} ({item.onHand - item.reserved} available)
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            <label className="flex items-center gap-2 pb-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={form.isPersonalizable}
+                disabled={disabled}
+                onChange={(e) => setForm((f) => ({ ...f, isPersonalizable: e.target.checked }))}
+                className="size-4 accent-accent"
+              />
+              Customer can upload their own image
+            </label>
+            {form.isPersonalizable && (
+              <MoneyInput
+                label="Design surcharge"
+                minorUnits={form.customizationPrice}
+                onChange={(v) => setForm((f) => ({ ...f, customizationPrice: v }))}
+                className="w-32"
+              />
+            )}
+            <label className="flex items-center gap-2 pb-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                disabled={disabled}
+                onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+                className="size-4 accent-accent"
+              />
+              Active (visible in the shop)
+            </label>
+          </div>
+        </details>
+      </div>
 
-        {/* Active status */}
-        <label className="flex items-center gap-2 text-sm font-medium text-ink select-none pb-2">
-          <input
-            type="checkbox"
-            checked={form.isActive}
-            disabled={disabled}
-            onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-            className="size-4 accent-accent"
-          />
-          Active
-        </label>
-
-        {/* Progress bar or Submit button */}
+      {/* Summary + submit */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface px-4 py-3 sm:px-5">
+        <p className="text-sm text-ink">
+          {nothingPicked ? (
+            <span className="text-muted-foreground">Pick at least one brand.</span>
+          ) : pendingCombosCount === 0 ? (
+            <span className="text-muted-foreground">All {totalCombosCount} combinations already exist.</span>
+          ) : (
+            <>
+              <strong>{pendingCombosCount}</strong> new {pendingCombosCount === 1 ? "variant" : "variants"}
+              {skippedCombosCount > 0 && (
+                <span className="text-muted-foreground"> · {skippedCombosCount} already exist, skipped</span>
+              )}
+            </>
+          )}
+        </p>
         {bulkProgress ? (
-          <div className="flex items-center gap-3 py-1">
-            <div className="h-2.5 w-32 overflow-hidden rounded-full bg-border">
+          <div className="flex items-center gap-3" role="status">
+            <div className="h-2 w-40 overflow-hidden rounded-full bg-border">
               <div
                 className="h-full bg-accent transition-all duration-200"
                 style={{ width: `${Math.round((bulkProgress.current / bulkProgress.total) * 100)}%` }}
               />
             </div>
-            <span className="text-xs font-semibold text-ink">
-              Creating {bulkProgress.current}/{bulkProgress.total}…
+            <span className="text-xs font-semibold text-ink tabular-nums">
+              {bulkProgress.current}/{bulkProgress.total}
             </span>
           </div>
         ) : (
           <button
             type="submit"
-            disabled={disabled || (isBulkMode && pendingCombosCount === 0)}
+            disabled={disabled || pendingCombosCount === 0 || nothingPicked || form.price === null || wasInvalid}
             className={buttonClass}
           >
-            {isBulkMode ? `Create ${pendingCombosCount} variants` : "Add variant"}
+            {pendingCombosCount > 1 ? `Create ${pendingCombosCount} variants` : "Add variant"}
           </button>
         )}
       </div>
     </form>
+  );
+}
+
+function PanelStep({
+  n,
+  title,
+  summary,
+  children,
+}: {
+  n: number;
+  title: string;
+  summary?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="px-4 py-4 sm:px-5">
+      <legend className="sr-only">{title}</legend>
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="flex size-6 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white">
+          {n}
+        </span>
+        <span className="text-sm font-semibold text-ink">{title}</span>
+        {summary && <span className="text-xs text-muted-foreground">· {summary}</span>}
+      </div>
+      {children}
+    </fieldset>
+  );
+}
+
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+  disabled?: boolean;
+}) {
+  return (
+    <div role="radiogroup" className="inline-flex flex-wrap gap-1 rounded-pill bg-surface p-1">
+      {options.map((option) => {
+        const on = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            disabled={disabled}
+            onClick={() => onChange(option.value)}
+            className={`rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
+              on ? "bg-ink text-white" : "text-muted-foreground hover:text-ink"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Chip({
+  on,
+  onClick,
+  disabled,
+  children,
+}: {
+  on: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      disabled={disabled}
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+        on ? "border-ink bg-ink text-white" : "border-border bg-background text-ink hover:border-ink"
+      }`}
+    >
+      {on && <span aria-hidden>✓</span>}
+      {children}
+    </button>
+  );
+}
+
+/** What the shop will show for this price / old price pair. */
+function PricePreview({ price, was, currency }: { price: number | null; was: number | null; currency: string }) {
+  if (price === null) return null;
+  const onSale = was !== null && was > price;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-semibold text-ink">Shop shows</span>
+      <div className="flex h-[38px] items-center gap-2 rounded-pill bg-surface px-4">
+        <span className="font-semibold text-ink">{formatPrice(price, currency)}</span>
+        {onSale && (
+          <>
+            <s className="text-sm text-muted-foreground">{formatPrice(was, currency)}</s>
+            <span className="rounded-pill bg-accent px-2 py-0.5 text-[11px] font-semibold text-white">
+              −{Math.round(((was - price) / was) * 100)}%
+            </span>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

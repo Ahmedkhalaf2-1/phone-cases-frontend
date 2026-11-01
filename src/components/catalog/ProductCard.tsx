@@ -39,6 +39,13 @@ export function ProductCard({
 }) {
   const { t } = useI18n();
   const formatPrice = useFormatPrice();
+  const wasPrice =
+    "compareAtPriceFrom" in product &&
+    product.compareAtPriceFrom &&
+    product.effectivePriceFrom !== null &&
+    product.compareAtPriceFrom > product.effectivePriceFrom
+      ? product.compareAtPriceFrom
+      : null;
 
   return (
     <Link
@@ -81,8 +88,15 @@ export function ProductCard({
             </p>
           )}
           {source === "live" && product.effectivePriceFrom !== null && (
-            <p className="mt-1 text-sm font-medium text-ink">
-              {formatPrice(product.effectivePriceFrom, product.currency)}
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm font-medium text-ink">
+              <span className={wasPrice ? "text-accent" : undefined}>
+                {formatPrice(product.effectivePriceFrom, product.currency)}
+              </span>
+              {wasPrice && (
+                <s className="text-xs font-normal text-muted-foreground">
+                  {formatPrice(wasPrice, product.currency)}
+                </s>
+              )}
             </p>
           )}
         </div>

@@ -92,6 +92,10 @@ export default function AdminOrderDetailPage({
 
   useEffect(load, [accessToken, authorizedFetch, id]);
 
+  async function reload() {
+    setOrder(await authorizedFetch((token) => adminClient.getOrder(token, id)));
+  }
+
   const items = order?.items;
   useEffect(() => {
     if (!accessToken || !items?.length) return;
@@ -403,14 +407,16 @@ export default function AdminOrderDetailPage({
               value={order.fulfillmentStatus}
               onChange={(e) =>
                 withBusy(async () => {
-                  const updated = await authorizedFetch((token) =>
+                  await authorizedFetch((token) =>
                     adminClient.updateFulfillmentStatus(
                       token,
                       order.id,
                       e.target.value as FulfillmentStatus,
                     ),
                   );
-                  setOrder(updated);
+                  // Re-read through GET: mutation responses aren't the same
+                  // shape as the detail view (custom designs), which crashed the page.
+                  await reload();
                 })
               }
               className={`mt-1.5 block w-full max-w-xs ${inputClass}`}
@@ -481,14 +487,16 @@ export default function AdminOrderDetailPage({
               value={order.paymentStatus}
               onChange={(e) =>
                 withBusy(async () => {
-                  const updated = await authorizedFetch((token) =>
+                  await authorizedFetch((token) =>
                     adminClient.updatePaymentStatus(
                       token,
                       order.id,
                       e.target.value as PaymentStatus,
                     ),
                   );
-                  setOrder(updated);
+                  // Re-read through GET: mutation responses aren't the same
+                  // shape as the detail view (custom designs), which crashed the page.
+                  await reload();
                 })
               }
               className={`mt-1.5 block w-full ${inputClass}`}
@@ -636,10 +644,12 @@ export default function AdminOrderDetailPage({
                     disabled={isBusy || !lateNote}
                     onClick={() =>
                       withBusy(async () => {
-                        const updated = await authorizedFetch((token) =>
+                        await authorizedFetch((token) =>
                           adminClient.flagLatePayment(token, order.id, lateNote),
                         );
-                        setOrder(updated);
+                        // Re-read through GET: mutation responses aren't the same
+                  // shape as the detail view (custom designs), which crashed the page.
+                  await reload();
                         setLateNote("");
                       })
                     }

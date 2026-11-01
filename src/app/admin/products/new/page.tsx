@@ -56,10 +56,10 @@ export default function NewProductPage({
           // The product exists either way; its page shows it isn't in a
           // collection yet and can add it from there.
         }
-        router.push(`/admin/products/${product.id}?collection=${collectionId}`);
+        router.push(`/admin/products/${product.id}?collection=${collectionId}#variants`);
         return;
       }
-      router.push(`/admin/products/${product.id}`);
+      router.push(`/admin/products/${product.id}#variants`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create product.");
       setIsSubmitting(false);
