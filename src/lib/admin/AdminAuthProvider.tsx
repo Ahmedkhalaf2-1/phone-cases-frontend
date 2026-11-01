@@ -41,6 +41,8 @@ interface AdminAuthContextValue {
    * blindly retrying a non-idempotent mutation could double-submit it.
    */
   authorizedFetch: <T>(fn: (accessToken: string) => Promise<T>) => Promise<T>;
+  /** Updates the signed-in staff member's details locally (e.g. after renaming yourself). */
+  updateStaff: (changes: Partial<Pick<Staff, "fullName">>) => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
@@ -248,6 +250,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     [scheduleRefresh],
   );
 
+  const updateStaff = useCallback((changes: Partial<Pick<Staff, "fullName">>) => {
+    setSession((current) => {
+      if (!current) return current;
+      const next = { ...current, staff: { ...current.staff, ...changes } };
+      const stored = readStored();
+      if (stored) writeStored({ ...stored, session: next });
+      return next;
+    });
+  }, []);
+
   return (
     <AdminAuthContext.Provider
       value={{
@@ -258,6 +270,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         loginError,
         authorizedFetch,
+        updateStaff,
       }}
     >
       {children}
