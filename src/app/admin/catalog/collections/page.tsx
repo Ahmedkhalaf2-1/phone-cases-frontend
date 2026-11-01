@@ -1,48 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { useAdminCatalog } from "@/lib/admin/catalog-store";
 import { collectionCoverUrl, primaryImageUrl } from "@/lib/admin/product-display";
 import type { AdminCollection } from "@/lib/admin/types";
 
-const inputClass =
-  "rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const buttonClass =
   "rounded-pill bg-ink px-4 py-2.5 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 export default function AdminCollectionsPage() {
-  const router = useRouter();
   const { accessToken, authorizedFetch } = useAdminAuth();
   const [collections, setCollections] = useState<AdminCollection[]>([]);
   const catalog = useAdminCatalog();
   const products = catalog.isComplete ? catalog.products : null;
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isBusy, setIsBusy] = useState(false);
 
-  const [slug, setSlug] = useState("");
-  const [nameEn, setNameEn] = useState("");
-  const [nameAr, setNameAr] = useState("");
-  const [descriptionEn, setDescriptionEn] = useState("");
-  const [descriptionAr, setDescriptionAr] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const formId = useId();
 
   function load() {
     if (!accessToken) return;
@@ -56,35 +36,6 @@ export default function AdminCollectionsPage() {
   }
 
   useEffect(load, [accessToken, authorizedFetch]);
-
-  async function handleCreate(event: React.FormEvent) {
-    event.preventDefault();
-    if (!accessToken) return;
-    setIsBusy(true);
-    setError(null);
-    try {
-      const created = await authorizedFetch((token) =>
-        adminClient.createCollectionAdmin(token, {
-          slug,
-          nameEn,
-          nameAr,
-          descriptionEn: descriptionEn || undefined,
-          descriptionAr: descriptionAr || undefined,
-        }),
-      );
-      setSlug("");
-      setNameEn("");
-      setNameAr("");
-      setDescriptionEn("");
-      setDescriptionAr("");
-      // Straight to the new collection so the cover can be added next.
-      router.push(`/admin/catalog/collections/${created.id}`);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create collection.");
-    } finally {
-      setIsBusy(false);
-    }
-  }
 
   function productsIn(collection: AdminCollection) {
     return (catalog.products ?? []).filter((p) => p.collections?.some((c) => c.id === collection.id));
@@ -107,91 +58,10 @@ export default function AdminCollectionsPage() {
               : `${collections.length} collections${hiddenCount ? ` · ${hiddenCount} hidden from the shop` : ""}`}
           </p>
         </div>
-        <button
-          type="button"
-          aria-expanded={isFormOpen}
-          aria-controls={formId}
-          onClick={() => setIsFormOpen((open) => !open)}
-          className={isFormOpen ? `rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-semibold text-ink hover:border-ink ${focusRing}` : buttonClass}
-        >
-          {isFormOpen ? "Cancel" : "+ New collection"}
-        </button>
+        <Link href="/admin/catalog/collections/new" className={buttonClass}>
+          + New collection
+        </Link>
       </header>
-
-      {isFormOpen && (
-        <form
-          id={formId}
-          onSubmit={handleCreate}
-          className="mt-5 grid gap-3 rounded-card bg-surface p-4 shadow-card sm:grid-cols-2 sm:p-5"
-        >
-          <p className="text-sm font-semibold text-ink sm:col-span-2">New collection</p>
-          <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted-foreground">
-            Name (English)
-            <input
-              required
-              autoFocus
-              placeholder="e.g. Football"
-              value={nameEn}
-              onChange={(e) => {
-                setNameEn(e.target.value);
-                if (!slugEdited) setSlug(slugify(e.target.value));
-              }}
-              className={`${inputClass} font-normal text-ink`}
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted-foreground">
-            الاسم (عربي)
-            <input
-              required
-              dir="rtl"
-              placeholder="مثال: كرة القدم"
-              value={nameAr}
-              onChange={(e) => setNameAr(e.target.value)}
-              className={`${inputClass} font-normal text-ink`}
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted-foreground">
-            Description (English, optional)
-            <input
-              value={descriptionEn}
-              onChange={(e) => setDescriptionEn(e.target.value)}
-              className={`${inputClass} font-normal text-ink`}
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted-foreground">
-            الوصف (عربي، اختياري)
-            <input
-              dir="rtl"
-              value={descriptionAr}
-              onChange={(e) => setDescriptionAr(e.target.value)}
-              className={`${inputClass} font-normal text-ink`}
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted-foreground sm:col-span-2">
-            Web address
-            <span className="flex items-center gap-1 font-normal">
-              <span className="text-sm text-muted-foreground">/collections/</span>
-              <input
-                required
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                title="Lowercase letters, numbers and dashes"
-                value={slug}
-                onChange={(e) => {
-                  setSlug(e.target.value);
-                  setSlugEdited(true);
-                }}
-                className={`${inputClass} min-w-0 flex-1 text-ink sm:max-w-xs`}
-              />
-            </span>
-          </label>
-          <div className="flex items-center gap-3 sm:col-span-2">
-            <button type="submit" disabled={isBusy} className={buttonClass}>
-              {isBusy ? "Creating…" : "Create collection"}
-            </button>
-            <span className="text-xs text-muted-foreground">You can add a cover and products on the next screen.</span>
-          </div>
-        </form>
-      )}
 
       {error && (
         <p role="alert" className="mt-4 rounded-2xl bg-red-50 p-3 text-sm text-red-800">
@@ -304,9 +174,9 @@ export default function AdminCollectionsPage() {
         <div className="mt-5 rounded-card bg-surface px-6 py-16 text-center shadow-card">
           <p className="text-sm font-semibold text-ink">{search ? "No collections match your search" : "No collections yet"}</p>
           {!search && (
-            <button type="button" onClick={() => setIsFormOpen(true)} className={`${buttonClass} mt-4`}>
+            <Link href="/admin/catalog/collections/new" className={`${buttonClass} mt-4 inline-block`}>
               + New collection
-            </button>
+            </Link>
           )}
         </div>
       )}
