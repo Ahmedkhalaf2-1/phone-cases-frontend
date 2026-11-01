@@ -57,6 +57,8 @@ export interface PhoneBrand {
   id: string;
   slug: string;
   name: string;
+  /** Uploaded logo, if any (older backends omit it). */
+  logoUrl?: string | null;
 }
 
 export interface PhoneModel {

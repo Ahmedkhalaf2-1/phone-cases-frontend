@@ -4,6 +4,7 @@ import { use, useEffect, useId, useMemo, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { Switch } from "@/components/admin/form-kit";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import type { AdminPhoneBrand, AdminPhoneModel, CreatePhoneModelInput } from "@/lib/admin/types";
 
 const focusRing =
@@ -313,7 +314,14 @@ export default function AdminPhoneModelsPage({
         <div className="mt-5 flex flex-col gap-4">
           {groups.map(({ brand, models: list }) => (
             <section key={brand.id} className="rounded-card bg-surface shadow-card">
-              <h2 className="flex items-center gap-2 border-b border-border px-5 py-3.5 text-sm font-semibold text-ink">
+              <h2 className="flex items-center gap-2.5 border-b border-border px-5 py-3 text-sm font-semibold text-ink">
+                <BrandLogo
+                  slug={brand.slug}
+                  name={brand.nameEn}
+                  logoUrl={brand.logoMediaAsset?.url}
+                  className="size-8 rounded-xl"
+                  imageClassName="p-1.5"
+                />
                 {brand.nameEn}
                 <span className="font-normal text-muted-foreground">· {list.length}</span>
                 {!brand.isActive && (

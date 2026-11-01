@@ -5,12 +5,23 @@ import { useEffect, useId, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { Switch } from "@/components/admin/form-kit";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { builtInBrandLogo } from "@/config/brand-logos";
 import type { AdminPhoneBrand, AdminPhoneModel, CreatePhoneBrandInput } from "@/lib/admin/types";
 
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const inputClass = `rounded-pill border border-border bg-background px-4 py-2 text-sm text-ink ${focusRing}`;
 const buttonClass = `rounded-pill bg-ink px-4 py-2.5 text-sm font-semibold text-white transition-colors enabled:hover:bg-accent disabled:opacity-50 ${focusRing}`;
+const LOGO_TYPES = "image/png,image/jpeg,image/webp,image/gif";
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+
+function logoProblem(file: File): string | null {
+  if (!LOGO_TYPES.split(",").includes(file.type)) return "Use a PNG, JPG, WebP or GIF image.";
+  if (file.size > LOGO_MAX_BYTES) return "The logo must be smaller than 5 MB.";
+  return null;
+}
+
 const secondaryButtonClass = `rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink ${focusRing}`;
 
 function slugify(value: string) {
@@ -35,7 +46,22 @@ export default function AdminPhoneBrandsPage() {
   const [slugEdited, setSlugEdited] = useState(false);
   const [nameEn, setNameEn] = useState("");
   const [nameAr, setNameAr] = useState("");
+  const [newLogo, setNewLogo] = useState<File | null>(null);
+  const [newLogoPreview, setNewLogoPreview] = useState<string | null>(null);
   const formId = useId();
+
+  function chooseNewLogo(file: File | null) {
+    if (file) {
+      const problem = logoProblem(file);
+      if (problem) {
+        setError(problem);
+        return;
+      }
+    }
+    if (newLogoPreview) URL.revokeObjectURL(newLogoPreview);
+    setNewLogo(file);
+    setNewLogoPreview(file ? URL.createObjectURL(file) : null);
+  }
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editEn, setEditEn] = useState("");
@@ -63,7 +89,18 @@ export default function AdminPhoneBrandsPage() {
     setIsCreating(true);
     setError(null);
     try {
-      await authorizedFetch((token) => adminClient.createPhoneBrand(token, { slug, nameEn, nameAr }));
+      const created = await authorizedFetch((token) => adminClient.createPhoneBrand(token, { slug, nameEn, nameAr }));
+      if (newLogo) {
+        try {
+          const asset = await authorizedFetch((token) => adminClient.uploadMedia(token, newLogo, `${nameEn} logo`));
+          await authorizedFetch((token) =>
+            adminClient.updatePhoneBrand(token, created.id, { logoMediaAssetId: asset.id }),
+          );
+        } catch {
+          setError("The brand was created, but its logo didn't upload. Try again from the brand's card.");
+        }
+      }
+      chooseNewLogo(null);
       setSlug("");
       setSlugEdited(false);
       setNameEn("");
@@ -87,6 +124,29 @@ export default function AdminPhoneBrandsPage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not update brand.");
       return false;
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function uploadLogo(brand: AdminPhoneBrand, file: File) {
+    const problem = logoProblem(file);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setBusyId(brand.id);
+    setError(null);
+    try {
+      const asset = await authorizedFetch((token) => adminClient.uploadMedia(token, file, `${brand.nameEn} logo`));
+      const updated = await authorizedFetch((token) =>
+        adminClient.updatePhoneBrand(token, brand.id, { logoMediaAssetId: asset.id }),
+      );
+      setBrands((prev) =>
+        prev.map((b) => (b.id === brand.id ? { ...b, ...updated, logoMediaAsset: updated.logoMediaAsset ?? asset } : b)),
+      );
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not upload the logo.");
     } finally {
       setBusyId(null);
     }
@@ -119,8 +179,29 @@ export default function AdminPhoneBrandsPage() {
         <form
           id={formId}
           onSubmit={handleCreate}
-          className="mt-5 grid gap-3 rounded-card bg-surface p-4 shadow-card sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-5"
+          className="mt-5 grid gap-3 rounded-card bg-surface p-4 shadow-card sm:grid-cols-[auto_1fr_1fr_auto] sm:items-end sm:p-5"
         >
+          <div className="flex flex-col gap-1.5 text-xs font-semibold text-muted-foreground">
+            Logo
+            <label
+              className={`group relative cursor-pointer rounded-2xl focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent`}
+              title="Choose a logo (PNG with a transparent background works best)"
+            >
+              <BrandLogo slug={slug} name={nameEn || "?"} logoUrl={newLogoPreview} className="size-[42px]" imageClassName="p-1.5" />
+              <span className="absolute -end-1 -bottom-1 flex size-5 items-center justify-center rounded-full bg-ink text-xs text-white">
+                +
+              </span>
+              <input
+                type="file"
+                accept={LOGO_TYPES}
+                className="sr-only"
+                onChange={(e) => {
+                  chooseNewLogo(e.target.files?.[0] ?? null);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
           <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted-foreground">
             Name (English)
             <input
@@ -149,7 +230,7 @@ export default function AdminPhoneBrandsPage() {
           <button type="submit" disabled={isCreating} className={buttonClass}>
             {isCreating ? "Creating…" : "Create brand"}
           </button>
-          <label className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground sm:col-span-3">
+          <label className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground sm:col-span-4">
             Web address
             <input
               required
@@ -162,6 +243,13 @@ export default function AdminPhoneBrandsPage() {
               }}
               className={`${inputClass} w-48 py-1.5 font-normal`}
             />
+            <span className="font-normal">
+              {newLogo
+                ? `Logo: ${newLogo.name}`
+                : builtInBrandLogo(slug)
+                  ? "This brand already has a built-in logo; uploading one replaces it."
+                  : "Optional logo: PNG with a transparent background works best."}
+            </span>
           </label>
         </form>
       )}
@@ -195,14 +283,34 @@ export default function AdminPhoneBrandsPage() {
                 className={`flex flex-col rounded-card bg-surface p-4 shadow-card ${brand.isActive ? "" : "opacity-70"}`}
               >
                 <div className="flex items-start gap-3">
-                  <span
-                    aria-hidden
-                    className={`flex size-12 shrink-0 items-center justify-center rounded-2xl font-display text-2xl uppercase ${
-                      brand.isActive ? "bg-ink text-white" : "bg-background text-muted-foreground"
+                  <label
+                    className={`group relative shrink-0 cursor-pointer rounded-2xl focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent ${
+                      busy ? "pointer-events-none opacity-60" : ""
                     }`}
+                    title={brand.logoMediaAsset ? "Change logo" : "Upload a logo"}
                   >
-                    {brand.nameEn.trim()[0] ?? "?"}
-                  </span>
+                    <BrandLogo
+                      slug={brand.slug}
+                      name={brand.nameEn}
+                      logoUrl={brand.logoMediaAsset?.url}
+                      className="size-14"
+                      muted={!brand.isActive}
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-ink/70 text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
+                      {busy ? "…" : brand.logoMediaAsset ? "Change" : "Upload"}
+                    </span>
+                    <input
+                      type="file"
+                      accept={LOGO_TYPES}
+                      className="sr-only"
+                      aria-label={`Upload a logo for ${brand.nameEn}`}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (file) uploadLogo(brand, file);
+                      }}
+                    />
+                  </label>
                   {isEditing ? (
                     <form
                       className="flex min-w-0 flex-1 flex-col gap-2"
@@ -238,8 +346,27 @@ export default function AdminPhoneBrandsPage() {
                   ) : (
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-lg font-semibold text-ink">{brand.nameEn}</p>
-                      <p dir="rtl" className="truncate text-start text-sm text-muted-foreground">
-                        {brand.nameAr}
+                      <p className="truncate text-sm text-muted-foreground">
+                        <span dir="rtl">{brand.nameAr}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {brand.logoMediaAsset ? (
+                          <>
+                            Uploaded logo ·{" "}
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => update(brand, { logoMediaAssetId: null }).then((ok) => ok && setBrands((prev) => prev.map((b) => (b.id === brand.id ? { ...b, logoMediaAsset: null } : b))))}
+                              className="font-semibold text-muted-foreground underline underline-offset-2 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        ) : builtInBrandLogo(brand.slug) ? (
+                          "Built-in logo · click it to upload your own"
+                        ) : (
+                          <span className="text-amber-700">No logo · click the letter to upload one</span>
+                        )}
                       </p>
                     </div>
                   )}

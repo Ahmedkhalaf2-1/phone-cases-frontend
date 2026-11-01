@@ -562,6 +562,9 @@ export interface AdminPhoneBrand {
   nameAr: string;
   displayOrder: number;
   isActive: boolean;
+  /** Uploaded logo (older backends omit these). */
+  logoMediaAssetId?: string | null;
+  logoMediaAsset?: MediaAsset | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -572,6 +575,8 @@ export interface CreatePhoneBrandInput {
   nameAr: string;
   displayOrder?: number;
   isActive?: boolean;
+  /** MediaAsset id of the logo; null clears it. */
+  logoMediaAssetId?: string | null;
 }
 
 export interface AdminPhoneModel {
