@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
-import { LoadingRow } from "@/components/ui/Spinner";
 import { primaryButtonClass } from "@/components/admin/admin-styles";
 import { ShippingZoneCard } from "@/components/admin/shipping/ShippingZoneCard";
 import type { ShippingRate, ShippingZone } from "@/lib/admin/types";
@@ -78,25 +77,31 @@ export default function AdminShippingPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl uppercase tracking-tight text-ink">Shipping</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Manage delivery zones, rates and pricing.
+          <h1 className="font-display text-4xl uppercase tracking-tight text-ink">Shipping</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isLoading
+              ? "Where you deliver and what it costs."
+              : `${zones.filter((z) => z.isActive).length} of ${zones.length} zones on · ${zones.reduce(
+                  (sum, z) => sum + z.rates.filter((r) => r.isActive).length,
+                  0,
+                )} delivery options live`}
           </p>
         </div>
         {createButton}
-      </div>
+      </header>
 
-      {isLoading && <LoadingRow label="Loading shipping zones…" />}
       {error && (
-        <p role="alert" className="mt-4 text-sm text-accent">
+        <p role="alert" className="mt-4 rounded-2xl bg-red-50 p-3 text-sm text-red-800">
           {error}
         </p>
       )}
 
+      {isLoading && <div aria-hidden className="mt-6 h-56 animate-pulse rounded-card bg-surface" />}
+
       {!isLoading && zones.length === 0 && !error && (
-        <div className="mt-8 rounded-3xl border border-dashed border-border p-10 text-center">
+        <div className="mt-6 rounded-card bg-surface p-10 text-center shadow-card">
           <p className="font-semibold text-ink">No shipping zones yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Create a zone for the countries you deliver to, then add its shipping rates.
@@ -106,7 +111,7 @@ export default function AdminShippingPage() {
       )}
 
       {zones.length > 0 && (
-        <div className="mt-6 flex flex-col gap-5">
+        <div className="mt-6 flex flex-col gap-4">
           {zones.map((zone) => (
             <ShippingZoneCard
               key={zone.id}

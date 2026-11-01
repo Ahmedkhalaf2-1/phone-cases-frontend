@@ -19,19 +19,19 @@ export function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-border p-5 sm:p-6">
+    <section className="rounded-card bg-surface p-5 shadow-card sm:p-6">
       <div className="flex items-start gap-3">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold text-white">
           {step}
         </span>
-        <div>
-          <h2 className="font-semibold text-ink">{title}</h2>
+        <div className="pt-0.5">
+          <h2 className="font-semibold leading-tight text-ink">{title}</h2>
           {description && (
             <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
           )}
         </div>
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -50,22 +50,70 @@ export function ToggleField({
 }) {
   const id = useId();
   return (
-    <div className="flex items-start gap-3">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        aria-describedby={`${id}-help`}
-        className="mt-1 size-4 accent-accent"
-      />
-      <label htmlFor={id} className="text-sm">
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl bg-background p-4 text-sm"
+    >
+      <span>
         <span className="font-semibold text-ink">{label}</span>
         <span id={`${id}-help`} className="mt-0.5 block text-muted-foreground">
           {help}
         </span>
-      </label>
-    </div>
+      </span>
+      <input
+        id={id}
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-describedby={`${id}-help`}
+        className="peer sr-only"
+      />
+      <SwitchTrack />
+    </label>
+  );
+}
+
+/** Visual track for a `peer sr-only` checkbox placed just before it. */
+export function SwitchTrack({ small }: { small?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`relative shrink-0 rounded-full bg-border transition-colors peer-checked:bg-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent peer-disabled:opacity-50 after:absolute after:top-0.5 after:start-0.5 after:rounded-full after:bg-white after:shadow after:transition-transform ${
+        small
+          ? "h-5 w-9 after:size-4 peer-checked:after:translate-x-4 rtl:peer-checked:after:-translate-x-4"
+          : "h-6 w-11 after:size-5 peer-checked:after:translate-x-5 rtl:peer-checked:after:-translate-x-5"
+      }`}
+    />
+  );
+}
+
+/** Compact on/off switch for list rows (enable / disable without opening the editor). */
+export function Switch({
+  checked,
+  onChange,
+  label,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  /** Accessible name, e.g. "WELCOME10 enabled". */
+  label: string;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="inline-flex cursor-pointer items-center" title={checked ? "On — click to turn off" : "Off — click to turn on"}>
+      <input
+        type="checkbox"
+        role="switch"
+        aria-label={label}
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="peer sr-only"
+      />
+      <SwitchTrack small />
+    </label>
   );
 }
 
@@ -117,14 +165,14 @@ export function SummaryCard({
 }) {
   return (
     <aside className="lg:sticky lg:top-6 lg:self-start">
-      <div className="rounded-3xl border border-border bg-surface p-5">
+      <div className="rounded-card bg-surface p-5 shadow-card">
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
           {eyebrow}
         </p>
         <p className="mt-2 break-words font-display text-xl uppercase tracking-tight text-ink">
           {heading}
         </p>
-        <dl className="mt-3">{children}</dl>
+        <dl className="mt-3 rounded-2xl bg-background px-4 py-1">{children}</dl>
 
         <div className="hidden lg:block">
           {error && (
@@ -157,8 +205,8 @@ export function SummaryCard({
 }
 
 /**
- * Mobile/tablet primary action. Fixed to the viewport bottom, offset past
- * the admin sidebar from sm up, padded for the home-indicator safe area.
+ * Mobile/tablet primary action. Fixed to the viewport bottom (the admin
+ * sidebar is a drawer below lg), padded for the home-indicator safe area.
  * The form must have matching bottom padding (pb-28) so it never hides
  * content.
  */
@@ -178,7 +226,7 @@ export function MobileActionBar({
   disabled: boolean;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:start-56 lg:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
       <div className="mx-auto flex max-w-3xl items-center gap-3">
         <div className="min-w-0 flex-1 text-xs">
           {error ? (
