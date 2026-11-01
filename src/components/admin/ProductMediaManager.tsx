@@ -175,7 +175,7 @@ export function ProductMediaManager({
         <div>
           <h3 className="text-sm font-semibold text-ink">Main image</h3>
           <p className="text-xs text-muted-foreground">What customers see first in the shop.</p>
-          <div className="relative mt-2 aspect-square overflow-hidden rounded-card bg-surface shadow-card">
+          <div className="relative mt-2 aspect-square overflow-hidden rounded-card bg-background">
             {main ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -248,13 +248,13 @@ export function ProductMediaManager({
                   setDragIndex(null);
                   setDropIndex(null);
                 }}
-                className={`group flex flex-col rounded-card bg-surface p-2 shadow-card transition ${
+                className={`group flex flex-col rounded-card bg-background p-2 transition ${
                   dragIndex === index ? "opacity-40" : ""
                 } ${dropIndex === index && dragIndex !== index ? "ring-2 ring-accent" : ""} ${
                   isWorking ? "" : "cursor-grab active:cursor-grabbing"
                 }`}
               >
-                <div className="relative aspect-square overflow-hidden rounded-card-inner bg-background">
+                <div className="relative aspect-square overflow-hidden rounded-card-inner bg-surface">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={asset.url}

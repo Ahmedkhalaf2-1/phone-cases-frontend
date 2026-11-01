@@ -9,7 +9,6 @@ import { formatPrice } from "@/lib/format-price";
 import {
   PRODUCT_STATUS_HINT,
   PRODUCT_STATUS_LABEL,
-  PRODUCT_STATUS_STYLE,
   priceSummary,
   primaryImageUrl,
 } from "@/lib/admin/product-display";
@@ -174,18 +173,30 @@ export default function AdminProductDetailPage({
   const hasProduct = product !== null;
   useEffect(() => {
     if (!hasProduct) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting);
-        if (visible.length > 0) setActiveSection(visible[0].target.id as SectionId);
-      },
-      { rootMargin: "-20% 0px -70% 0px" },
-    );
-    for (const section of SECTIONS) {
-      const el = document.getElementById(section.id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        let current: SectionId = SECTIONS[0].id;
+        for (const section of SECTIONS) {
+          const el = document.getElementById(section.id);
+          if (el && el.getBoundingClientRect().top <= 140) current = section.id;
+        }
+        // At the very bottom the last sections can't reach the top.
+        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+          current = SECTIONS[SECTIONS.length - 1].id;
+        }
+        setActiveSection(current);
+      });
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("hashchange", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("hashchange", update);
+    };
   }, [hasProduct]);
 
   // Keep the shared admin grids in sync with edits made here.
@@ -652,87 +663,101 @@ export default function AdminProductDetailPage({
       </nav>
 
       {/* Summary */}
-      <header id="top" className="mt-3 flex scroll-mt-4 flex-col gap-5 rounded-card bg-surface p-4 shadow-card sm:flex-row sm:p-6">
-        <a
-          href="#images"
-          className="relative block aspect-square w-full shrink-0 overflow-hidden rounded-card-inner bg-background sm:w-48"
-          title="Go to product images"
-        >
-          {thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumbnail} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="flex h-full items-center justify-center p-4 text-center text-sm font-semibold text-amber-800">
-              No image yet — add one below
-            </span>
-          )}
-        </a>
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div>
-            <h1 className="font-display text-3xl tracking-tight text-ink uppercase sm:text-4xl">{product.nameEn}</h1>
-            <p dir="rtl" className="text-start text-sm text-muted-foreground">
-              {product.nameAr}
-            </p>
+      <header id="top" className="mt-3 scroll-mt-4 rounded-card bg-surface p-4 shadow-card sm:p-5">
+        <div className="flex flex-col gap-5 sm:flex-row">
+          <a
+            href="#images"
+            className="group relative block aspect-square w-full shrink-0 overflow-hidden rounded-card-inner bg-background sm:w-44"
+            title="Go to product images"
+          >
+            {thumbnail ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            ) : (
+              <span className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm font-semibold text-muted-foreground">
+                <span className="flex size-10 items-center justify-center rounded-full bg-surface text-ink">
+                  <SectionIcon id="images" className="size-5" />
+                </span>
+                Add a photo
+              </span>
+            )}
+          </a>
+
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl leading-tight tracking-tight break-words text-ink sm:text-4xl">
+                  {product.nameEn}
+                </h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  <span dir="rtl">{product.nameAr}</span>
+                  <span className="mx-1.5">·</span>
+                  <span>/products/{product.slug}</span>
+                </p>
+              </div>
+              {product.status === "PUBLISHED" && (
+                <Link
+                  href={`/products/${product.slug}`}
+                  target="_blank"
+                  className={`${secondaryButtonClass} shrink-0`}
+                >
+                  View in shop ↗
+                </Link>
+              )}
+            </div>
+
+            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <a href="#pricing" className="rounded-2xl bg-background p-3 transition-colors hover:bg-border/50">
+                <dt className="text-xs text-muted-foreground">Price</dt>
+                <dd className={`mt-0.5 font-semibold ${price ? "text-ink" : "text-amber-700"}`}>{price ?? "Not set yet"}</dd>
+              </a>
+              <a href="#variants" className="rounded-2xl bg-background p-3 transition-colors hover:bg-border/50">
+                <dt className="text-xs text-muted-foreground">Variants</dt>
+                <dd className={`mt-0.5 font-semibold ${product.variants.length ? "text-ink" : "text-amber-700"}`}>
+                  {product.variants.length
+                    ? `${product.variants.filter((v) => v.isActive).length} of ${product.variants.length} on`
+                    : "None yet"}
+                </dd>
+              </a>
+              <a href="#basic" className="col-span-2 rounded-2xl bg-background p-3 transition-colors hover:bg-border/50 sm:col-span-1">
+                <dt className="text-xs text-muted-foreground">Collection</dt>
+                <dd className={`mt-0.5 truncate font-semibold ${product.collections.length ? "text-ink" : "text-amber-700"}`}>
+                  {product.collections.length ? product.collections.map((c) => c.nameEn).join(", ") : "None yet"}
+                </dd>
+              </a>
+            </dl>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div role="radiogroup" aria-label="Status" className="inline-flex gap-1 rounded-pill bg-background p-1">
+                {STATUS_VALUES.map((status) => {
+                  const isCurrent = product.status === status;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      role="radio"
+                      aria-checked={isCurrent}
+                      disabled={isBusy}
+                      onClick={() => handleStatusChange(status)}
+                      title={PRODUCT_STATUS_HINT[status]}
+                      className={`flex items-center gap-1.5 rounded-pill px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
+                        isCurrent ? "bg-ink text-white" : "text-muted-foreground hover:text-ink"
+                      }`}
+                    >
+                      <span
+                        aria-hidden
+                        className={`size-2 rounded-full ${
+                          status === "PUBLISHED" ? "bg-green-500" : status === "DRAFT" ? "bg-amber-400" : "bg-muted-foreground/60"
+                        }`}
+                      />
+                      {PRODUCT_STATUS_LABEL[status]}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">{PRODUCT_STATUS_HINT[product.status]}</p>
+            </div>
           </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-muted-foreground">Price</dt>
-              <dd className="text-lg font-semibold text-ink">
-                {price ?? <span className="text-amber-700">No price yet — add a variant</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Collection</dt>
-              <dd className="flex flex-wrap gap-1.5 pt-0.5">
-                {product.collections.length === 0 && <span className="text-amber-700">Not in any collection</span>}
-                {product.collections.map((c) => (
-                  <Link
-                    key={c.id}
-                    href={`/admin/catalog/collections/${c.id}`}
-                    className="rounded-full bg-accent-wash px-2.5 py-0.5 text-xs font-semibold text-ink hover:underline"
-                  >
-                    {c.nameEn}
-                  </Link>
-                ))}
-              </dd>
-            </div>
-          </dl>
-          <div>
-            <p className="text-sm text-muted-foreground">Status</p>
-            <div role="radiogroup" aria-label="Status" className="mt-1 flex flex-wrap gap-1.5">
-              {STATUS_VALUES.map((status) => {
-                const isCurrent = product.status === status;
-                return (
-                  <button
-                    key={status}
-                    type="button"
-                    role="radio"
-                    aria-checked={isCurrent}
-                    disabled={isBusy}
-                    onClick={() => handleStatusChange(status)}
-                    title={PRODUCT_STATUS_HINT[status]}
-                    className={`rounded-pill px-4 py-1.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
-                      isCurrent
-                        ? `${PRODUCT_STATUS_STYLE[status]} ring-2 ring-current`
-                        : "bg-background text-muted-foreground hover:text-ink"
-                    }`}
-                  >
-                    {PRODUCT_STATUS_LABEL[status]}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{PRODUCT_STATUS_HINT[product.status]}</p>
-          </div>
-          {product.status === "PUBLISHED" && (
-            <Link
-              href={`/products/${product.slug}`}
-              target="_blank"
-              className="self-start text-sm font-semibold text-accent underline underline-offset-4"
-            >
-              View in shop ↗
-            </Link>
-          )}
         </div>
       </header>
 
@@ -820,65 +845,93 @@ export default function AdminProductDetailPage({
       </div>
 
       {/* Basic information */}
-      <Section id="basic" title="Basic information">
-        {!isEditingDetails ? (
-          <>
-            <dl className="grid gap-4 text-sm sm:grid-cols-2">
-              <Detail label="Name (English)">{product.nameEn}</Detail>
-              <Detail label="الاسم (عربي)" rtl>
-                {product.nameAr}
-              </Detail>
-              <Detail label="Description (English)">{product.descriptionEn}</Detail>
-              <Detail label="الوصف (عربي)" rtl>
-                {product.descriptionAr}
-              </Detail>
-              <Detail label="Web address">/products/{product.slug}</Detail>
-              <Detail label="Internal notes (staff only)">{product.internalNotes}</Detail>
-            </dl>
-            <button type="button" onClick={startEditingDetails} className={`${secondaryButtonClass} mt-4`}>
-              Edit basic information
+      <Section
+        id="basic"
+        title="Basic information"
+        description="Names and descriptions customers read, in both languages."
+        action={
+          !isEditingDetails && (
+            <button type="button" onClick={startEditingDetails} className={`${secondaryButtonClass} py-1.5`}>
+              Edit
             </button>
-          </>
+          )
+        }
+      >
+        {!isEditingDetails ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            <LanguageCard label="English">
+              <p className="text-lg font-semibold text-ink">{product.nameEn}</p>
+              <p className={`mt-1 text-sm whitespace-pre-line ${product.descriptionEn ? "text-ink/80" : "text-muted-foreground"}`}>
+                {product.descriptionEn || "No description yet."}
+              </p>
+            </LanguageCard>
+            <LanguageCard label="عربي" rtl>
+              <p className="text-lg font-semibold text-ink">{product.nameAr}</p>
+              <p className={`mt-1 text-sm whitespace-pre-line ${product.descriptionAr ? "text-ink/80" : "text-muted-foreground"}`}>
+                {product.descriptionAr || "لا يوجد وصف بعد."}
+              </p>
+            </LanguageCard>
+            <div className="rounded-2xl bg-background p-4 text-sm">
+              <p className="text-xs font-semibold text-muted-foreground">Web address</p>
+              <p className="mt-1 break-all text-ink">/products/{product.slug}</p>
+            </div>
+            <div className="rounded-2xl bg-background p-4 text-sm">
+              <p className="text-xs font-semibold text-muted-foreground">Internal notes · staff only</p>
+              <p className={`mt-1 whitespace-pre-line ${product.internalNotes ? "text-ink" : "text-muted-foreground"}`}>
+                {product.internalNotes || "None"}
+              </p>
+            </div>
+          </div>
         ) : (
-          <form onSubmit={handleSaveDetails} className="grid gap-3 sm:grid-cols-2">
-            <Field label="Name (English)">
-              <input required value={editNameEn} onChange={(e) => setEditNameEn(e.target.value)} className={inputClass} />
-            </Field>
-            <Field label="الاسم (عربي)">
-              <input
-                required
-                dir="rtl"
-                value={editNameAr}
-                onChange={(e) => setEditNameAr(e.target.value)}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Description (English)">
-              <textarea
-                rows={3}
-                value={editDescriptionEn}
-                onChange={(e) => setEditDescriptionEn(e.target.value)}
-                className={`${inputClass} rounded-2xl`}
-              />
-            </Field>
-            <Field label="الوصف (عربي)">
-              <textarea
-                rows={3}
-                dir="rtl"
-                value={editDescriptionAr}
-                onChange={(e) => setEditDescriptionAr(e.target.value)}
-                className={`${inputClass} rounded-2xl`}
-              />
-            </Field>
-            <Field label="Internal notes (staff only)">
-              <textarea
-                rows={2}
-                value={editInternalNotes}
-                onChange={(e) => setEditInternalNotes(e.target.value)}
-                className={`${inputClass} rounded-2xl`}
-              />
-            </Field>
-            <div className="flex items-end gap-2">
+          <form onSubmit={handleSaveDetails} className="grid gap-3 md:grid-cols-2">
+            <LanguageCard label="English">
+              <div className="flex flex-col gap-3">
+                <Field label="Name">
+                  <input required value={editNameEn} onChange={(e) => setEditNameEn(e.target.value)} className={`${inputClass} font-normal`} />
+                </Field>
+                <Field label="Description">
+                  <textarea
+                    rows={4}
+                    value={editDescriptionEn}
+                    onChange={(e) => setEditDescriptionEn(e.target.value)}
+                    className={`${inputClass} rounded-2xl font-normal`}
+                  />
+                </Field>
+              </div>
+            </LanguageCard>
+            <LanguageCard label="عربي" rtl>
+              <div className="flex flex-col gap-3">
+                <Field label="الاسم">
+                  <input
+                    required
+                    dir="rtl"
+                    value={editNameAr}
+                    onChange={(e) => setEditNameAr(e.target.value)}
+                    className={`${inputClass} font-normal`}
+                  />
+                </Field>
+                <Field label="الوصف">
+                  <textarea
+                    rows={4}
+                    dir="rtl"
+                    value={editDescriptionAr}
+                    onChange={(e) => setEditDescriptionAr(e.target.value)}
+                    className={`${inputClass} rounded-2xl font-normal`}
+                  />
+                </Field>
+              </div>
+            </LanguageCard>
+            <div className="rounded-2xl bg-background p-4 md:col-span-2">
+              <Field label="Internal notes · staff only">
+                <textarea
+                  rows={2}
+                  value={editInternalNotes}
+                  onChange={(e) => setEditInternalNotes(e.target.value)}
+                  className={`${inputClass} rounded-2xl font-normal`}
+                />
+              </Field>
+            </div>
+            <div className="flex gap-2 md:col-span-2">
               <button type="submit" disabled={isSavingDetails} className={buttonClass}>
                 {isSavingDetails ? "Saving…" : "Save changes"}
               </button>
@@ -889,48 +942,57 @@ export default function AdminProductDetailPage({
           </form>
         )}
 
-        <h3 className="mt-8 text-sm font-semibold text-ink">Collections</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {product.collections.map((collection) => (
-            <span
-              key={collection.id}
-              className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold uppercase"
-            >
-              {collection.nameEn}
-              <button
-                type="button"
-                disabled={isBusy}
-                onClick={() => handleDetachCollection(collection.id)}
-                aria-label={`Remove from ${collection.nameEn}`}
-                className="text-accent"
+        <div className="mt-6 border-t border-border pt-5">
+          <h3 className="text-sm font-semibold text-ink">Collections</h3>
+          <p className="text-xs text-muted-foreground">Where customers find this design. It can be in several.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {product.collections.map((collection) => (
+              <span
+                key={collection.id}
+                className="flex items-center gap-1 rounded-pill bg-ink py-1 ps-3 pe-1 text-sm font-semibold text-white"
               >
-                ×
-              </button>
-            </span>
-          ))}
-          {product.collections.length === 0 && (
-            <p className="text-sm text-muted-foreground">Not in any collection yet.</p>
-          )}
+                <Link href={`/admin/catalog/collections/${collection.id}`} className="hover:underline">
+                  {collection.nameEn}
+                </Link>
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => handleDetachCollection(collection.id)}
+                  aria-label={`Remove from ${collection.nameEn}`}
+                  title="Remove from this collection"
+                  className="flex size-6 items-center justify-center rounded-full text-white/70 hover:bg-white/15 hover:text-white"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {product.collections.length === 0 && (
+              <span className="text-sm text-amber-700">Not in any collection yet.</span>
+            )}
+            {availableCollectionsToAttach.length > 0 && (
+              <form onSubmit={handleAttachCollection} className="flex items-center gap-1.5">
+                <select
+                  aria-label="Add to collection"
+                  value={attachCollectionId}
+                  onChange={(e) => setAttachCollectionId(e.target.value)}
+                  className={`${inputClass} py-1.5`}
+                >
+                  <option value="">+ Add to collection…</option>
+                  {availableCollectionsToAttach.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nameEn}
+                    </option>
+                  ))}
+                </select>
+                {attachCollectionId && (
+                  <button type="submit" disabled={isBusy} className={`${buttonClass} py-1.5`}>
+                    Add
+                  </button>
+                )}
+              </form>
+            )}
+          </div>
         </div>
-        {availableCollectionsToAttach.length > 0 && (
-          <form onSubmit={handleAttachCollection} className="mt-2 flex flex-wrap gap-2">
-            <select
-              value={attachCollectionId}
-              onChange={(e) => setAttachCollectionId(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Add to collection…</option>
-              {availableCollectionsToAttach.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nameEn}
-                </option>
-              ))}
-            </select>
-            <button type="submit" disabled={isBusy || !attachCollectionId} className={buttonClass}>
-              Add
-            </button>
-          </form>
-        )}
       </Section>
 
       {/* Pricing */}
@@ -982,152 +1044,174 @@ export default function AdminProductDetailPage({
           </p>
         ) : (
           <>
-            {/* Table Filters & Bulk Actions */}
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
+            {/* Filters & bulk actions */}
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+              <div className="relative min-w-0 flex-1 sm:max-w-xs">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden className="pointer-events-none absolute inset-y-0 start-3.5 my-auto size-4 text-muted-foreground">
+                  <path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" />
+                </svg>
                 <input
                   type="search"
-                  placeholder="Filter by SKU or model…"
+                  aria-label="Search variants"
+                  placeholder="Search model or SKU"
                   value={variantSearch}
                   onChange={(e) => setVariantSearch(e.target.value)}
-                  className={`w-48 ${inputClass}`}
+                  className={`w-full ${inputClass} ps-10`}
                 />
-                <select
-                  value={variantFilterBrand}
-                  onChange={(e) => setVariantFilterBrand(e.target.value)}
-                  className={`w-36 ${inputClass}`}
-                >
-                  <option value="ALL">All brands</option>
-                  {phoneBrands.map((b) => (
-                    <option key={b.slug} value={b.slug}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={variantFilterCaseType}
-                  onChange={(e) => setVariantFilterCaseType(e.target.value)}
-                  className={`w-36 ${inputClass}`}
-                >
-                  <option value="ALL">All case types</option>
-                  {caseTypes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-xs text-muted-foreground">
-                  Showing {filteredVariants.length} of {product.variants.length}
-                </span>
               </div>
-              <div className="flex items-center gap-2">
+              <select
+                aria-label="Brand"
+                value={variantFilterBrand}
+                onChange={(e) => setVariantFilterBrand(e.target.value)}
+                className={`${inputClass} ${variantFilterBrand !== "ALL" ? "border-ink font-semibold" : ""}`}
+              >
+                <option value="ALL">All brands</option>
+                {phoneBrands.map((b) => (
+                  <option key={b.slug} value={b.slug}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Case type"
+                value={variantFilterCaseType}
+                onChange={(e) => setVariantFilterCaseType(e.target.value)}
+                className={`${inputClass} ${variantFilterCaseType !== "ALL" ? "border-ink font-semibold" : ""}`}
+              >
+                <option value="ALL">All case types</option>
+                {caseTypes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <div className="ms-auto flex items-center gap-1">
                 <button
                   type="button"
-                  disabled={isBusy || product.variants.length === 0}
+                  disabled={isBusy || product.variants.every((v) => v.isActive)}
                   onClick={() => handleBulkSetVariantsActive(true)}
-                  className="text-xs font-semibold text-ink hover:text-accent"
+                  className="rounded-pill px-3 py-1.5 text-xs font-semibold text-ink hover:bg-background disabled:opacity-40"
                 >
-                  Activate all
+                  Turn all on
                 </button>
-                <span className="text-muted-foreground">·</span>
                 <button
                   type="button"
-                  disabled={isBusy || product.variants.length === 0}
+                  disabled={isBusy || product.variants.every((v) => !v.isActive)}
                   onClick={() => handleBulkSetVariantsActive(false)}
-                  className="text-xs font-semibold text-muted-foreground hover:text-accent"
+                  className="rounded-pill px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-background hover:text-ink disabled:opacity-40"
                 >
-                  Deactivate all
+                  Turn all off
                 </button>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-border text-start text-muted-foreground">
-                    <th className="p-2 text-start">Phone model · case type</th>
-                    <th className="p-2 text-start">SKU</th>
-                    <th className="p-2 text-start">Price</th>
-                    <th className="p-2 text-start">Active</th>
-                    <th className="p-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredVariants.map((variant) => (
-                    <Fragment key={variant.id}>
-                      <tr className="border-b border-border hover:bg-surface/50">
-                        <td className="p-2 font-semibold text-ink">
-                          {variantLabel(variant)}
-                          {variant.isPersonalizable && (
-                            <span className="ms-2 rounded-full bg-accent-wash px-2 py-0.5 text-[11px] font-semibold">
-                              Custom image +{formatPrice(variant.customizationPrice ?? 0, variant.currency)}
-                            </span>
+            <div className="overflow-hidden rounded-2xl border border-border">
+              <div className="max-h-[32rem] overflow-auto">
+                <table className="w-full min-w-[600px] border-collapse text-sm">
+                  <thead className="sticky top-0 z-[1] bg-background text-xs text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-2.5 text-start font-semibold">Phone model</th>
+                      <th className="px-3 py-2.5 text-start font-semibold">SKU</th>
+                      <th className="px-3 py-2.5 text-end font-semibold">Price</th>
+                      <th className="px-3 py-2.5 text-center font-semibold">On</th>
+                      <th className="px-4 py-2.5" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredVariants.map((variant) => {
+                      const model = phoneModels.find((m) => m.id === variant.phoneModelId);
+                      const caseType = caseTypes.find((c) => c.id === variant.caseTypeId);
+                      const isEditing = editingVariantId === variant.id;
+                      return (
+                        <Fragment key={variant.id}>
+                          <tr className={`border-t border-border ${isEditing ? "bg-background" : "hover:bg-background/60"} ${variant.isActive ? "" : "text-muted-foreground"}`}>
+                            <td className="px-4 py-2.5">
+                              <span className={`block font-semibold ${variant.isActive ? "text-ink" : ""}`}>
+                                {model ? `${model.brand.name} ${model.name}` : "Accessory"}
+                              </span>
+                              <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                                {caseType?.name ?? "No case type"}
+                                {variant.isPersonalizable && (
+                                  <span className="rounded-full bg-accent-wash px-1.5 py-px text-[11px] font-semibold text-ink">
+                                    Custom image +{formatPrice(variant.customizationPrice ?? 0, variant.currency)}
+                                  </span>
+                                )}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{variant.sku}</td>
+                            <td className="px-3 py-2.5 text-end whitespace-nowrap tabular-nums">
+                              <span className={variant.compareAtPrice !== null ? "font-semibold text-accent" : "font-semibold"}>
+                                {formatPrice(variant.price, variant.currency)}
+                              </span>
+                              {variant.compareAtPrice !== null && (
+                                <s className="ms-1.5 text-xs text-muted-foreground">
+                                  {formatPrice(variant.compareAtPrice, variant.currency)}
+                                </s>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              <Switch
+                                checked={variant.isActive}
+                                disabled={isBusy}
+                                onChange={(checked) => handleToggleVariantActive(variant.id, checked)}
+                                label={`${variantLabel(variant)} active`}
+                              />
+                            </td>
+                            <td className="px-4 py-2.5 text-end">
+                              <button
+                                type="button"
+                                onClick={() => (isEditing ? setEditingVariantId(null) : startEditingVariant(variant))}
+                                className={`rounded-pill px-3 py-1 text-xs font-semibold transition-colors ${
+                                  isEditing ? "bg-ink text-white" : "border border-border bg-background text-ink hover:border-ink"
+                                }`}
+                              >
+                                {isEditing ? "Close" : "Edit"}
+                              </button>
+                            </td>
+                          </tr>
+                          {isEditing && (
+                            <tr className="bg-background">
+                              <td colSpan={5} className="px-4 pb-4">
+                                <VariantForm
+                                  form={editVariantForm}
+                                  setForm={setEditVariantForm}
+                                  phoneModels={phoneModels}
+                                  caseTypes={caseTypes}
+                                  stockItems={stockItems}
+                                  onSubmit={handleSaveVariant}
+                                  submitLabel="Save variant"
+                                  disabled={isBusy}
+                                />
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="p-2 font-mono text-xs text-muted-foreground">{variant.sku}</td>
-                        <td className="p-2">
-                          {formatPrice(variant.price, variant.currency)}
-                          {variant.compareAtPrice !== null && (
-                            <s className="ms-1.5 text-xs text-muted-foreground">
-                              {formatPrice(variant.compareAtPrice, variant.currency)}
-                            </s>
-                          )}
-                        </td>
-                        <td className="p-2">
-                          <Switch
-                            checked={variant.isActive}
-                            disabled={isBusy}
-                            onChange={(checked) => handleToggleVariantActive(variant.id, checked)}
-                            label={`${variantLabel(variant)} active`}
-                          />
-                        </td>
-                        <td className="p-2 text-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              editingVariantId === variant.id
-                                ? setEditingVariantId(null)
-                                : startEditingVariant(variant)
-                            }
-                            className="text-xs font-semibold text-accent underline underline-offset-4"
-                          >
-                            {editingVariantId === variant.id ? "Cancel" : "Edit"}
-                          </button>
+                        </Fragment>
+                      );
+                    })}
+                    {filteredVariants.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                          No variants match these filters.
                         </td>
                       </tr>
-                      {editingVariantId === variant.id && (
-                        <tr className="border-b border-border bg-background">
-                          <td colSpan={5} className="p-3">
-                            <VariantForm
-                              form={editVariantForm}
-                              setForm={setEditVariantForm}
-                              phoneModels={phoneModels}
-                              caseTypes={caseTypes}
-                              stockItems={stockItems}
-                              onSubmit={handleSaveVariant}
-                              submitLabel="Save variant"
-                              disabled={isBusy}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))}
-                  {filteredVariants.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                        No variants match the selected filters.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="border-t border-border bg-background px-4 py-2 text-xs text-muted-foreground">
+                Showing {filteredVariants.length} of {product.variants.length} · {product.variants.filter((v) => v.isActive).length} on
+              </p>
             </div>
           </>
         )}
 
-        <h3 className="mt-8 text-sm font-semibold text-ink">Add variants</h3>
-        <div className="mt-2">
+        <div className={product.variants.length > 0 ? "mt-6 border-t border-border pt-5" : ""}>
+          <h3 className="text-sm font-semibold text-ink">Add variants</h3>
+          <p className="text-xs text-muted-foreground">
+            Combinations that already exist are skipped, so you can safely run it again after adding new phone models.
+          </p>
+        </div>
+        <div className="mt-3">
           <AddVariantPanel
             form={newVariant}
             setForm={setNewVariant}
@@ -1153,83 +1237,158 @@ export default function AdminProductDetailPage({
             disabled={isBusy}
           />
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Leaving phone model/case type unset means this variant is an
-          accessory, not something &quot;compatible with every phone.&quot;
-          Stock item and unlimited stock can&apos;t both be set — picking one
-          clears the other.
-        </p>
       </Section>
 
       {/* Personalization */}
-      <Section id="personalization" title="Personalization">
-        <h3 className="text-sm font-semibold text-ink">Customer&apos;s own image</h3>
-        {product.variants.some((v) => v.isPersonalizable) ? (
-          <p className="mt-1 max-w-2xl text-sm text-ink">
-            {product.variants.filter((v) => v.isPersonalizable).length} of {product.variants.length} variants let
-            customers upload their own image on the{" "}
-            <Link href={`/customize?product=${product.slug}`} target="_blank" className="font-semibold text-accent underline underline-offset-4">
-              Design your case ↗
-            </Link>{" "}
-            page.
-          </p>
-        ) : (
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Off for every variant. To turn it on, click Edit on a variant under Variants and tick &quot;Customer can
-            upload their own image&quot;.
-          </p>
-        )}
-        <h3 className="mt-5 text-sm font-semibold text-ink">Personal notes</h3>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Customers can add a note to any case when they add it to the bag (for example a name to print on the back).
-          It shows on the order line in{" "}
-          <Link href="/admin/orders" className="font-semibold text-accent underline underline-offset-4">
-            Orders
-          </Link>
-          .
-        </p>
+      <Section
+        id="personalization"
+        title="Personalization"
+        description="Ways customers can make this case their own."
+      >
+        {(() => {
+          const personalizable = product.variants.filter((v) => v.isPersonalizable).length;
+          return (
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl bg-background p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-ink">Customer&apos;s own image</p>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      personalizable ? "bg-green-100 text-green-800" : "bg-surface text-muted-foreground"
+                    }`}
+                  >
+                    {personalizable ? `On for ${personalizable} of ${product.variants.length}` : "Off"}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  {personalizable ? (
+                    <>
+                      Customers upload a photo on the{" "}
+                      <Link
+                        href={`/customize?product=${product.slug}`}
+                        target="_blank"
+                        className="font-semibold text-accent underline underline-offset-4"
+                      >
+                        Design your case ↗
+                      </Link>{" "}
+                      page.
+                    </>
+                  ) : (
+                    <>Turn it on per variant: click Edit on a variant above and tick &quot;Customer can upload their own image&quot;.</>
+                  )}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-background p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-ink">Personal note</p>
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">Always on</span>
+                </div>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  Customers can add a note when they add it to the bag, like a name to print. You&apos;ll see it on the
+                  order in{" "}
+                  <Link href="/admin/orders" className="font-semibold text-accent underline underline-offset-4">
+                    Orders
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+          );
+        })()}
       </Section>
 
       {/* Inventory */}
       <Section
         id="inventory"
         title="Inventory"
-        description="Change which stock item a variant uses with Edit in Variants. Adjust stock counts on the Stock page."
+        description="Change a variant's stock item with Edit under Variants. Adjust counts on the Stock page."
+        action={
+          <Link href="/admin/stock" className={`${secondaryButtonClass} py-1.5`}>
+            Stock page
+          </Link>
+        }
       >
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {product.variants.map((variant) => {
-            const stockItem = stockItems.find((s) => s.id === variant.stockItemId) ?? variant.stockItem;
-            const available = stockItem ? stockItem.onHand - stockItem.reserved : null;
+        {product.variants.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No variants yet.</p>
+        ) : (
+          (() => {
+            const rows = product.variants.map((variant) => {
+              const stockItem = stockItems.find((st) => st.id === variant.stockItemId) ?? variant.stockItem;
+              const available = stockItem ? stockItem.onHand - stockItem.reserved : null;
+              const state: "made" | "none" | "out" | "in" = variant.isUnlimitedStock
+                ? "made"
+                : available === null
+                  ? "none"
+                  : available <= 0
+                    ? "out"
+                    : "in";
+              return { variant, available, state };
+            });
+            const tiles = [
+              { state: "made", label: "Made to order", tone: "bg-blue-100 text-blue-800" },
+              { state: "in", label: "In stock", tone: "bg-green-100 text-green-800" },
+              { state: "out", label: "Out of stock", tone: "bg-red-100 text-red-800" },
+              { state: "none", label: "No stock item", tone: "bg-amber-100 text-amber-800" },
+            ] as const;
+            const problems = rows.filter((r) => r.state === "out" || r.state === "none");
             return (
-              <li key={variant.id} className="flex items-center justify-between gap-3 rounded-2xl bg-background p-3 text-sm">
-                <span className="font-semibold text-ink">{variantLabel(variant)}</span>
-                <span
-                  className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    variant.isUnlimitedStock
-                      ? "bg-blue-100 text-blue-800"
-                      : available === null
-                        ? "bg-amber-100 text-amber-800"
-                        : available <= 0
-                          ? "bg-red-100 text-red-800"
-                          : "bg-green-100 text-green-800"
-                  }`}
-                >
-                  {variant.isUnlimitedStock
-                    ? "Made to order"
-                    : available === null
-                      ? "No stock item"
-                      : available <= 0
-                        ? "Out of stock"
-                        : `${available} in stock`}
-                </span>
-              </li>
+              <>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {tiles.map((tile) => {
+                    const count = rows.filter((r) => r.state === tile.state).length;
+                    return (
+                      <div key={tile.state} className="rounded-2xl bg-background p-3">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                          <span aria-hidden className={`size-2 rounded-full ${tile.tone.split(" ")[0]}`} />
+                          {tile.label}
+                        </p>
+                        <p className={`mt-1 font-display text-2xl ${count && (tile.state === "out" || tile.state === "none") ? "text-red-700" : "text-ink"}`}>
+                          {count}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {problems.length > 0 && (
+                  <>
+                    <p className="mt-4 text-sm font-semibold text-ink">Needs attention</p>
+                    <ul className="mt-2 divide-y divide-border rounded-2xl border border-border">
+                      {problems.map(({ variant, state }) => (
+                        <li key={variant.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                          <span className="min-w-0 truncate text-ink">{variantLabel(variant)}</span>
+                          <span
+                            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              state === "out" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {state === "out" ? "Out of stock" : "No stock item"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {rows.some((r) => r.state === "in") && (
+                  <details className="mt-4 text-sm">
+                    <summary className="cursor-pointer font-semibold text-ink">
+                      Stock per variant ({rows.filter((r) => r.state === "in").length})
+                    </summary>
+                    <ul className="mt-2 divide-y divide-border rounded-2xl border border-border">
+                      {rows
+                        .filter((r) => r.state === "in")
+                        .map(({ variant, available }) => (
+                          <li key={variant.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                            <span className="min-w-0 truncate text-ink">{variantLabel(variant)}</span>
+                            <span className="shrink-0 font-semibold text-green-800 tabular-nums">{available} left</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </details>
+                )}
+              </>
             );
-          })}
-          {product.variants.length === 0 && <p className="text-sm text-muted-foreground">No variants yet.</p>}
-        </ul>
-        <Link href="/admin/stock" className={`${secondaryButtonClass} mt-4 inline-block`}>
-          Open Stock page
-        </Link>
+          })()
+        )}
       </Section>
     </div>
   );
@@ -1239,11 +1398,14 @@ function Section({
   id,
   title,
   description,
+  action,
   children,
 }: {
   id: string;
   title: string;
   description?: string;
+  /** Optional control on the right of the header (e.g. an Edit button). */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -1256,12 +1418,13 @@ function Section({
         <span aria-hidden className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-background text-ink">
           <SectionIcon id={id as SectionId} className="size-[18px]" />
         </span>
-        <div>
+        <div className="min-w-0 flex-1">
           <h2 id={`${id}-heading`} className="text-lg leading-tight font-semibold text-ink">
             {title}
           </h2>
           {description && <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">{description}</p>}
         </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       <div className="p-4 sm:p-6">{children}</div>
     </section>
@@ -1277,13 +1440,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Detail({ label, rtl, children }: { label: string; rtl?: boolean; children: React.ReactNode }) {
+/** One language's block; Arabic content is laid out right-to-left. */
+function LanguageCard({ label, rtl, children }: { label: string; rtl?: boolean; children: React.ReactNode }) {
   return (
-    <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd dir={rtl ? "rtl" : undefined} className="text-start whitespace-pre-line text-ink">
-        {children || <span className="text-muted-foreground">—</span>}
-      </dd>
+    <div dir={rtl ? "rtl" : undefined} className="rounded-2xl bg-background p-4 text-start">
+      <p className="mb-2 inline-block rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+        {label}
+      </p>
+      {children}
     </div>
   );
 }
@@ -1320,6 +1484,9 @@ function PricingEditor({
   // Bulk by case type
   const [targetCaseTypeId, setTargetCaseTypeId] = useState("");
   const [caseTypePrice, setCaseTypePrice] = useState<number | null>(null);
+  const [caseTypeWas, setCaseTypeWas] = useState<number | null>(null);
+  const [bulkMode, setBulkMode] = useState<"all" | "caseType">("all");
+  const [showEach, setShowEach] = useState(false);
 
   if (variants.length === 0) {
     return <p className="text-sm text-muted-foreground">Add a variant first — prices are set per variant.</p>;
@@ -1338,150 +1505,224 @@ function PricingEditor({
   const allWasInvalid = allPrice !== null && allWas !== null && allWas <= allPrice;
   const onSaleCount = variants.filter((v) => draft[v.id].compareAtPrice !== null).length;
 
+  const caseTypeWasInvalid = caseTypePrice !== null && caseTypeWas !== null && caseTypeWas <= caseTypePrice;
+  // Current prices at a glance: one shared price, or a range.
+  const prices = variants.map((v) => draft[v.id].price).filter((p): p is number => p !== null);
+  const minPrice = prices.length ? Math.min(...prices) : null;
+  const maxPrice = prices.length ? Math.max(...prices) : null;
+  const sharedWas = new Set(variants.map((v) => draft[v.id].compareAtPrice));
+  const caseTypesInUse = (caseTypes ?? []).filter((c) => variants.some((v) => v.caseTypeId === c.id));
+
+  function applyDraft(match: (v: AdminVariant) => boolean, price: number | null, was: number | null) {
+    setDraft((prev) => {
+      const next = { ...prev };
+      for (const v of variants) if (match(v)) next[v.id] = { price, compareAtPrice: was };
+      return next;
+    });
+    setInputsVersion((n) => n + 1);
+  }
+
   const matchedCaseTypeCount = targetCaseTypeId
     ? variants.filter((v) => v.caseTypeId === targetCaseTypeId).length
     : 0;
 
   return (
     <div>
-      {variants.length > 1 && (
-        <div className="mb-4 flex flex-col gap-3 rounded-2xl bg-accent-wash/60 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Bulk price updates
+      {/* At a glance */}
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl bg-background p-4">
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground">
+            {minPrice === maxPrice ? `All ${variants.length} variants` : `${variants.length} variants`}
           </p>
-          <div className="flex flex-wrap items-end gap-2">
-            <MoneyInput label="Selling price" minorUnits={allPrice} onChange={setAllPrice} className="w-36" />
-            <MoneyInput label="Old price — optional" minorUnits={allWas} onChange={setAllWas} className="w-36" />
-            <button
-              type="button"
-              disabled={disabled || allPrice === null || allWasInvalid}
-              onClick={() => {
-                setDraft((prev) =>
-                  Object.fromEntries(
-                    Object.entries(prev).map(([id, d]) => [id, { ...d, price: allPrice, compareAtPrice: allWas }]),
-                  ),
-                );
-                setInputsVersion((n) => n + 1);
-              }}
-              className={secondaryButtonClass}
-            >
-              {allWas !== null ? `Put all ${variants.length} on sale` : `Apply to all ${variants.length}`}
-            </button>
-            {onSaleCount > 0 && (
-              <button
-                type="button"
-                disabled={disabled}
-                title="Each variant goes back to its old price and the crossed-out price disappears."
-                onClick={() => {
-                  setDraft((prev) =>
-                    Object.fromEntries(
-                      Object.entries(prev).map(([id, d]) => [
-                        id,
-                        d.compareAtPrice !== null ? { price: d.compareAtPrice, compareAtPrice: null } : d,
-                      ]),
-                    ),
-                  );
-                  setInputsVersion((n) => n + 1);
-                }}
-                className="px-2 py-2 text-sm font-semibold text-accent hover:underline disabled:opacity-50"
-              >
-                End sale on {onSaleCount}
-              </button>
+          <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2">
+            <span className="font-display text-3xl text-ink">
+              {minPrice === null
+                ? "—"
+                : minPrice === maxPrice
+                  ? formatPrice(minPrice, currency)
+                  : `${formatPrice(minPrice, currency)} – ${formatPrice(maxPrice!, currency)}`}
+            </span>
+            {onSaleCount > 0 && sharedWas.size === 1 && [...sharedWas][0] !== null && (
+              <s className="text-sm text-muted-foreground">{formatPrice([...sharedWas][0]!, currency)}</s>
+            )}
+          </p>
+        </div>
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+            onSaleCount > 0 ? "bg-accent text-white" : "bg-surface text-muted-foreground"
+          }`}
+        >
+          {onSaleCount === 0 ? "Not on sale" : onSaleCount === variants.length ? "On sale" : `${onSaleCount} on sale`}
+        </span>
+      </div>
+
+      {/* Bulk tools */}
+      {variants.length > 1 && (
+        <div className="mt-4 rounded-2xl border border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-ink">Change prices in bulk</p>
+            {caseTypesInUse.length > 1 && (
+              <div role="radiogroup" aria-label="Apply to" className="inline-flex gap-0.5 rounded-pill bg-background p-0.5">
+                {(
+                  [
+                    ["all", "All variants"],
+                    ["caseType", "One case type"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={bulkMode === value}
+                    onClick={() => setBulkMode(value)}
+                    className={`rounded-pill px-3 py-1 text-xs font-semibold transition-colors ${
+                      bulkMode === value ? "bg-ink text-white" : "text-muted-foreground hover:text-ink"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-          {allWasInvalid && (
-            <p className="text-xs font-semibold text-red-700">The old price must be higher than the selling price.</p>
-          )}
 
-          {caseTypes && caseTypes.length > 0 && (
-            <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-accent/10">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted-foreground">Apply by case type</label>
+          {bulkMode === "all" || caseTypesInUse.length <= 1 ? (
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <MoneyInput label="Selling price" minorUnits={allPrice} onChange={setAllPrice} className="w-36" />
+              <MoneyInput label="Old price — optional" minorUnits={allWas} onChange={setAllWas} className="w-36" />
+              <button
+                type="button"
+                disabled={disabled || allPrice === null || allWasInvalid}
+                onClick={() => applyDraft(() => true, allPrice, allWas)}
+                className={secondaryButtonClass}
+              >
+                {allWas !== null ? `Put all ${variants.length} on sale` : `Apply to all ${variants.length}`}
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink">
+                Case type
                 <select
                   value={targetCaseTypeId}
                   onChange={(e) => setTargetCaseTypeId(e.target.value)}
-                  className={`w-44 ${inputClass}`}
+                  className={`w-44 ${inputClass} font-normal`}
                 >
-                  <option value="">Select case type…</option>
-                  {caseTypes.map((c) => (
+                  <option value="">Choose…</option>
+                  {caseTypesInUse.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} ({variants.filter((v) => v.caseTypeId === c.id).length})
                     </option>
                   ))}
                 </select>
-              </div>
-              <MoneyInput label="Price for case type" minorUnits={caseTypePrice} onChange={setCaseTypePrice} className="w-36" />
+              </label>
+              <MoneyInput label="Selling price" minorUnits={caseTypePrice} onChange={setCaseTypePrice} className="w-36" />
+              <MoneyInput label="Old price — optional" minorUnits={caseTypeWas} onChange={setCaseTypeWas} className="w-36" />
               <button
                 type="button"
-                disabled={disabled || !targetCaseTypeId || caseTypePrice === null || matchedCaseTypeCount === 0}
-                onClick={() => {
-                  setDraft((prev) => {
-                    const next = { ...prev };
-                    for (const v of variants) {
-                      if (v.caseTypeId === targetCaseTypeId) {
-                        next[v.id] = { ...next[v.id], price: caseTypePrice };
-                      }
-                    }
-                    return next;
-                  });
-                  setInputsVersion((n) => n + 1);
-                }}
+                disabled={disabled || !targetCaseTypeId || caseTypePrice === null || matchedCaseTypeCount === 0 || caseTypeWasInvalid}
+                onClick={() => applyDraft((v) => v.caseTypeId === targetCaseTypeId, caseTypePrice, caseTypeWas)}
                 className={secondaryButtonClass}
               >
                 Apply to {matchedCaseTypeCount} {matchedCaseTypeCount === 1 ? "variant" : "variants"}
               </button>
             </div>
           )}
+          {(allWasInvalid || caseTypeWasInvalid) && (
+            <p className="mt-2 text-xs font-semibold text-red-700">The old price must be higher than the selling price.</p>
+          )}
+          {onSaleCount > 0 && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setDraft((prev) =>
+                  Object.fromEntries(
+                    Object.entries(prev).map(([vid, d]) => [
+                      vid,
+                      d.compareAtPrice !== null ? { price: d.compareAtPrice, compareAtPrice: null } : d,
+                    ]),
+                  ),
+                );
+                setInputsVersion((n) => n + 1);
+              }}
+              className="mt-3 text-sm font-semibold text-accent hover:underline disabled:opacity-50"
+              title="Each variant goes back to its old price and the crossed-out price disappears."
+            >
+              End sale on {onSaleCount} {onSaleCount === 1 ? "variant" : "variants"} →
+            </button>
+          )}
         </div>
       )}
-      <ul className="flex flex-col gap-2">
-        {variants.map((variant) => {
-          const d = draft[variant.id];
-          const changed = d.price !== variant.price || d.compareAtPrice !== variant.compareAtPrice;
-          return (
-            <li
-              key={`${variant.id}-${inputsVersion}`}
-              className={`flex flex-wrap items-end gap-3 rounded-2xl p-3 ${changed ? "bg-amber-50" : "bg-background"}`}
-            >
-              <div className="min-w-40 flex-1">
-                <p className="font-semibold text-ink">{labelFor(variant)}</p>
-                <p className="text-xs text-muted-foreground">
-                  Now {formatPrice(variant.price, currency)}
-                  {variant.compareAtPrice !== null && ` (on sale, was ${formatPrice(variant.compareAtPrice, currency)})`}
-                  {!variant.isActive && " · inactive"}
-                </p>
-              </div>
-              <MoneyInput
-                label="Price"
-                minorUnits={d.price}
-                onChange={(v) => setDraft((prev) => ({ ...prev, [variant.id]: { ...prev[variant.id], price: v } }))}
-                className="w-36"
-              />
-              <MoneyInput
-                label="Old price — optional"
-                minorUnits={d.compareAtPrice}
-                onChange={(v) =>
-                  setDraft((prev) => ({ ...prev, [variant.id]: { ...prev[variant.id], compareAtPrice: v } }))
-                }
-                className="w-36"
-              />
-              {isWasInvalid(d) && (
-                <p className="w-full text-xs font-semibold text-red-700">Old price must be higher than the price.</p>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={disabled || changes.length === 0 || hasEmpty || hasInvalidWas}
-          onClick={() => onSave(changes)}
-          className={buttonClass}
-        >
-          {changes.length > 1 ? `Save ${changes.length} prices` : "Save price"}
-        </button>
-        {changes.length > 0 && (
+
+      {/* One by one */}
+      <div className="mt-4">
+        {variants.length > 1 && (
+          <button
+            type="button"
+            aria-expanded={showEach || changes.length > 0}
+            onClick={() => setShowEach((open) => !open)}
+            className="flex items-center gap-1.5 text-sm font-semibold text-ink hover:text-accent"
+          >
+            <span aria-hidden className={`inline-block transition-transform ${showEach || changes.length > 0 ? "rotate-90" : ""}`}>
+              ›
+            </span>
+            Edit each variant&apos;s price
+            <span className="font-normal text-muted-foreground">({variants.length})</span>
+          </button>
+        )}
+        {(variants.length === 1 || showEach || changes.length > 0) && (
+          <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border">
+            {variants.map((variant) => {
+              const d = draft[variant.id];
+              const changed = d.price !== variant.price || d.compareAtPrice !== variant.compareAtPrice;
+              return (
+                <li
+                  key={`${variant.id}-${inputsVersion}`}
+                  className={`flex flex-wrap items-end gap-3 px-4 py-3 ${changed ? "bg-amber-50" : ""}`}
+                >
+                  <div className="min-w-40 flex-1 self-center">
+                    <p className="font-semibold text-ink">{labelFor(variant)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Now {formatPrice(variant.price, currency)}
+                      {variant.compareAtPrice !== null && <> · was <s>{formatPrice(variant.compareAtPrice, currency)}</s></>}
+                      {!variant.isActive && " · off"}
+                    </p>
+                  </div>
+                  <MoneyInput
+                    label="Price"
+                    minorUnits={d.price}
+                    onChange={(v) => setDraft((prev) => ({ ...prev, [variant.id]: { ...prev[variant.id], price: v } }))}
+                    className="w-32"
+                  />
+                  <MoneyInput
+                    label="Old price"
+                    minorUnits={d.compareAtPrice}
+                    onChange={(v) =>
+                      setDraft((prev) => ({ ...prev, [variant.id]: { ...prev[variant.id], compareAtPrice: v } }))
+                    }
+                    className="w-32"
+                  />
+                  {isWasInvalid(d) && (
+                    <p className="w-full text-xs font-semibold text-red-700">Old price must be higher than the price.</p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {/* Save bar: only when something changed */}
+      {(changes.length > 0 || hasEmpty || hasInvalidWas) && (
+        <div className="sticky bottom-3 z-10 mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-ink p-3 text-sm text-white shadow-lg">
+          <span className="flex-1">
+            {hasEmpty
+              ? "Every variant needs a price."
+              : hasInvalidWas
+                ? "Fix the old prices marked in red."
+                : `${changes.length} unsaved ${changes.length === 1 ? "price" : "prices"}`}
+          </span>
           <button
             type="button"
             disabled={disabled}
@@ -1491,16 +1732,23 @@ function PricingEditor({
               );
               setInputsVersion((n) => n + 1);
             }}
-            className={secondaryButtonClass}
+            className="rounded-pill px-3 py-1.5 font-semibold text-white/80 hover:text-white"
           >
-            Undo changes
+            Undo
           </button>
-        )}
-        {hasEmpty && <span className="text-sm text-amber-700">Every variant needs a price.</span>}
-        <span className="text-xs text-muted-foreground">
-          The old price shows crossed out next to the selling price, on the product page and product cards.
-        </span>
-      </div>
+          <button
+            type="button"
+            disabled={disabled || changes.length === 0 || hasEmpty || hasInvalidWas}
+            onClick={() => onSave(changes)}
+            className="rounded-pill bg-white px-4 py-1.5 font-semibold text-ink transition-colors enabled:hover:bg-accent enabled:hover:text-white disabled:opacity-50"
+          >
+            Save {changes.length > 1 ? `${changes.length} prices` : "price"}
+          </button>
+        </div>
+      )}
+      <p className="mt-3 text-xs text-muted-foreground">
+        The old price shows crossed out next to the selling price on the product page and product cards.
+      </p>
     </div>
   );
 }
