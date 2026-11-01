@@ -681,7 +681,13 @@ export const adminClient = {
 
   listAuditLog(
     accessToken: string,
-    params: { page?: number; pageSize?: number } = {},
+    params: {
+      page?: number;
+      pageSize?: number;
+      entityType?: string;
+      entityId?: string;
+      staffUserId?: string;
+    } = {},
   ): Promise<AuditLogResult> {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {

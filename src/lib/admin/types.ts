@@ -498,14 +498,15 @@ export interface AdminRefundInput {
 
 export interface AuditLogEntry {
   id: string;
-  staffUserId: string;
   action: string;
   entityType: string;
   entityId: string;
   metadata: unknown;
   ipAddress: string | null;
   createdAt: string;
-  staffUser: { id: string; email: string; fullName: string; role: StaffRole };
+  /** null for actions with no staff member (e.g. a customer placing an order). */
+  staffUserId: string | null;
+  staffUser: { id: string; email: string; fullName: string; role: StaffRole } | null;
 }
 
 export interface AuditLogResult {
