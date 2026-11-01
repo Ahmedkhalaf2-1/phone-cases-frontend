@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { formatPrice } from "@/lib/format-price";
@@ -30,11 +30,21 @@ const PAYMENT_VALUES: PaymentStatus[] = [
   "REFUNDED",
 ];
 
-export default function AdminOrdersPage() {
+export default function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ fulfillment?: string; payment?: string }>;
+}) {
+  // ?fulfillment=PENDING / ?payment=UNPAID preselect a filter (dashboard links).
+  const initial = use(searchParams);
   const { accessToken, authorizedFetch } = useAdminAuth();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [fulfillmentStatus, setFulfillmentStatus] = useState<FulfillmentStatus | "">("");
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | "">("");
+  const [fulfillmentStatus, setFulfillmentStatus] = useState<FulfillmentStatus | "">(() =>
+    FULFILLMENT_VALUES.find((v) => v === initial.fulfillment) ?? "",
+  );
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | "">(() =>
+    PAYMENT_VALUES.find((v) => v === initial.payment) ?? "",
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

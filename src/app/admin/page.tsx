@@ -30,7 +30,8 @@ const RECENT_WINDOW = 50;
 /** Page size the orders endpoint is known to accept, and a safety cap on paging through paid orders. */
 const PAID_PAGE_SIZE = 50;
 const MAX_PAID_PAGES = 40;
-const CHART_DAYS = 14;
+const RANGES = [7, 14, 30] as const;
+type Range = (typeof RANGES)[number];
 
 type Counts = {
   total: number;
@@ -91,6 +92,7 @@ export default function AdminDashboardPage() {
   const [stock, setStock] = useState<Section<StockItem[]>>(loading);
   const [loadedAt, setLoadedAt] = useState<Date | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [range, setRange] = useState<Range>(14);
 
   const list = useCallback(
     (params: Parameters<typeof adminClient.listOrders>[1]) =>
@@ -180,6 +182,7 @@ export default function AdminDashboardPage() {
 
   const c = counts.data;
   const isEmptyShop = c?.total === 0;
+  const isLoadingAny = !loadedAt || (!counts.data && !counts.error);
 
   // --- derived values -----------------------------------------------------
   const today = startOfToday();
@@ -200,18 +203,22 @@ export default function AdminDashboardPage() {
     .filter((o) => new Date(o.createdAt).getTime() >= monthStart)
     .reduce((sum, o) => sum + collected(o), 0);
 
-  const days = Array.from({ length: CHART_DAYS }, (_, i) => {
+  const days = Array.from({ length: range }, (_, i) => {
     const d = new Date(today);
-    d.setDate(d.getDate() - (CHART_DAYS - 1 - i));
+    d.setDate(d.getDate() - (range - 1 - i));
     return d;
   });
-  const byDay = new Map(days.map((d) => [dayKey(d), 0]));
+  const byDay = new Map(days.map((d) => [dayKey(d), { value: 0, count: 0 }]));
   for (const o of paidOrders) {
-    const key = dayKey(new Date(o.createdAt));
-    if (byDay.has(key)) byDay.set(key, byDay.get(key)! + collected(o));
+    const bucket = byDay.get(dayKey(new Date(o.createdAt)));
+    if (bucket) {
+      bucket.value += collected(o);
+      bucket.count += 1;
+    }
   }
-  const chart = days.map((d) => ({ date: d, value: byDay.get(dayKey(d)) ?? 0 }));
-  const chartMax = Math.max(0, ...chart.map((p) => p.value));
+  const chart = days.map((d) => ({ date: d, ...(byDay.get(dayKey(d)) ?? { value: 0, count: 0 }) }));
+  const rangeTotal = chart.reduce((sum, p) => sum + p.value, 0);
+  const rangeOrders = chart.reduce((sum, p) => sum + p.count, 0);
 
   const sold = new Map<string, number>();
   for (const o of paidOrders) {
@@ -233,32 +240,76 @@ export default function AdminDashboardPage() {
   const active = c ? ACTIVE.reduce((sum, s) => sum + c.byFulfillment[s], 0) : null;
   const unpaidOpen = c ? c.unpaid - c.unpaidCancelled : null;
 
+  const firstName = (staff?.fullName ?? "").replace(/\(.*?\)/g, "").trim().split(/\s+/)[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  const actions = c
+    ? [
+        { count: c.byFulfillment.PENDING, label: "Orders to confirm", href: "/admin/orders?fulfillment=PENDING", tone: "warn" as const },
+        { count: unpaidOpen ?? 0, label: "Unpaid orders", href: "/admin/orders?payment=UNPAID", tone: "warn" as const },
+        { count: c.paymentPending, label: "Payments to verify", href: "/admin/orders?payment=PENDING", tone: "warn" as const },
+        { count: c.paymentFailed, label: "Failed payments", href: "/admin/orders?payment=FAILED", tone: "bad" as const },
+        ...(stock.data
+          ? [{ count: outOfStock.length, label: "Stock items out of stock", href: "/admin/stock", tone: "bad" as const }]
+          : []),
+        ...(recent.data
+          ? [{ count: personalized.length, label: "Personalized orders in progress", href: "#personalized", tone: "warn" as const }]
+          : []),
+      ]
+    : [];
+  const openActions = actions.filter((a) => a.count > 0);
+
   return (
     <div className="max-w-7xl">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl tracking-tight text-ink uppercase">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Welcome back{staff?.fullName ? `, ${staff.fullName}` : ""}.
-            {loadedAt && ` Updated ${loadedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}.`}
+          <p className="text-sm text-muted-foreground">
+            {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
           </p>
+          <h1 className="mt-1 font-display text-4xl tracking-tight text-ink uppercase">
+            {greeting}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <QuickLink href="/admin/orders">Orders</QuickLink>
-          <QuickLink href="/admin/products/new">Add product</QuickLink>
-          <QuickLink href="/admin/stock">Stock</QuickLink>
+        <div className="flex flex-wrap items-center gap-2">
+          {loadedAt && (
+            <span className="me-1 text-xs text-muted-foreground">
+              Updated {loadedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
           <button
             type="button"
             onClick={refresh}
-            className="rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            aria-label="Refresh"
+            title="Refresh"
+            className={`flex size-10 items-center justify-center rounded-pill border border-border bg-background text-ink transition-colors hover:border-ink ${focusRing}`}
           >
-            Refresh
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+              className={`size-4 ${isLoadingAny ? "animate-spin" : ""}`}
+            >
+              <path d="M21 12a9 9 0 1 1-2.6-6.4L21 8M21 3v5h-5" />
+            </svg>
           </button>
+          <QuickLink href="/admin/orders">Orders</QuickLink>
+          <Link
+            href="/admin/products/new"
+            className={`rounded-pill bg-ink px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent ${focusRing}`}
+          >
+            + Add product
+          </Link>
         </div>
       </header>
 
       {isEmptyShop ? (
-        <div className="mt-8 rounded-2xl border border-border bg-surface p-10 text-center">
+        <div className="mt-8 rounded-card bg-surface p-10 text-center">
           <h2 className="font-display text-2xl text-ink uppercase">No orders yet</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             Once customers start ordering, sales and order activity will appear here.
@@ -273,164 +324,161 @@ export default function AdminDashboardPage() {
       ) : (
         <>
           {/* KPIs */}
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Kpi
-              label="Total orders"
-              error={counts.error}
-              value={c ? c.total.toLocaleString("en-US") : null}
-              note={
-                recent.data
-                  ? windowCoversToday
-                    ? `${todaysRecent.length} today`
-                    : `${todaysRecent.length}+ today`
-                  : undefined
-              }
-            />
-            <Kpi
-              label="Collected revenue"
+              label="Revenue this month"
               error={paid.error}
-              value={paid.data ? formatPrice(revenueAll, currency) : null}
-              note={paid.data ? `${formatPrice(revenueMonth, currency)} this month` : undefined}
+              value={paid.data ? formatPrice(revenueMonth, currency) : null}
+              note={paid.data ? `${formatPrice(revenueAll, currency)} all time` : undefined}
               hint="Orders marked paid, minus refunds"
             />
             <Kpi
-              label="Active orders"
+              label="Orders"
+              error={counts.error}
+              value={c ? c.total.toLocaleString("en-US") : null}
+              note={
+                recent.data ? `${todaysRecent.length}${windowCoversToday ? "" : "+"} placed today` : undefined
+              }
+            />
+            <Kpi
+              label="In progress"
               error={counts.error}
               value={active !== null ? active.toLocaleString("en-US") : null}
               note={c ? `${c.byFulfillment.PENDING} waiting to be confirmed` : undefined}
+              href="/admin/orders?fulfillment=PENDING"
             />
             <Kpi
               label="Unpaid"
               error={counts.error}
               value={unpaidOpen !== null ? unpaidOpen.toLocaleString("en-US") : null}
-              note="Excluding cancelled orders"
+              note="Open orders not paid yet"
               tone={unpaidOpen ? "warn" : undefined}
+              href="/admin/orders?payment=UNPAID"
             />
           </div>
 
-          {/* Pipeline + actions */}
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-            <Card title="Fulfillment pipeline" action={<CardLink href="/admin/orders">All orders</CardLink>}>
-              {counts.error ? (
-                <ErrorText>{counts.error}</ErrorText>
-              ) : !c ? (
-                <Skeleton className="h-24" />
+          {/* Revenue + attention */}
+          <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
+            <Card
+              title="Collected revenue"
+              action={
+                <Segmented
+                  label="Chart range"
+                  value={range}
+                  options={RANGES.map((r) => ({ value: r, label: `${r}d` }))}
+                  onChange={setRange}
+                />
+              }
+            >
+              {paid.error ? (
+                <ErrorText>{paid.error}</ErrorText>
+              ) : !paid.data ? (
+                <Skeleton className="h-60" />
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
-                    {FULFILLMENT.map((status) => (
-                      <div
-                        key={status}
-                        className={`rounded-xl border p-3 ${
-                          status === "CANCELLED" ? "border-border bg-background" : "border-border bg-surface"
-                        }`}
-                      >
-                        <p className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                          {status}
-                        </p>
-                        <p className="mt-1 font-display text-3xl text-ink">{c.byFulfillment[status]}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {c.total > 0 && (
-                    <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-background" aria-hidden>
-                      {FULFILLMENT.map((status) => (
-                        <span
-                          key={status}
-                          className={PIPELINE_COLOR[status]}
-                          style={{ width: `${(c.byFulfillment[status] / c.total) * 100}%` }}
-                        />
-                      ))}
-                    </div>
+                  <p className="font-display text-3xl text-ink">{formatPrice(rangeTotal, currency)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {rangeOrders} paid {rangeOrders === 1 ? "order" : "orders"} in the last {range} days
+                  </p>
+                  <RevenueChart points={chart} currency={currency} />
+                  {!paid.data.complete && (
+                    <p className="mt-2 text-xs text-amber-700">
+                      Only the first {MAX_PAID_PAGES * PAID_PAGE_SIZE} paid orders per status were included.
+                    </p>
                   )}
                 </>
               )}
             </Card>
 
-            <Card title="Action required">
+            <Card title="Needs attention">
               {counts.error && !c ? (
                 <ErrorText>{counts.error}</ErrorText>
               ) : !c ? (
-                <Skeleton className="h-32" />
+                <Skeleton className="h-48" />
+              ) : openActions.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center py-8 text-center">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-green-100 text-green-800">
+                    ✓
+                  </span>
+                  <p className="mt-3 text-sm font-semibold text-ink">All clear</p>
+                  <p className="text-xs text-muted-foreground">Nothing is waiting on you.</p>
+                </div>
               ) : (
-                <ul className="flex flex-col divide-y divide-border text-sm">
-                  <ActionRow count={c.byFulfillment.PENDING} label="orders waiting to be confirmed" href="/admin/orders" />
-                  <ActionRow count={unpaidOpen ?? 0} label="unpaid orders (not cancelled)" href="/admin/orders" />
-                  <ActionRow count={c.paymentPending} label="payments pending verification" href="/admin/orders" />
-                  <ActionRow count={c.paymentFailed} label="failed payments" href="/admin/orders" tone="bad" />
-                  {stock.data && (
-                    <ActionRow count={outOfStock.length} label="stock items out of stock" href="/admin/stock" tone="bad" />
-                  )}
-                  {recent.data && (
-                    <ActionRow
-                      count={personalized.length}
-                      label={`personalized orders in progress (latest ${RECENT_WINDOW})`}
-                      href="#personalized"
-                    />
-                  )}
+                <ul className="flex flex-col gap-1.5">
+                  {openActions.map((a) => (
+                    <li key={a.label}>
+                      <Link
+                        href={a.href}
+                        className={`group flex items-center gap-3 rounded-xl bg-background px-3 py-2.5 text-sm transition-colors hover:bg-border/50 ${focusRing}`}
+                      >
+                        <span
+                          className={`flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-bold ${
+                            a.tone === "bad" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {a.count}
+                        </span>
+                        <span className="min-w-0 flex-1 text-ink">{a.label}</span>
+                        <span aria-hidden className="text-muted-foreground transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100">
+                          →
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               )}
             </Card>
           </div>
 
-          {/* Sales */}
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-            <Card
-              title={`Collected revenue · last ${CHART_DAYS} days`}
-              action={<span className="text-xs text-muted-foreground">Paid orders, by order date</span>}
-            >
-              {paid.error ? (
-                <ErrorText>{paid.error}</ErrorText>
-              ) : !paid.data ? (
-                <Skeleton className="h-40" />
-              ) : chartMax === 0 ? (
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  No paid orders in the last {CHART_DAYS} days.
-                </p>
+          {/* Pipeline */}
+          <div className="mt-3">
+            <Card title="Order pipeline" action={<CardLink href="/admin/orders">All orders</CardLink>}>
+              {counts.error ? (
+                <ErrorText>{counts.error}</ErrorText>
+              ) : !c ? (
+                <Skeleton className="h-28" />
               ) : (
-                <div className="flex h-44 items-end gap-1.5" role="img" aria-label="Collected revenue per day">
-                  {chart.map(({ date, value }) => (
-                    <div key={dayKey(date)} className="flex h-full min-w-0 flex-1 flex-col justify-end gap-1">
-                      <div
-                        className="w-full rounded-t-md bg-ink transition-[height]"
-                        style={{ height: `${Math.max(value > 0 ? 3 : 0, (value / chartMax) * 85)}%` }}
-                        title={`${date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}: ${formatPrice(value, currency)}`}
-                      />
-                      <span className="truncate text-center text-[10px] text-muted-foreground">{date.getDate()}</span>
+                <>
+                  {c.total > 0 && (
+                    <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full" aria-hidden>
+                      {FULFILLMENT.filter((s) => c.byFulfillment[s] > 0).map((status) => (
+                        <span
+                          key={status}
+                          className={`${PIPELINE_COLOR[status]} first:rounded-s-full last:rounded-e-full`}
+                          style={{ width: `${(c.byFulfillment[status] / c.total) * 100}%` }}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-              {paid.data && !paid.data.complete && (
-                <p className="mt-2 text-xs text-amber-700">
-                  Only the first {MAX_PAID_PAGES * PAID_PAGE_SIZE} paid orders per status were included.
-                </p>
-              )}
-            </Card>
-
-            <Card title="Best sellers" action={<span className="text-xs text-muted-foreground">Paid orders, net of returns</span>}>
-              {paid.error ? (
-                <ErrorText>{paid.error}</ErrorText>
-              ) : !paid.data ? (
-                <Skeleton className="h-40" />
-              ) : bestSellers.length === 0 ? (
-                <p className="py-6 text-sm text-muted-foreground">No paid orders yet.</p>
-              ) : (
-                <ol className="flex flex-col gap-2 text-sm">
-                  {bestSellers.map(([name, qty], index) => (
-                    <li key={name} className="flex items-baseline gap-3">
-                      <span className="w-4 shrink-0 text-muted-foreground">{index + 1}</span>
-                      <span className="min-w-0 flex-1 truncate text-ink">{name}</span>
-                      <span className="shrink-0 font-semibold text-ink">{qty} sold</span>
-                    </li>
-                  ))}
-                </ol>
+                  )}
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                    {FULFILLMENT.map((status) => (
+                      <Link
+                        key={status}
+                        href={`/admin/orders?fulfillment=${status}`}
+                        className={`rounded-xl bg-background p-3 transition-colors hover:bg-border/50 ${focusRing}`}
+                      >
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                          <span aria-hidden className={`size-2 rounded-full ${PIPELINE_COLOR[status]}`} />
+                          {STATUS_LABEL[status]}
+                        </p>
+                        <p className="mt-1 flex items-baseline gap-1.5">
+                          <span className="font-display text-3xl text-ink">{c.byFulfillment[status]}</span>
+                          {c.total > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              {Math.round((c.byFulfillment[status] / c.total) * 100)}%
+                            </span>
+                          )}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </>
               )}
             </Card>
           </div>
 
-          {/* Recent orders */}
-          <div className="mt-6">
+          {/* Recent orders + best sellers */}
+          <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
             <Card title="Recent orders" action={<CardLink href="/admin/orders">View all</CardLink>}>
               {recent.error ? (
                 <ErrorText>{recent.error}</ErrorText>
@@ -440,14 +488,44 @@ export default function AdminDashboardPage() {
                 <RecentOrders orders={recentOrders.slice(0, 8)} />
               )}
             </Card>
+
+            <Card title="Best sellers" action={<span className="text-xs text-muted-foreground">Units sold</span>}>
+              {paid.error ? (
+                <ErrorText>{paid.error}</ErrorText>
+              ) : !paid.data ? (
+                <Skeleton className="h-48" />
+              ) : bestSellers.length === 0 ? (
+                <p className="py-6 text-sm text-muted-foreground">No paid orders yet.</p>
+              ) : (
+                <ol className="flex flex-col gap-3.5 text-sm">
+                  {bestSellers.map(([name, qty], index) => (
+                    <li key={name}>
+                      <div className="flex items-baseline gap-2">
+                        <span className="w-4 shrink-0 text-xs text-muted-foreground">{index + 1}</span>
+                        <span className="min-w-0 flex-1 truncate text-ink" title={name}>
+                          {name}
+                        </span>
+                        <span className="shrink-0 font-semibold text-ink tabular-nums">{qty}</span>
+                      </div>
+                      <div className="ms-6 mt-1.5 h-1.5 rounded-full bg-background">
+                        <div
+                          className="h-full rounded-full bg-ink"
+                          style={{ width: `${(qty / bestSellers[0][1]) * 100}%` }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
           </div>
 
           {/* Personalized + stock */}
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
             <div id="personalized" className="scroll-mt-6">
               <Card
                 title="Personalized orders in progress"
-                action={<span className="text-xs text-muted-foreground">From the latest {RECENT_WINDOW} orders</span>}
+                action={<span className="text-xs text-muted-foreground">Latest {RECENT_WINDOW} orders</span>}
               >
                 {recent.error ? (
                   <ErrorText>{recent.error}</ErrorText>
@@ -458,12 +536,17 @@ export default function AdminDashboardPage() {
                 ) : (
                   <ul className="flex flex-col divide-y divide-border text-sm">
                     {personalized.slice(0, 6).map((o) => (
-                      <li key={o.id} className="flex items-center justify-between gap-3 py-2">
-                        <Link href={`/admin/orders/${o.id}`} className="min-w-0 hover:text-accent">
-                          <span className="font-semibold text-ink">#{o.sequenceNumber}</span>{" "}
-                          <span className="text-muted-foreground">{o.customerFullName}</span>
+                      <li key={o.id}>
+                        <Link
+                          href={`/admin/orders/${o.id}`}
+                          className="flex items-center justify-between gap-3 py-2.5 hover:text-accent"
+                        >
+                          <span className="min-w-0 truncate">
+                            <span className="font-semibold text-ink">#{o.sequenceNumber}</span>{" "}
+                            <span className="text-muted-foreground">{o.customerFullName}</span>
+                          </span>
+                          <StatusBadge status={o.fulfillmentStatus} />
                         </Link>
-                        <StatusBadge status={o.fulfillmentStatus} />
                       </li>
                     ))}
                   </ul>
@@ -477,15 +560,13 @@ export default function AdminDashboardPage() {
               ) : !stock.data ? (
                 <Skeleton className="h-24" />
               ) : outOfStock.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Every tracked stock item has units available.
-                </p>
+                <p className="text-sm text-muted-foreground">Every tracked stock item has units available.</p>
               ) : (
                 <ul className="flex flex-col divide-y divide-border text-sm">
                   {outOfStock.slice(0, 8).map((s) => (
-                    <li key={s.id} className="flex items-center justify-between gap-3 py-2">
+                    <li key={s.id} className="flex items-center justify-between gap-3 py-2.5">
                       <span className="min-w-0 truncate text-ink">{s.nameEn}</span>
-                      <span className="shrink-0 text-xs font-semibold text-red-700">
+                      <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
                         {s.onHand} on hand · {s.reserved} reserved
                       </span>
                     </li>
@@ -500,6 +581,18 @@ export default function AdminDashboardPage() {
   );
 }
 
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+const STATUS_LABEL: Record<FulfillmentStatus, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  PREPARING: "Preparing",
+  SHIPPED: "Shipped",
+  DELIVERED: "Delivered",
+  CANCELLED: "Cancelled",
+};
+
 const PIPELINE_COLOR: Record<FulfillmentStatus, string> = {
   PENDING: "bg-amber-400",
   CONFIRMED: "bg-blue-400",
@@ -509,11 +602,150 @@ const PIPELINE_COLOR: Record<FulfillmentStatus, string> = {
   CANCELLED: "bg-red-300",
 };
 
+/** Whole-pound amount, shortened for axis labels: 1250 -> "1.3k". */
+function compactMoney(minor: number) {
+  const units = minor / 100;
+  if (units >= 1000) return `${(units / 1000).toFixed(units >= 10000 ? 0 : 1)}k`;
+  return Math.round(units).toLocaleString("en-US");
+}
+
+/** Rounds a max up to 1 / 2 / 2.5 / 5 × 10^n so gridlines land on clean values. */
+function niceCeil(value: number) {
+  if (value <= 0) return 1;
+  const exp = Math.pow(10, Math.floor(Math.log10(value)));
+  const step = [1, 2, 2.5, 5, 10].find((m) => m * exp >= value) ?? 10;
+  return step * exp;
+}
+
+function RevenueChart({
+  points,
+  currency,
+}: {
+  points: { date: Date; value: number; count: number }[];
+  currency: string;
+}) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const max = niceCeil(Math.max(0, ...points.map((p) => p.value)));
+  const ticks = [max, max / 2, 0];
+  const labelEvery = points.length > 14 ? 5 : points.length > 7 ? 2 : 1;
+  const active = hovered !== null ? points[hovered] : null;
+
+  return (
+    <div className="mt-5">
+      <div className="relative flex h-52 gap-2">
+        {/* y axis */}
+        <div className="flex w-10 shrink-0 flex-col justify-between pb-5 text-end text-[10px] text-muted-foreground tabular-nums">
+          {ticks.map((t) => (
+            <span key={t} className="-translate-y-1/2 first:translate-y-0 last:translate-y-0">
+              {compactMoney(t)}
+            </span>
+          ))}
+        </div>
+        <div className="relative min-w-0 flex-1">
+          {/* gridlines */}
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 bottom-5 flex flex-col justify-between">
+            {ticks.map((t) => (
+              <span key={t} className={`border-t ${t === 0 ? "border-border" : "border-dashed border-border/70"}`} />
+            ))}
+          </div>
+          {/* bars */}
+          <div
+            className="absolute inset-0 flex"
+            role="img"
+            aria-label={`Collected revenue per day for the last ${points.length} days`}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {points.map((p, i) => (
+              <div
+                key={dayKey(p.date)}
+                className="flex h-full min-w-0 flex-1 cursor-default flex-col items-center"
+                onMouseEnter={() => setHovered(i)}
+              >
+                <div className="flex w-full flex-1 items-end justify-center px-[1px]">
+                  <div
+                    className={`w-full max-w-7 rounded-t-[4px] transition-colors ${
+                      hovered === i ? "bg-accent" : hovered !== null ? "bg-ink/35" : "bg-ink"
+                    }`}
+                    style={{ height: `${p.value > 0 ? Math.max(2, (p.value / max) * 100) : 0}%` }}
+                  />
+                </div>
+                <span className="h-5 pt-1.5 text-[10px] leading-none text-muted-foreground tabular-nums">
+                  {(points.length - 1 - i) % labelEvery === 0 ? p.date.getDate() : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+          {/* tooltip */}
+          {active && hovered !== null && (
+            <div
+              className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-xl bg-ink px-3 py-2 text-xs whitespace-nowrap text-white shadow-lg"
+              style={{
+                left: `clamp(4.5rem, ${((hovered + 0.5) / points.length) * 100}%, calc(100% - 4.5rem))`,
+              }}
+            >
+              <p className="text-white/70">
+                {active.date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+              </p>
+              <p className="mt-0.5 font-semibold">{formatPrice(active.value, currency)}</p>
+              <p className="text-white/70">
+                {active.count} {active.count === 1 ? "order" : "orders"}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      <table className="sr-only">
+        <caption>Collected revenue per day</caption>
+        <tbody>
+          {points.map((p) => (
+            <tr key={dayKey(p.date)}>
+              <th scope="row">{p.date.toLocaleDateString("en-GB")}</th>
+              <td>{formatPrice(p.value, currency)}</td>
+              <td>{p.count} orders</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Segmented<T extends number | string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="inline-flex gap-0.5 rounded-pill bg-background p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={o.value === value}
+          onClick={() => onChange(o.value)}
+          className={`rounded-pill px-3 py-1 text-xs font-semibold transition-colors ${focusRing} ${
+            o.value === value ? "bg-ink text-white" : "text-muted-foreground hover:text-ink"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="h-full rounded-2xl border border-border bg-surface p-5">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">{title}</h2>
+    <section className="h-full rounded-card bg-surface p-5 shadow-card">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
         {action}
       </div>
       {children}
@@ -528,6 +760,7 @@ function Kpi({
   hint,
   error,
   tone,
+  href,
 }: {
   label: string;
   value: string | null;
@@ -535,51 +768,42 @@ function Kpi({
   hint?: string;
   error: string | null;
   tone?: "warn";
+  href?: string;
 }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-5" title={hint}>
-      <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">{label}</p>
+  const content = (
+    <>
+      <p className="flex items-center justify-between gap-2 text-xs font-semibold text-muted-foreground">
+        {label}
+        {href && (
+          <span aria-hidden className="text-muted-foreground transition-transform group-hover:translate-x-0.5 rtl:-scale-x-100">
+            →
+          </span>
+        )}
+      </p>
       {error ? (
         <p className="mt-3 text-sm text-accent">{error}</p>
       ) : value === null ? (
         <Skeleton className="mt-3 h-9 w-28" />
       ) : (
-        <p className={`mt-2 font-display text-4xl ${tone === "warn" ? "text-amber-700" : "text-ink"}`}>{value}</p>
-      )}
-      {note && !error && <p className="mt-1 text-sm text-muted-foreground">{note}</p>}
-      {hint && !error && <p className="mt-0.5 text-xs text-muted-foreground/80">{hint}</p>}
-    </div>
-  );
-}
-
-function ActionRow({
-  count,
-  label,
-  href,
-  tone,
-}: {
-  count: number;
-  label: string;
-  href: string;
-  tone?: "bad";
-}) {
-  const attention = count > 0;
-  return (
-    <li className="flex items-center justify-between gap-3 py-2.5">
-      <span className={attention ? "text-ink" : "text-muted-foreground"}>
-        <span
-          className={`me-2 font-semibold ${attention ? (tone === "bad" ? "text-red-700" : "text-amber-700") : ""}`}
+        <p
+          className={`mt-2 truncate font-display text-3xl sm:text-4xl ${tone === "warn" ? "text-amber-700" : "text-ink"}`}
+          title={value}
         >
-          {count}
-        </span>
-        {label}
-      </span>
-      {attention && (
-        <Link href={href} className="shrink-0 text-xs font-semibold text-accent hover:underline">
-          View
-        </Link>
+          {value}
+        </p>
       )}
-    </li>
+      {note && !error && <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{note}</p>}
+    </>
+  );
+  const className = `group block h-full rounded-card bg-surface p-4 shadow-card sm:p-5 ${focusRing}`;
+  return href ? (
+    <Link href={href} className={`${className} transition-transform hover:-translate-y-0.5`} title={hint}>
+      {content}
+    </Link>
+  ) : (
+    <div className={className} title={hint}>
+      {content}
+    </div>
   );
 }
 
@@ -592,35 +816,33 @@ function RecentOrders({ orders }: { orders: AdminOrder[] }) {
         <thead>
           <tr className="border-b border-border text-start text-xs text-muted-foreground">
             <th className="py-2 pe-3 text-start font-semibold">Order</th>
-            <th className="py-2 pe-3 text-start font-semibold">Customer</th>
             <th className="py-2 pe-3 text-start font-semibold">Items</th>
             <th className="py-2 pe-3 text-start font-semibold">Status</th>
-            <th className="py-2 pe-3 text-start font-semibold">Payment</th>
             <th className="py-2 pe-3 text-end font-semibold">Total</th>
-            <th className="py-2 pe-3 text-start font-semibold">Placed</th>
-            <th className="py-2" />
+            <th className="py-2 text-end font-semibold">Placed</th>
           </tr>
         </thead>
         <tbody>
           {orders.map((o) => (
-            <tr key={o.id} className="border-b border-border last:border-0 hover:bg-background">
-              <td className="py-3 pe-3 font-semibold text-ink">#{o.sequenceNumber}</td>
-              <td className="max-w-40 truncate py-3 pe-3 text-ink">{o.customerFullName}</td>
+            <tr key={o.id} className="group border-b border-border last:border-0">
+              <td className="py-3 pe-3">
+                <Link href={`/admin/orders/${o.id}`} className="block group-hover:text-accent">
+                  <span className="font-semibold text-ink group-hover:text-accent">#{o.sequenceNumber}</span>
+                  <span className="block max-w-40 truncate text-xs text-muted-foreground">{o.customerFullName}</span>
+                </Link>
+              </td>
               <td className="max-w-56 truncate py-3 pe-3 text-muted-foreground">{itemSummary(o)}</td>
               <td className="py-3 pe-3">
-                <StatusBadge status={o.fulfillmentStatus} />
+                <span className="flex flex-wrap gap-1">
+                  <StatusBadge status={o.fulfillmentStatus} />
+                  <StatusBadge status={o.paymentStatus} />
+                </span>
               </td>
-              <td className="py-3 pe-3">
-                <StatusBadge status={o.paymentStatus} />
+              <td className="py-3 pe-3 text-end font-semibold whitespace-nowrap text-ink tabular-nums">
+                {formatPrice(o.total, o.currency)}
               </td>
-              <td className="py-3 pe-3 text-end font-semibold text-ink">{formatPrice(o.total, o.currency)}</td>
-              <td className="py-3 pe-3 whitespace-nowrap text-muted-foreground" title={exactTime(o.createdAt)}>
+              <td className="py-3 text-end whitespace-nowrap text-muted-foreground" title={exactTime(o.createdAt)}>
                 {relativeTime(o.createdAt)}
-              </td>
-              <td className="py-3 text-end">
-                <Link href={`/admin/orders/${o.id}`} className="text-xs font-semibold text-accent hover:underline">
-                  View
-                </Link>
               </td>
             </tr>
           ))}
@@ -633,7 +855,7 @@ function RecentOrders({ orders }: { orders: AdminOrder[] }) {
           <li key={o.id}>
             <Link href={`/admin/orders/${o.id}`} className="block py-3">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="font-semibold text-ink">
+                <span className="min-w-0 truncate font-semibold text-ink">
                   #{o.sequenceNumber} <span className="font-normal text-muted-foreground">{o.customerFullName}</span>
                 </span>
                 <span className="shrink-0 font-semibold text-ink">{formatPrice(o.total, o.currency)}</span>
@@ -664,7 +886,7 @@ function QuickLink({ href, children }: { href: string; children: React.ReactNode
   return (
     <Link
       href={href}
-      className="rounded-pill border border-border bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className={`rounded-pill border border-border bg-background px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink ${focusRing}`}
     >
       {children}
     </Link>
