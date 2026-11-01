@@ -15,6 +15,7 @@ import {
 } from "@/lib/admin/product-display";
 import { LoadingRow } from "@/components/ui/Spinner";
 import { MoneyInput } from "@/components/admin/MoneyInput";
+import { Switch } from "@/components/admin/form-kit";
 import { ProductMediaManager } from "@/components/admin/ProductMediaManager";
 import { upsertCatalogProduct } from "@/lib/admin/catalog-store";
 import type { AdminCollection, AdminProduct, AdminVariant, ProductStatus, StockItem } from "@/lib/admin/types";
@@ -36,6 +37,24 @@ const SECTIONS = [
   { id: "personalization", label: "Personalization" },
   { id: "inventory", label: "Inventory" },
 ] as const;
+type SectionId = (typeof SECTIONS)[number]["id"];
+
+const SECTION_ICON: Record<SectionId, string> = {
+  basic: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5",
+  pricing: "M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8zM7 7h.01",
+  images: "M3 5h18v14H3zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 19",
+  variants: "M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2",
+  personalization: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
+  inventory: "M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8",
+};
+
+function SectionIcon({ id, className = "size-4" }: { id: SectionId; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`shrink-0 ${className}`}>
+      <path d={SECTION_ICON[id]} />
+    </svg>
+  );
+}
 
 type ModelScope = "all" | "brands" | "one";
 
@@ -79,6 +98,7 @@ export default function AdminProductDetailPage({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionId>("basic");
 
   const [phoneModels, setPhoneModels] = useState<PhoneModel[]>([]);
   const [caseTypes, setCaseTypes] = useState<CaseType[]>([]);
@@ -128,7 +148,15 @@ export default function AdminProductDetailPage({
   function load() {
     if (!accessToken) return;
     authorizedFetch((token) => adminClient.getProduct(token, id))
-      .then(setProduct)
+      .then((loaded) => {
+        setProduct(loaded);
+        // Pre-fill new variants with the product's starting price.
+        if (loaded.basePrice) {
+          setNewVariant((prev) =>
+            prev.price === null ? { ...prev, price: loaded.basePrice, isUnlimitedStock: true } : prev,
+          );
+        }
+      })
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Could not load product."),
       );
@@ -142,21 +170,29 @@ export default function AdminProductDetailPage({
 
   useEffect(load, [accessToken, authorizedFetch, id]);
 
+  // Highlight the section currently in view in the sticky section menu.
+  const hasProduct = product !== null;
+  useEffect(() => {
+    if (!hasProduct) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length > 0) setActiveSection(visible[0].target.id as SectionId);
+      },
+      { rootMargin: "-20% 0px -70% 0px" },
+    );
+    for (const section of SECTIONS) {
+      const el = document.getElementById(section.id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, [hasProduct]);
+
   // Keep the shared admin grids in sync with edits made here.
   useEffect(() => {
     if (product) upsertCatalogProduct(product);
   }, [product]);
 
-  // Pre-fill default price from product basePrice for new variants
-  useEffect(() => {
-    if (product?.basePrice && newVariant.price === null) {
-      setNewVariant((prev) => ({
-        ...prev,
-        price: prev.price ?? product.basePrice,
-        isUnlimitedStock: true,
-      }));
-    }
-  }, [product?.basePrice, newVariant.price]);
 
   function flash(message: string) {
     setError(null);
@@ -616,7 +652,7 @@ export default function AdminProductDetailPage({
       </nav>
 
       {/* Summary */}
-      <header className="mt-3 flex flex-col gap-5 rounded-card bg-surface p-4 shadow-card sm:flex-row sm:p-6">
+      <header id="top" className="mt-3 flex scroll-mt-4 flex-col gap-5 rounded-card bg-surface p-4 shadow-card sm:flex-row sm:p-6">
         <a
           href="#images"
           className="relative block aspect-square w-full shrink-0 overflow-hidden rounded-card-inner bg-background sm:w-48"
@@ -700,20 +736,82 @@ export default function AdminProductDetailPage({
         </div>
       </header>
 
+      {/* Setup checklist */}
+      {(() => {
+        const steps = [
+          { done: (product.media?.length ?? 0) > 0, label: "Add a photo", href: "#images" },
+          { done: product.variants.length > 0, label: "Add variants", href: "#variants" },
+          { done: product.variants.some((v) => v.isActive), label: "Turn on a variant", href: "#variants" },
+          { done: product.collections.length > 0, label: "Put it in a collection", href: "#basic" },
+          { done: product.status === "PUBLISHED", label: "Make it Active", href: "#top" },
+        ];
+        const doneCount = steps.filter((st) => st.done).length;
+        if (doneCount === steps.length) return null;
+        return (
+          <section aria-label="Setup checklist" className="mt-4 rounded-card bg-surface p-4 shadow-card sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-ink">Get it ready for the shop</p>
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {doneCount} of {steps.length} done
+              </p>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
+              <div className="h-full rounded-full bg-ink transition-[width]" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+            </div>
+            <ol className="mt-3 flex flex-wrap gap-2">
+              {steps.map((st) => (
+                <li key={st.label}>
+                  <a
+                    href={st.href}
+                    className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      st.done ? "bg-green-100 text-green-800" : "bg-background text-ink hover:bg-border/60"
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className={`flex size-4 items-center justify-center rounded-full text-[10px] ${
+                        st.done ? "bg-green-700 text-white" : "border border-muted-foreground/50"
+                      }`}
+                    >
+                      {st.done ? "✓" : ""}
+                    </span>
+                    <span className={st.done ? "line-through decoration-green-800/40" : ""}>{st.label}</span>
+                    <span className="sr-only">{st.done ? "(done)" : "(to do)"}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        );
+      })()}
+
       {/* Section nav */}
       <nav
         aria-label="Sections"
-        className="sticky top-0 z-10 -mx-4 mt-4 flex gap-1.5 overflow-x-auto bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-pill sm:px-2"
+        className="sticky top-0 z-10 -mx-4 mt-4 flex gap-1 overflow-x-auto bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-pill sm:px-1.5 sm:shadow-card"
       >
-        {SECTIONS.map((section) => (
-          <a
-            key={section.id}
-            href={`#${section.id}`}
-            className="shrink-0 rounded-pill px-3 py-1.5 text-sm font-semibold text-ink hover:bg-surface"
-          >
-            {section.label}
-          </a>
-        ))}
+        {SECTIONS.map((section) => {
+          const needsAttention =
+            (section.id === "images" && (product.media?.length ?? 0) === 0) ||
+            (section.id === "variants" && product.variants.length === 0);
+          const isActive = activeSection === section.id;
+          return (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              aria-current={isActive ? "location" : undefined}
+              className={`relative flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-semibold transition-colors ${
+                isActive ? "bg-ink text-white" : "text-ink hover:bg-surface"
+              }`}
+            >
+              <SectionIcon id={section.id} />
+              {section.label}
+              {needsAttention && (
+                <span aria-label="needs attention" className="size-1.5 rounded-full bg-amber-500" />
+              )}
+            </a>
+          );
+        })}
       </nav>
 
       <div aria-live="polite">
@@ -976,13 +1074,11 @@ export default function AdminProductDetailPage({
                           )}
                         </td>
                         <td className="p-2">
-                          <input
-                            type="checkbox"
+                          <Switch
                             checked={variant.isActive}
                             disabled={isBusy}
-                            onChange={(e) => handleToggleVariantActive(variant.id, e.target.checked)}
-                            aria-label={`${variantLabel(variant)} active`}
-                            className="size-4 accent-accent"
+                            onChange={(checked) => handleToggleVariantActive(variant.id, checked)}
+                            label={`${variantLabel(variant)} active`}
                           />
                         </td>
                         <td className="p-2 text-end">
@@ -1154,13 +1250,20 @@ function Section({
     <section
       id={id}
       aria-labelledby={`${id}-heading`}
-      className="mt-6 scroll-mt-16 rounded-card bg-surface p-4 shadow-card sm:p-6"
+      className="mt-4 scroll-mt-16 rounded-card bg-surface shadow-card"
     >
-      <h2 id={`${id}-heading`} className="text-lg font-semibold text-ink">
-        {title}
-      </h2>
-      {description && <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">{description}</p>}
-      <div className="mt-4">{children}</div>
+      <div className="flex items-start gap-3 border-b border-border px-4 py-4 sm:px-6">
+        <span aria-hidden className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-background text-ink">
+          <SectionIcon id={id as SectionId} className="size-[18px]" />
+        </span>
+        <div>
+          <h2 id={`${id}-heading`} className="text-lg leading-tight font-semibold text-ink">
+            {title}
+          </h2>
+          {description && <p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">{description}</p>}
+        </div>
+      </div>
+      <div className="p-4 sm:p-6">{children}</div>
     </section>
   );
 }
