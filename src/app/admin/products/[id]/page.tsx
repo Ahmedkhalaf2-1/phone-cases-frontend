@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, use, useCallback, useEffect, useState } from "react";
+import { Fragment, use, useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { apiGet } from "@/lib/api/http";
@@ -96,6 +96,17 @@ export default function AdminProductDetailPage({
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
   const [editVariantForm, setEditVariantForm] = useState<VariantFormState>(EMPTY_VARIANT_FORM);
 
+  // Bulk generation state for Add Variant
+  const [applyToAllModels, setApplyToAllModels] = useState(false);
+  const [applyToAllCaseTypes, setApplyToAllCaseTypes] = useState(false);
+  const [modelBrandFilter, setModelBrandFilter] = useState<string>("ALL");
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
+
+  // Filter state for Variants table
+  const [variantSearch, setVariantSearch] = useState("");
+  const [variantFilterBrand, setVariantFilterBrand] = useState("ALL");
+  const [variantFilterCaseType, setVariantFilterCaseType] = useState("ALL");
+
   useEffect(() => {
     // Always the real backend's public catalog, regardless of storefront
     // demo mode — this is staff creating real variants against real data.
@@ -133,9 +144,111 @@ export default function AdminProductDetailPage({
     if (product) upsertCatalogProduct(product);
   }, [product]);
 
+  // Pre-fill default price from product basePrice for new variants
+  useEffect(() => {
+    if (product?.basePrice && newVariant.price === null) {
+      setNewVariant((prev) => ({
+        ...prev,
+        price: prev.price ?? product.basePrice,
+        isUnlimitedStock: true,
+      }));
+    }
+  }, [product?.basePrice, newVariant.price]);
+
   function flash(message: string) {
     setError(null);
     setNotice(message);
+  }
+
+  const phoneBrands = useMemo(() => {
+    const map = new Map<string, { id: string; slug: string; name: string }>();
+    for (const m of phoneModels) {
+      if (m.brand) map.set(m.brand.slug, m.brand);
+    }
+    return Array.from(map.values());
+  }, [phoneModels]);
+
+  const targetModels: (PhoneModel | null)[] = useMemo(() => {
+    if (applyToAllModels) {
+      return modelBrandFilter === "ALL"
+        ? phoneModels
+        : phoneModels.filter((m) => m.brand.slug === modelBrandFilter);
+    }
+    if (newVariant.phoneModelId) {
+      const found = phoneModels.find((m) => m.id === newVariant.phoneModelId);
+      return found ? [found] : [null];
+    }
+    return [null];
+  }, [applyToAllModels, modelBrandFilter, phoneModels, newVariant.phoneModelId]);
+
+  const targetCaseTypes: (CaseType | null)[] = useMemo(() => {
+    if (applyToAllCaseTypes) {
+      return caseTypes;
+    }
+    if (newVariant.caseTypeId) {
+      const found = caseTypes.find((c) => c.id === newVariant.caseTypeId);
+      return found ? [found] : [null];
+    }
+    return [null];
+  }, [applyToAllCaseTypes, caseTypes, newVariant.caseTypeId]);
+
+  const existingCombos = useMemo(() => {
+    const set = new Set<string>();
+    for (const v of product?.variants ?? []) {
+      set.add(`${v.phoneModelId ?? "none"}:${v.caseTypeId ?? "none"}`);
+    }
+    return set;
+  }, [product?.variants]);
+
+  const existingSkus = useMemo(() => {
+    return new Set((product?.variants ?? []).map((v) => v.sku.toUpperCase()));
+  }, [product?.variants]);
+
+  const pendingCombos = useMemo(() => {
+    const list: { model: PhoneModel | null; caseType: CaseType | null }[] = [];
+    for (const model of targetModels) {
+      for (const ct of targetCaseTypes) {
+        const key = `${model?.id ?? "none"}:${ct?.id ?? "none"}`;
+        if (!existingCombos.has(key)) {
+          list.push({ model, caseType: ct });
+        }
+      }
+    }
+    return list;
+  }, [targetModels, targetCaseTypes, existingCombos]);
+
+  const isBulkMode = applyToAllModels || applyToAllCaseTypes;
+  const totalCombosCount = targetModels.length * targetCaseTypes.length;
+  const skippedCombosCount = totalCombosCount - pendingCombos.length;
+
+  function generateSkuForCombo(
+    userPrefix: string,
+    productSlug: string,
+    model: PhoneModel | null,
+    caseType: CaseType | null,
+    usedSkus: Set<string>,
+  ): string {
+    const prefix = (userPrefix.trim() || productSlug)
+      .toUpperCase()
+      .replace(/[^A-Z0-9_-]/g, "-")
+      .replace(/-+/g, "-");
+
+    const parts = [prefix];
+    if (model) {
+      parts.push(model.slug.toUpperCase().replace(/[^A-Z0-9_-]/g, "-"));
+    }
+    if (caseType) {
+      parts.push(caseType.slug.toUpperCase().replace(/[^A-Z0-9_-]/g, "-"));
+    }
+    const baseSku = parts.join("-");
+    let candidate = baseSku;
+    let counter = 1;
+    while (usedSkus.has(candidate.toUpperCase())) {
+      counter++;
+      candidate = `${baseSku}-${counter}`;
+    }
+    usedSkus.add(candidate.toUpperCase());
+    return candidate;
   }
 
   /**
@@ -176,26 +289,152 @@ export default function AdminProductDetailPage({
 
   async function handleAddVariant(event: React.FormEvent) {
     event.preventDefault();
-    if (!accessToken) return;
+    if (!accessToken || !product) return;
     if (newVariant.price === null) {
       setError("Enter the variant's price.");
       return;
     }
+
+    if (!isBulkMode) {
+      if (!newVariant.sku.trim()) {
+        setError("Enter a SKU for this variant.");
+        return;
+      }
+      setIsBusy(true);
+      setError(null);
+      try {
+        await authorizedFetch((token) =>
+          adminClient.createVariant(token, id, variantInputFromForm(newVariant)),
+        );
+        setNewVariant((prev) => ({
+          ...EMPTY_VARIANT_FORM,
+          price: product.basePrice ?? null,
+          isUnlimitedStock: true,
+        }));
+        await loadProduct();
+        flash("Variant added.");
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Could not add variant.");
+      } finally {
+        setIsBusy(false);
+      }
+      return;
+    }
+
+    if (pendingCombos.length === 0) {
+      setError("All selected combinations already exist for this product.");
+      return;
+    }
+
+    setIsBusy(true);
+    setError(null);
+    setBulkProgress({ current: 0, total: pendingCombos.length });
+
+    const usedSkus = new Set(existingSkus);
+    let createdCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
+    const BATCH_SIZE = 4;
+    for (let i = 0; i < pendingCombos.length; i += BATCH_SIZE) {
+      const batch = pendingCombos.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async ({ model, caseType }) => {
+          const sku = generateSkuForCombo(
+            newVariant.sku,
+            product.slug,
+            model,
+            caseType,
+            usedSkus,
+          );
+
+          try {
+            await authorizedFetch((token) =>
+              adminClient.createVariant(token, id, {
+                sku,
+                price: newVariant.price ?? 0,
+                compareAtPrice: newVariant.compareAtPrice ?? undefined,
+                phoneModelId: model?.id,
+                caseTypeId: caseType?.id,
+                isActive: newVariant.isActive,
+                isUnlimitedStock: newVariant.isUnlimitedStock,
+                stockItemId: newVariant.isUnlimitedStock ? undefined : newVariant.stockItemId || undefined,
+                isPersonalizable: newVariant.isPersonalizable,
+                customizationPrice: newVariant.isPersonalizable ? newVariant.customizationPrice ?? 0 : undefined,
+              }),
+            );
+            createdCount++;
+          } catch (err) {
+            failedCount++;
+            const msg = err instanceof ApiError ? err.message : "Could not add variant";
+            if (!errors.includes(msg)) errors.push(msg);
+          } finally {
+            setBulkProgress((prev) =>
+              prev ? { ...prev, current: createdCount + failedCount } : null,
+            );
+          }
+        }),
+      );
+    }
+
+    setBulkProgress(null);
+    setIsBusy(false);
+    await loadProduct();
+
+    if (createdCount > 0 && failedCount === 0) {
+      flash(`Successfully created all ${createdCount} variants.`);
+      setNewVariant((prev) => ({
+        ...EMPTY_VARIANT_FORM,
+        price: product.basePrice ?? null,
+        isUnlimitedStock: true,
+      }));
+    } else if (createdCount > 0 && failedCount > 0) {
+      flash(`Created ${createdCount} variants (${failedCount} failed: ${errors.join(", ")}).`);
+    } else {
+      setError(`Failed to create variants: ${errors.join(", ")}`);
+    }
+  }
+
+  async function handleBulkSetVariantsActive(isActive: boolean) {
+    if (!accessToken || !product || product.variants.length === 0) return;
+    const toChange = product.variants.filter((v) => v.isActive !== isActive);
+    if (toChange.length === 0) return;
     setIsBusy(true);
     setError(null);
     try {
-      await authorizedFetch((token) =>
-        adminClient.createVariant(token, id, variantInputFromForm(newVariant)),
-      );
-      setNewVariant(EMPTY_VARIANT_FORM);
+      for (const v of toChange) {
+        await authorizedFetch((token) =>
+          adminClient.updateVariant(token, id, v.id, { isActive }),
+        );
+      }
       await loadProduct();
-      flash("Variant added.");
+      flash(isActive ? "All variants activated." : "All variants deactivated.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not add variant.");
+      setError(err instanceof ApiError ? err.message : "Could not update variants.");
     } finally {
       setIsBusy(false);
     }
   }
+
+  const filteredVariants = useMemo(() => {
+    if (!product?.variants) return [];
+    return product.variants.filter((variant) => {
+      if (variantFilterBrand !== "ALL") {
+        const model = phoneModels.find((m) => m.id === variant.phoneModelId);
+        if (model?.brand.slug !== variantFilterBrand) return false;
+      }
+      if (variantFilterCaseType !== "ALL") {
+        if (variant.caseTypeId !== variantFilterCaseType) return false;
+      }
+      if (variantSearch.trim()) {
+        const query = variantSearch.toLowerCase();
+        const label = variantLabel(variant).toLowerCase();
+        const sku = variant.sku.toLowerCase();
+        if (!label.includes(query) && !sku.includes(query)) return false;
+      }
+      return true;
+    });
+  }, [product?.variants, variantFilterBrand, variantFilterCaseType, variantSearch, phoneModels, caseTypes]);
 
   function startEditingVariant(variant: AdminVariant) {
     setEditingVariantId(variant.id);
@@ -641,6 +880,8 @@ export default function AdminProductDetailPage({
           variants={product.variants}
           currency={product.currency}
           labelFor={variantLabel}
+          caseTypes={caseTypes}
+          phoneBrands={phoneBrands}
           disabled={isBusy}
           onSave={handleSavePrices}
         />
@@ -670,94 +911,196 @@ export default function AdminProductDetailPage({
         title="Variants"
         description="One variant per phone model / case type this design is sold for."
       >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-border text-start text-muted-foreground">
-                <th className="p-2 text-start">Phone model · case type</th>
-                <th className="p-2 text-start">SKU</th>
-                <th className="p-2 text-start">Price</th>
-                <th className="p-2 text-start">Active</th>
-                <th className="p-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {product.variants.map((variant) => (
-                <Fragment key={variant.id}>
-                  <tr className="border-b border-border">
-                    <td className="p-2 font-semibold text-ink">
-                      {variantLabel(variant)}
-                      {variant.isPersonalizable && (
-                        <span className="ms-2 rounded-full bg-accent-wash px-2 py-0.5 text-[11px] font-semibold">
-                          Custom image +{formatPrice(variant.customizationPrice ?? 0, variant.currency)}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-2 font-mono text-xs text-muted-foreground">{variant.sku}</td>
-                    <td className="p-2">{formatPrice(variant.price, variant.currency)}</td>
-                    <td className="p-2">
-                      <input
-                        type="checkbox"
-                        checked={variant.isActive}
-                        disabled={isBusy}
-                        onChange={(e) => handleToggleVariantActive(variant.id, e.target.checked)}
-                        aria-label={`${variantLabel(variant)} active`}
-                        className="size-4 accent-accent"
-                      />
-                    </td>
-                    <td className="p-2 text-end">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          editingVariantId === variant.id
-                            ? setEditingVariantId(null)
-                            : startEditingVariant(variant)
-                        }
-                        className="text-xs font-semibold text-accent underline underline-offset-4"
-                      >
-                        {editingVariantId === variant.id ? "Cancel" : "Edit"}
-                      </button>
-                    </td>
+        {product.variants.length === 0 ? (
+          <div className="mb-6 rounded-2xl border-2 border-dashed border-accent/30 bg-accent-wash/30 p-8 text-center">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-wash text-xl">
+              📱
+            </div>
+            <h3 className="mt-3 text-base font-semibold text-ink">No variants yet</h3>
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+              Phone cases usually sell across multiple phone models and case types. You can quickly generate variants for all phone models and case types in one click.
+            </p>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => {
+                setApplyToAllModels(true);
+                setApplyToAllCaseTypes(true);
+                setNewVariant((prev) => ({
+                  ...prev,
+                  price: prev.price ?? product.basePrice,
+                  isUnlimitedStock: true,
+                }));
+              }}
+              className={`${buttonClass} mt-4 inline-flex items-center gap-2 shadow-sm`}
+            >
+              ⚡ Setup for all phone models & case types
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Table Filters & Bulk Actions */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="search"
+                  placeholder="Filter by SKU or model…"
+                  value={variantSearch}
+                  onChange={(e) => setVariantSearch(e.target.value)}
+                  className={`w-48 ${inputClass}`}
+                />
+                <select
+                  value={variantFilterBrand}
+                  onChange={(e) => setVariantFilterBrand(e.target.value)}
+                  className={`w-36 ${inputClass}`}
+                >
+                  <option value="ALL">All brands</option>
+                  {phoneBrands.map((b) => (
+                    <option key={b.slug} value={b.slug}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={variantFilterCaseType}
+                  onChange={(e) => setVariantFilterCaseType(e.target.value)}
+                  className={`w-36 ${inputClass}`}
+                >
+                  <option value="ALL">All case types</option>
+                  {caseTypes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted-foreground">
+                  Showing {filteredVariants.length} of {product.variants.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isBusy || product.variants.length === 0}
+                  onClick={() => handleBulkSetVariantsActive(true)}
+                  className="text-xs font-semibold text-ink hover:text-accent"
+                >
+                  Activate all
+                </button>
+                <span className="text-muted-foreground">·</span>
+                <button
+                  type="button"
+                  disabled={isBusy || product.variants.length === 0}
+                  onClick={() => handleBulkSetVariantsActive(false)}
+                  className="text-xs font-semibold text-muted-foreground hover:text-accent"
+                >
+                  Deactivate all
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border text-start text-muted-foreground">
+                    <th className="p-2 text-start">Phone model · case type</th>
+                    <th className="p-2 text-start">SKU</th>
+                    <th className="p-2 text-start">Price</th>
+                    <th className="p-2 text-start">Active</th>
+                    <th className="p-2" />
                   </tr>
-                  {editingVariantId === variant.id && (
-                    <tr className="border-b border-border bg-background">
-                      <td colSpan={5} className="p-3">
-                        <VariantForm
-                          form={editVariantForm}
-                          setForm={setEditVariantForm}
-                          phoneModels={phoneModels}
-                          caseTypes={caseTypes}
-                          stockItems={stockItems}
-                          onSubmit={handleSaveVariant}
-                          submitLabel="Save variant"
-                          disabled={isBusy}
-                        />
+                </thead>
+                <tbody>
+                  {filteredVariants.map((variant) => (
+                    <Fragment key={variant.id}>
+                      <tr className="border-b border-border hover:bg-surface/50">
+                        <td className="p-2 font-semibold text-ink">
+                          {variantLabel(variant)}
+                          {variant.isPersonalizable && (
+                            <span className="ms-2 rounded-full bg-accent-wash px-2 py-0.5 text-[11px] font-semibold">
+                              Custom image +{formatPrice(variant.customizationPrice ?? 0, variant.currency)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-2 font-mono text-xs text-muted-foreground">{variant.sku}</td>
+                        <td className="p-2">{formatPrice(variant.price, variant.currency)}</td>
+                        <td className="p-2">
+                          <input
+                            type="checkbox"
+                            checked={variant.isActive}
+                            disabled={isBusy}
+                            onChange={(e) => handleToggleVariantActive(variant.id, e.target.checked)}
+                            aria-label={`${variantLabel(variant)} active`}
+                            className="size-4 accent-accent"
+                          />
+                        </td>
+                        <td className="p-2 text-end">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              editingVariantId === variant.id
+                                ? setEditingVariantId(null)
+                                : startEditingVariant(variant)
+                            }
+                            className="text-xs font-semibold text-accent underline underline-offset-4"
+                          >
+                            {editingVariantId === variant.id ? "Cancel" : "Edit"}
+                          </button>
+                        </td>
+                      </tr>
+                      {editingVariantId === variant.id && (
+                        <tr className="border-b border-border bg-background">
+                          <td colSpan={5} className="p-3">
+                            <VariantForm
+                              form={editVariantForm}
+                              setForm={setEditVariantForm}
+                              phoneModels={phoneModels}
+                              caseTypes={caseTypes}
+                              stockItems={stockItems}
+                              onSubmit={handleSaveVariant}
+                              submitLabel="Save variant"
+                              disabled={isBusy}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                  {filteredVariants.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                        No variants match the selected filters.
                       </td>
                     </tr>
                   )}
-                </Fragment>
-              ))}
-              {product.variants.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                    No variants yet — add one below so customers can buy this design.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
 
-        <h3 className="mt-6 text-sm font-semibold text-ink">Add variant</h3>
+        <h3 className="mt-8 text-sm font-semibold text-ink">Add variants</h3>
         <div className="mt-2">
-          <VariantForm
+          <AddVariantPanel
             form={newVariant}
             setForm={setNewVariant}
             phoneModels={phoneModels}
+            phoneBrands={phoneBrands}
             caseTypes={caseTypes}
             stockItems={stockItems}
+            productSlug={product.slug}
+            applyToAllModels={applyToAllModels}
+            setApplyToAllModels={setApplyToAllModels}
+            applyToAllCaseTypes={applyToAllCaseTypes}
+            setApplyToAllCaseTypes={setApplyToAllCaseTypes}
+            modelBrandFilter={modelBrandFilter}
+            setModelBrandFilter={setModelBrandFilter}
+            pendingCombosCount={pendingCombos.length}
+            totalCombosCount={totalCombosCount}
+            skippedCombosCount={skippedCombosCount}
+            targetModelsCount={targetModels.length}
+            targetCaseTypesCount={targetCaseTypes.length}
+            bulkProgress={bulkProgress}
             onSubmit={handleAddVariant}
-            submitLabel="Add"
             disabled={isBusy}
           />
         </div>
@@ -897,12 +1240,16 @@ function PricingEditor({
   variants,
   currency,
   labelFor,
+  caseTypes,
+  phoneBrands,
   disabled,
   onSave,
 }: {
   variants: AdminVariant[];
   currency: string;
   labelFor: (variant: AdminVariant) => string;
+  caseTypes?: CaseType[];
+  phoneBrands?: { id: string; slug: string; name: string }[];
   disabled: boolean;
   onSave: (changes: { variantId: string; price: number; compareAtPrice: number | null }[]) => void;
 }) {
@@ -912,6 +1259,10 @@ function PricingEditor({
   // MoneyInput keeps its own text; bump to remount after "apply to all".
   const [inputsVersion, setInputsVersion] = useState(0);
   const [allPrice, setAllPrice] = useState<number | null>(null);
+
+  // Bulk by case type
+  const [targetCaseTypeId, setTargetCaseTypeId] = useState("");
+  const [caseTypePrice, setCaseTypePrice] = useState<number | null>(null);
 
   if (variants.length === 0) {
     return <p className="text-sm text-muted-foreground">Add a variant first — prices are set per variant.</p>;
@@ -925,24 +1276,73 @@ function PricingEditor({
     .map((v) => ({ variantId: v.id, price: draft[v.id].price as number, compareAtPrice: draft[v.id].compareAtPrice }));
   const hasEmpty = variants.some((v) => draft[v.id].price === null);
 
+  const matchedCaseTypeCount = targetCaseTypeId
+    ? variants.filter((v) => v.caseTypeId === targetCaseTypeId).length
+    : 0;
+
   return (
     <div>
       {variants.length > 1 && (
-        <div className="mb-4 flex flex-wrap items-end gap-2 rounded-2xl bg-accent-wash p-3">
-          <MoneyInput label="Same price for all" minorUnits={allPrice} onChange={setAllPrice} className="w-36" />
-          <button
-            type="button"
-            disabled={disabled || allPrice === null}
-            onClick={() => {
-              setDraft((prev) =>
-                Object.fromEntries(Object.entries(prev).map(([id, d]) => [id, { ...d, price: allPrice }])),
-              );
-              setInputsVersion((n) => n + 1);
-            }}
-            className={secondaryButtonClass}
-          >
-            Apply to all {variants.length}
-          </button>
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl bg-accent-wash/60 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Bulk price updates
+          </p>
+          <div className="flex flex-wrap items-end gap-2">
+            <MoneyInput label="Same price for all" minorUnits={allPrice} onChange={setAllPrice} className="w-36" />
+            <button
+              type="button"
+              disabled={disabled || allPrice === null}
+              onClick={() => {
+                setDraft((prev) =>
+                  Object.fromEntries(Object.entries(prev).map(([id, d]) => [id, { ...d, price: allPrice }])),
+                );
+                setInputsVersion((n) => n + 1);
+              }}
+              className={secondaryButtonClass}
+            >
+              Apply to all {variants.length}
+            </button>
+          </div>
+
+          {caseTypes && caseTypes.length > 0 && (
+            <div className="flex flex-wrap items-end gap-2 pt-2 border-t border-accent/10">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground">Apply by case type</label>
+                <select
+                  value={targetCaseTypeId}
+                  onChange={(e) => setTargetCaseTypeId(e.target.value)}
+                  className={`w-44 ${inputClass}`}
+                >
+                  <option value="">Select case type…</option>
+                  {caseTypes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({variants.filter((v) => v.caseTypeId === c.id).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <MoneyInput label="Price for case type" minorUnits={caseTypePrice} onChange={setCaseTypePrice} className="w-36" />
+              <button
+                type="button"
+                disabled={disabled || !targetCaseTypeId || caseTypePrice === null || matchedCaseTypeCount === 0}
+                onClick={() => {
+                  setDraft((prev) => {
+                    const next = { ...prev };
+                    for (const v of variants) {
+                      if (v.caseTypeId === targetCaseTypeId) {
+                        next[v.id] = { ...next[v.id], price: caseTypePrice };
+                      }
+                    }
+                    return next;
+                  });
+                  setInputsVersion((n) => n + 1);
+                }}
+                className={secondaryButtonClass}
+              >
+                Apply to {matchedCaseTypeCount} {matchedCaseTypeCount === 1 ? "variant" : "variants"}
+              </button>
+            </div>
+          )}
         </div>
       )}
       <ul className="flex flex-col gap-2">
@@ -1155,6 +1555,325 @@ function VariantForm({
       <button type="submit" disabled={disabled} className={buttonClass}>
         {submitLabel}
       </button>
+    </form>
+  );
+}
+
+function AddVariantPanel({
+  form,
+  setForm,
+  phoneModels,
+  phoneBrands,
+  caseTypes,
+  stockItems,
+  productSlug,
+  applyToAllModels,
+  setApplyToAllModels,
+  applyToAllCaseTypes,
+  setApplyToAllCaseTypes,
+  modelBrandFilter,
+  setModelBrandFilter,
+  pendingCombosCount,
+  totalCombosCount,
+  skippedCombosCount,
+  targetModelsCount,
+  targetCaseTypesCount,
+  bulkProgress,
+  onSubmit,
+  disabled,
+}: {
+  form: VariantFormState;
+  setForm: (updater: (prev: VariantFormState) => VariantFormState) => void;
+  phoneModels: PhoneModel[];
+  phoneBrands: { id: string; slug: string; name: string }[];
+  caseTypes: CaseType[];
+  stockItems: StockItem[];
+  productSlug: string;
+  applyToAllModels: boolean;
+  setApplyToAllModels: (val: boolean) => void;
+  applyToAllCaseTypes: boolean;
+  setApplyToAllCaseTypes: (val: boolean) => void;
+  modelBrandFilter: string;
+  setModelBrandFilter: (val: string) => void;
+  pendingCombosCount: number;
+  totalCombosCount: number;
+  skippedCombosCount: number;
+  targetModelsCount: number;
+  targetCaseTypesCount: number;
+  bulkProgress: { current: number; total: number } | null;
+  onSubmit: (event: React.FormEvent) => void;
+  disabled: boolean;
+}) {
+  const isBulkMode = applyToAllModels || applyToAllCaseTypes;
+
+  return (
+    <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+      {/* Toggles bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl bg-accent-wash/60 p-3 text-sm">
+        <span className="font-semibold text-ink">Scope:</span>
+        <label className="flex items-center gap-2 cursor-pointer font-medium text-ink select-none">
+          <input
+            type="checkbox"
+            checked={applyToAllModels}
+            disabled={disabled}
+            onChange={(e) => setApplyToAllModels(e.target.checked)}
+            className="size-4 accent-accent"
+          />
+          Apply to all phone models ({phoneModels.length})
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer font-medium text-ink select-none">
+          <input
+            type="checkbox"
+            checked={applyToAllCaseTypes}
+            disabled={disabled}
+            onChange={(e) => setApplyToAllCaseTypes(e.target.checked)}
+            className="size-4 accent-accent"
+          />
+          Apply to all case types ({caseTypes.length})
+        </label>
+        <div className="ms-auto flex items-center gap-3">
+          {!applyToAllModels || !applyToAllCaseTypes ? (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setApplyToAllModels(true);
+                setApplyToAllCaseTypes(true);
+                setForm((f) => ({ ...f, isUnlimitedStock: true }));
+              }}
+              className="text-xs font-semibold text-accent hover:underline"
+            >
+              ⚡ Select all models & case types
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setApplyToAllModels(false);
+                setApplyToAllCaseTypes(false);
+              }}
+              className="text-xs font-medium text-muted-foreground hover:text-ink"
+            >
+              Single variant mode
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Bulk Preview Card */}
+      {isBulkMode && (
+        <div className="mb-4 rounded-xl border border-accent/20 bg-accent-wash/40 p-3.5 text-sm text-ink">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold text-ink">
+              ⚡ Bulk generation: {targetModelsCount} phone {targetModelsCount === 1 ? "model" : "models"} × {targetCaseTypesCount} case {targetCaseTypesCount === 1 ? "type" : "types"}
+            </span>
+            <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-white">
+              {pendingCombosCount} new {pendingCombosCount === 1 ? "variant" : "variants"} to create
+            </span>
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {skippedCombosCount > 0 ? (
+              <>
+                <strong className="text-ink">{pendingCombosCount}</strong> variants will be created.{" "}
+                <span className="text-amber-700 font-medium">{skippedCombosCount} existing combinations will be skipped</span> to avoid duplicates.
+              </>
+            ) : (
+              <>All {pendingCombosCount} combinations are new and will be generated.</>
+            )}
+            {" "}Sample SKU: <code className="rounded bg-background px-1.5 py-0.5 font-mono text-[11px] text-ink font-semibold">{(form.sku.trim() || productSlug).toUpperCase()}-[MODEL]-[CASETYPE]</code>
+          </p>
+        </div>
+      )}
+
+      {/* Inputs */}
+      <div className="flex flex-wrap items-end gap-3">
+        {/* Phone model selection / Brand filter */}
+        {applyToAllModels ? (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Phone models brand</label>
+            <select
+              value={modelBrandFilter}
+              disabled={disabled}
+              onChange={(e) => setModelBrandFilter(e.target.value)}
+              className={`w-48 ${inputClass}`}
+            >
+              <option value="ALL">All brands ({phoneModels.length} models)</option>
+              {phoneBrands.map((b) => (
+                <option key={b.slug} value={b.slug}>
+                  {b.name} only ({phoneModels.filter((m) => m.brand.slug === b.slug).length})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Phone model</label>
+            <select
+              value={form.phoneModelId}
+              disabled={disabled}
+              onChange={(e) => setForm((f) => ({ ...f, phoneModelId: e.target.value }))}
+              className={`w-48 ${inputClass}`}
+            >
+              <option value="">No phone model (accessory)</option>
+              {phoneBrands.map((brand) => (
+                <optgroup key={brand.slug} label={brand.name}>
+                  {phoneModels
+                    .filter((m) => m.brand.slug === brand.slug)
+                    .map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Case type selection */}
+        {applyToAllCaseTypes ? (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Case type</label>
+            <div className={`flex h-[38px] w-48 items-center rounded-pill border border-border bg-accent-wash/30 px-4 text-xs font-semibold text-ink`}>
+              All case types ({caseTypes.length})
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Case type</label>
+            <select
+              value={form.caseTypeId}
+              disabled={disabled}
+              onChange={(e) => setForm((f) => ({ ...f, caseTypeId: e.target.value }))}
+              className={`w-48 ${inputClass}`}
+            >
+              <option value="">No case type</option>
+              {caseTypes.map((caseType) => (
+                <option key={caseType.id} value={caseType.id}>
+                  {caseType.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* SKU or Prefix */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-muted-foreground">
+            {isBulkMode ? "SKU Prefix (optional)" : "SKU"}
+          </label>
+          <input
+            required={!isBulkMode}
+            placeholder={isBulkMode ? `Defaults to: ${productSlug.toUpperCase()}` : "SKU (e.g. IPH15-CLR)"}
+            value={form.sku}
+            disabled={disabled}
+            onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+            className={`w-44 ${inputClass}`}
+          />
+        </div>
+
+        {/* Price & CompareAt */}
+        <MoneyInput
+          label="Price"
+          minorUnits={form.price}
+          onChange={(v) => setForm((f) => ({ ...f, price: v }))}
+          className="w-32"
+        />
+        <MoneyInput
+          label="Was (optional)"
+          minorUnits={form.compareAtPrice}
+          onChange={(v) => setForm((f) => ({ ...f, compareAtPrice: v }))}
+          className="w-32"
+        />
+
+        {/* Stock */}
+        <label className="flex items-center gap-2 text-sm font-medium text-ink select-none pb-2">
+          <input
+            type="checkbox"
+            checked={form.isUnlimitedStock}
+            disabled={disabled}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, isUnlimitedStock: e.target.checked, stockItemId: "" }))
+            }
+            className="size-4 accent-accent"
+          />
+          Unlimited stock
+        </label>
+        {!form.isUnlimitedStock && (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Stock item</label>
+            <select
+              value={form.stockItemId}
+              disabled={disabled || form.isUnlimitedStock}
+              onChange={(e) => setForm((f) => ({ ...f, stockItemId: e.target.value }))}
+              className={`w-44 ${inputClass} disabled:opacity-50`}
+            >
+              <option value="">No stock item</option>
+              {stockItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.sku} ({item.onHand - item.reserved} avail)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Customization */}
+        <label className="flex items-center gap-2 text-sm font-medium text-ink select-none pb-2">
+          <input
+            type="checkbox"
+            checked={form.isPersonalizable}
+            disabled={disabled}
+            onChange={(e) => setForm((f) => ({ ...f, isPersonalizable: e.target.checked }))}
+            className="size-4 accent-accent"
+          />
+          Custom image upload
+        </label>
+        {form.isPersonalizable && (
+          <MoneyInput
+            label="Design surcharge"
+            minorUnits={form.customizationPrice}
+            onChange={(v) => setForm((f) => ({ ...f, customizationPrice: v }))}
+            className="w-32"
+          />
+        )}
+
+        {/* Active status */}
+        <label className="flex items-center gap-2 text-sm font-medium text-ink select-none pb-2">
+          <input
+            type="checkbox"
+            checked={form.isActive}
+            disabled={disabled}
+            onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+            className="size-4 accent-accent"
+          />
+          Active
+        </label>
+
+        {/* Progress bar or Submit button */}
+        {bulkProgress ? (
+          <div className="flex items-center gap-3 py-1">
+            <div className="h-2.5 w-32 overflow-hidden rounded-full bg-border">
+              <div
+                className="h-full bg-accent transition-all duration-200"
+                style={{ width: `${Math.round((bulkProgress.current / bulkProgress.total) * 100)}%` }}
+              />
+            </div>
+            <span className="text-xs font-semibold text-ink">
+              Creating {bulkProgress.current}/{bulkProgress.total}…
+            </span>
+          </div>
+        ) : (
+          <button
+            type="submit"
+            disabled={disabled || (isBulkMode && pendingCombosCount === 0)}
+            className={buttonClass}
+          >
+            {isBulkMode ? `Create ${pendingCombosCount} variants` : "Add variant"}
+          </button>
+        )}
+      </div>
     </form>
   );
 }
