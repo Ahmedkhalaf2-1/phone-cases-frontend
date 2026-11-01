@@ -6,12 +6,14 @@ import { useAdminAuth } from "@/lib/admin/AdminAuthProvider";
 import { adminClient, ApiError } from "@/lib/admin/admin-client";
 import { PRODUCT_STATUS_LABEL } from "@/lib/admin/product-display";
 import { AdminProductCard } from "@/components/admin/AdminProductCard";
-import { LoadingRow } from "@/components/ui/Spinner";
 import type { AdminCollection, AdminProduct, ProductStatus } from "@/lib/admin/types";
 
 type StatusFilter = "ALL" | ProductStatus;
 
 const PAGE_SIZE = 24;
+const STATUS_TABS: StatusFilter[] = ["ALL", "PUBLISHED", "DRAFT", "ARCHIVED"];
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export default function AdminProductsPage() {
   const { accessToken, authorizedFetch } = useAdminAuth();
@@ -27,6 +29,29 @@ export default function AdminProductsPage() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [collectionFilter, setCollectionFilter] = useState("");
+  const [statusCounts, setStatusCounts] = useState<Partial<Record<StatusFilter, number>>>({});
+
+  // Counts for the status tabs (one tiny request each).
+  useEffect(() => {
+    if (!accessToken) return;
+    let cancelled = false;
+    Promise.all(
+      STATUS_TABS.map((status) =>
+        authorizedFetch((token) =>
+          adminClient.listProducts(token, {
+            page: 1,
+            pageSize: 1,
+            status: status === "ALL" ? undefined : status,
+          }),
+        ).then((r) => r.meta.totalItems),
+      ),
+    )
+      .then((totals) => !cancelled && setStatusCounts(Object.fromEntries(STATUS_TABS.map((s, i) => [s, totals[i]]))))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, authorizedFetch]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -110,92 +135,157 @@ export default function AdminProductsPage() {
   }
 
   const visible = products;
+  const hasFilters = Boolean(query || collectionFilter || statusFilter !== "ALL");
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="font-display text-3xl tracking-tight text-ink uppercase">
-          Products
-        </h1>
+    <div className="max-w-7xl">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-4xl tracking-tight text-ink uppercase">Products</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {statusCounts.ALL !== undefined
+              ? `${statusCounts.ALL.toLocaleString("en-US")} designs · ${statusCounts.PUBLISHED ?? 0} live in the shop`
+              : "\u00a0"}
+          </p>
+        </div>
         <Link
           href="/admin/products/new"
-          className="rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className={`rounded-pill bg-ink px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent ${focusRing}`}
         >
-          New product
+          + New product
         </Link>
-      </div>
-      <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-        Tip: open a <Link href="/admin/catalog/collections" className="font-semibold text-accent underline underline-offset-4">collection</Link>{" "}
-        to see just its products.
-      </p>
+      </header>
 
-      {error && <p className="mt-6 text-sm text-accent">{error}</p>}
-
-      {(
-        <>
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products…"
-              className="w-full max-w-xs rounded-pill border border-border bg-background px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            />
-            <select
-              value={collectionFilter}
-              onChange={(e) => setCollectionFilter(e.target.value)}
-              aria-label="Filter by collection"
-              className="rounded-pill border border-border bg-background px-4 py-2 text-sm"
+      {/* Status tabs */}
+      <div role="tablist" aria-label="Status" className="-mx-4 mt-5 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+        {STATUS_TABS.map((value) => {
+          const on = statusFilter === value;
+          const count = statusCounts[value];
+          return (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setStatusFilter(value)}
+              className={`flex shrink-0 items-center gap-2 rounded-pill px-3.5 py-2 text-sm font-semibold transition-colors ${focusRing} ${
+                on ? "bg-ink text-white" : "bg-surface text-ink hover:bg-border/60"
+              }`}
             >
-              <option value="">All collections</option>
-              {collections.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nameEn}
-                </option>
-              ))}
-            </select>
-            <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-1.5">
-              {(["ALL", "PUBLISHED", "DRAFT", "ARCHIVED"] as StatusFilter[]).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={statusFilter === value}
-                  onClick={() => setStatusFilter(value)}
-                  className={`rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    statusFilter === value ? "bg-ink text-white" : "bg-surface text-ink shadow-card hover:bg-background"
-                  }`}
-                >
-                  {value === "ALL" ? "All" : PRODUCT_STATUS_LABEL[value]}
-                </button>
-              ))}
-            </div>
-            <span className="ms-auto text-sm text-muted-foreground">
-              {visible.length} of {total}
-            </span>
-          </div>
+              {value === "ALL" ? "All" : PRODUCT_STATUS_LABEL[value]}
+              {count !== undefined && (
+                <span className={`text-xs tabular-nums ${on ? "text-white/75" : "text-muted-foreground"}`}>{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-          {isLoading && <LoadingRow label="Loading products…" />}
-          <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-            {visible.map((product) => (
-              <AdminProductCard key={product.id} product={product} href={`/admin/products/${product.id}`} />
-            ))}
-          </ul>
-          {!isLoading && visible.length === 0 && (
-            <p className="mt-6 text-center text-muted-foreground">No products match these filters.</p>
-          )}
-          {!isLoading && page < totalPages && (
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={loadMore}
-                disabled={isLoadingMore}
-                className="rounded-pill bg-ink px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent disabled:opacity-60"
-              >
-                {isLoadingMore ? "Loading…" : "Load more"}
-              </button>
-            </div>
-          )}
-        </>
+      {/* Search + collection */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-0 flex-1 sm:max-w-sm">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 start-3.5 my-auto size-4 text-muted-foreground"
+          >
+            <path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search products by name"
+            aria-label="Search products"
+            className={`w-full rounded-pill border border-border bg-background py-2 ps-10 pe-4 text-sm ${focusRing}`}
+          />
+        </div>
+        <select
+          value={collectionFilter}
+          onChange={(e) => setCollectionFilter(e.target.value)}
+          aria-label="Filter by collection"
+          className={`rounded-pill border bg-background px-4 py-2 text-sm ${focusRing} ${
+            collectionFilter ? "border-ink font-semibold text-ink" : "border-border"
+          }`}
+        >
+          <option value="">All collections</option>
+          {collections.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nameEn}
+            </option>
+          ))}
+        </select>
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setCollectionFilter("");
+              setStatusFilter("ALL");
+            }}
+            className="px-2 text-sm font-semibold text-accent hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
+        <span className="ms-auto text-sm text-muted-foreground tabular-nums">
+          {isLoading ? "Loading…" : `${visible.length} of ${total}`}
+        </span>
+      </div>
+
+      {error && (
+        <p role="alert" className="mt-4 rounded-2xl bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </p>
+      )}
+
+      {isLoading && visible.length === 0 ? (
+        <ul aria-hidden className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+          {Array.from({ length: 10 }, (_, i) => (
+            <li key={i} className="rounded-card bg-surface p-2 shadow-card">
+              <div className="aspect-square animate-pulse rounded-card-inner bg-background" />
+              <div className="mx-2 mt-3 h-4 w-3/4 animate-pulse rounded bg-background" />
+              <div className="mx-2 mt-2 mb-2 h-3 w-1/3 animate-pulse rounded bg-background" />
+            </li>
+          ))}
+        </ul>
+      ) : !isLoading && visible.length === 0 ? (
+        <div className="mt-4 rounded-card bg-surface px-6 py-16 text-center shadow-card">
+          <p className="text-sm font-semibold text-ink">No products found</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {hasFilters ? "Try a different search or clear the filters." : "Add your first design to get started."}
+          </p>
+        </div>
+      ) : (
+        <ul
+          className={`mt-4 grid grid-cols-2 gap-4 transition-opacity sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 ${
+            isLoading ? "opacity-60" : ""
+          }`}
+        >
+          {visible.map((product) => (
+            <AdminProductCard key={product.id} product={product} href={`/admin/products/${product.id}`} />
+          ))}
+        </ul>
+      )}
+
+      {!isLoading && page < totalPages && (
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className={`rounded-pill border border-border bg-background px-5 py-2.5 text-sm font-semibold text-ink transition-colors enabled:hover:border-ink disabled:opacity-60 ${focusRing}`}
+          >
+            {isLoadingMore ? "Loading…" : `Load ${Math.min(PAGE_SIZE, total - visible.length)} more`}
+          </button>
+          <span className="text-xs text-muted-foreground">
+            Showing {visible.length} of {total}
+          </span>
+        </div>
       )}
     </div>
   );
