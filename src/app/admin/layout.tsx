@@ -125,7 +125,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         return (
           <div key={group.label ?? index}>
             {group.label && (
-              <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-[0.12em] text-white/40 uppercase">
+              <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
                 {group.label}
               </p>
             )}
@@ -139,7 +139,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                       onClick={onNavigate}
                       aria-current={isActive ? "page" : undefined}
                       className={`relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${focusRing} ${
-                        isActive ? "bg-white/10 text-white" : "text-white/65 hover:bg-white/5 hover:text-white"
+                        isActive ? "bg-ink text-white" : "text-ink hover:bg-background"
                       }`}
                     >
                       {isActive && (
@@ -192,7 +192,7 @@ function ProfileCard() {
   }
 
   return (
-    <div className="rounded-2xl bg-white/5 p-3">
+    <div className="rounded-2xl border border-border bg-background p-3">
       <div className="flex items-center gap-3">
         <span
           aria-hidden
@@ -213,23 +213,23 @@ function ProfileCard() {
               disabled={isSaving}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Escape" && setIsEditing(false)}
-              className={`w-full rounded-lg bg-white/10 px-2 py-1 text-sm text-white ${focusRing}`}
+              className={`w-full rounded-lg border border-border bg-surface px-2 py-1 text-sm text-ink ${focusRing}`}
             />
             <div className="flex gap-2 text-xs">
-              <button type="submit" disabled={isSaving} className={`font-semibold text-white ${focusRing}`}>
+              <button type="submit" disabled={isSaving} className={`font-semibold text-ink ${focusRing}`}>
                 {isSaving ? "Saving…" : "Save"}
               </button>
-              <button type="button" onClick={() => setIsEditing(false)} className={`text-white/60 ${focusRing}`}>
+              <button type="button" onClick={() => setIsEditing(false)} className={`text-muted-foreground ${focusRing}`}>
                 Cancel
               </button>
             </div>
           </form>
         ) : (
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white" title={staff.fullName}>
+            <p className="truncate text-sm font-semibold text-ink" title={staff.fullName}>
               {staff.fullName}
             </p>
-            <p className="truncate text-xs text-white/55">{ROLE_LABEL[staff.role] ?? staff.role}</p>
+            <p className="truncate text-xs text-muted-foreground">{ROLE_LABEL[staff.role] ?? staff.role}</p>
           </div>
         )}
         {canRename && !isEditing && (
@@ -242,18 +242,18 @@ function ProfileCard() {
             }}
             aria-label="Edit your name"
             title="Edit your name"
-            className={`rounded-lg p-1.5 text-white/55 hover:bg-white/10 hover:text-white ${focusRing}`}
+            className={`rounded-lg p-1.5 text-muted-foreground hover:bg-surface hover:text-ink ${focusRing}`}
           >
             <Icon name="pencil" className="size-4" />
           </button>
         )}
       </div>
-      {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+      {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
       <div className="mt-3 grid grid-cols-2 gap-1.5 text-xs font-medium">
         <Link
           href="/"
           target="_blank"
-          className={`flex items-center justify-center gap-1.5 rounded-lg bg-white/5 py-1.5 text-white/75 hover:bg-white/10 hover:text-white ${focusRing}`}
+          className={`flex items-center justify-center gap-1.5 rounded-lg bg-surface py-1.5 text-ink hover:bg-border/60 ${focusRing}`}
         >
           <Icon name="external" className="size-3.5" />
           View shop
@@ -261,7 +261,7 @@ function ProfileCard() {
         <button
           type="button"
           onClick={logout}
-          className={`flex items-center justify-center gap-1.5 rounded-lg bg-white/5 py-1.5 text-white/75 hover:bg-white/10 hover:text-white ${focusRing}`}
+          className={`flex items-center justify-center gap-1.5 rounded-lg bg-surface py-1.5 text-ink hover:bg-border/60 ${focusRing}`}
         >
           <Icon name="logout" className="size-3.5" />
           Sign out
@@ -275,8 +275,8 @@ function Brand() {
   return (
     <Link href="/admin" className={`flex items-center gap-2.5 rounded-lg ${focusRing}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/contrast-logo-white.png" alt={SITE.brandName} width={908} height={120} className="h-4 w-auto" />
-      <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/70 uppercase">
+      <img src="/brand/contrast-logo.png" alt={SITE.brandName} width={908} height={120} className="h-4 w-auto" />
+      <span className="rounded-md bg-background px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
         Admin
       </span>
     </Link>
@@ -331,7 +331,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
       {noindex}
 
       {/* Mobile top bar */}
-      <header className="flex items-center justify-between bg-ink px-4 py-3 lg:hidden">
+      <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:hidden">
         <Brand />
         <button
           type="button"
@@ -339,7 +339,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
           aria-controls={menuId}
           aria-label="Open menu"
           onClick={() => setIsMobileNavOpen(true)}
-          className={`rounded-lg p-2 text-white hover:bg-white/10 ${focusRing}`}
+          className={`rounded-lg p-2 text-ink hover:bg-background ${focusRing}`}
         >
           <Icon name="menu" className="size-6" />
         </button>
@@ -359,7 +359,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
             role="dialog"
             aria-modal="true"
             aria-label="Admin menu"
-            className="absolute inset-y-0 start-0 flex w-72 max-w-[85vw] flex-col gap-6 overflow-y-auto bg-ink p-4"
+            className="absolute inset-y-0 start-0 flex w-72 max-w-[85vw] flex-col gap-6 overflow-y-auto bg-surface p-4"
           >
             <div className="flex items-center justify-between">
               <Brand />
@@ -367,7 +367,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setIsMobileNavOpen(false)}
-                className={`rounded-lg p-2 text-white hover:bg-white/10 ${focusRing}`}
+                className={`rounded-lg p-2 text-ink hover:bg-background ${focusRing}`}
               >
                 <Icon name="close" className="size-5" />
               </button>
@@ -381,7 +381,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-ink px-3 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 overflow-y-auto border-e border-border bg-surface px-3 py-5 lg:flex">
         <div className="px-3">
           <Brand />
         </div>
